@@ -557,30 +557,24 @@
     }
   };
 
-  // снимаем старые слушатели
+  // снять старые слушатели (если были)
   if (stickyInitOrRefresh._cleanup) stickyInitOrRefresh._cleanup();
 
-  // ищем “скроллер” (контейнер, который реально крутится)
-  const tasksCont = $("tasksContainer");
-  const scrollHost =
-    (tasksCont && tasksCont.closest(".bd")) || // если у тебя есть .bd
-    (tasksCont && tasksCont.parentElement) ||
-    null;
+  // ✅ главный скроллер — .bd
+  const bd = document.querySelector(".bd");
 
-  // ставим новые слушатели
-  window.addEventListener("scroll", onScroll, { passive: true, capture: true });
-  document.addEventListener("scroll", onScroll, { passive: true, capture: true });
-  if (scrollHost) scrollHost.addEventListener("scroll", onScroll, { passive: true });
+  // слушаем scroll именно там
+  if (bd) bd.addEventListener("scroll", onScroll, { passive: true });
 
-  // cleanup, чтобы не копились обработчики при смене варианта
+  // на всякий случай оставим и window (не мешает)
+  window.addEventListener("scroll", onScroll, { passive: true });
+
   stickyInitOrRefresh._cleanup = () => {
-    window.removeEventListener("scroll", onScroll, { capture: true });
-    document.removeEventListener("scroll", onScroll, { capture: true });
-    if (scrollHost) scrollHost.removeEventListener("scroll", onScroll);
+    if (bd) bd.removeEventListener("scroll", onScroll);
+    window.removeEventListener("scroll", onScroll);
   };
 
-  // сразу проставим
-  onScroll();
+  onScroll(); // первичная установка
 }
 
   init().catch((err) => {
