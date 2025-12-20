@@ -7,230 +7,263 @@
 
   <style>
     :root{
-      --bg:#0b1020;--bg2:#070a14;--card:#121a33;--card2:#0f1730;
+      --bg:#0b1020;--bg2:#070a14;--card:#121a33;
       --text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
-      --btn:#2b3a7a;--btn2:#1f2a57;--ok:#35d07f;--bad:#ff5b6e;
-      --r:18px;--max:1100px;--shadow:0 14px 40px rgba(0,0,0,.26);
+      --primary:#2b3a7a;--primary2:#1f2a57;
+      --ok:#35d07f;--bad:#ff5b6e;
+      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:1100px;
     }
-    /* Sticky-текст */
-.stickyText{
-  position: sticky;
-  top: 70px;               /* под шапку */
-  z-index: 25;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-.stickyTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.stickyRange{
-  margin-left:10px;
-  font-size:12px;
-  color: var(--muted);
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-}
-.stickyBody{
-  padding: 12px 14px 14px;
-  color: var(--muted);
-  line-height: 1.55;
-  max-height: 44vh;
-  overflow: auto;
-}
-.stickyBody h2{margin:8px 0 8px;font-size:16px;color:var(--text)}
-.stickyBody p{margin:8px 0}
-
     [data-theme="light"]{
-      --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;--card2:#f1f4ff;
+      --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;
       --text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
-      --btn:#3254ff;--btn2:#e9edff;--shadow:0 14px 40px rgba(15,24,60,.10);
+      --primary:#3254ff;--primary2:#e9edff;
+      --shadow:0 14px 40px rgba(15,24,60,.1);
     }
     *{box-sizing:border-box}
     body{
-      margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
-      background:
-        radial-gradient(900px 500px at 20% 0%, rgba(43,58,122,.35), transparent 60%),
-        linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
+      background:linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
     }
+    a{color:inherit;text-decoration:none}
     .topbar{
       position:sticky;top:0;z-index:20;
-      background:color-mix(in srgb, var(--bg) 78%, transparent);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--border);
+      background:rgba(0,0,0,.35);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border)
     }
     .topbar-inner{
-      max-width:var(--max);margin:0 auto;padding:10px 14px;
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      max-width:var(--max);margin:0 auto;padding:10px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px
     }
     .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--btn),rgba(255,255,255,.08));border:1px solid var(--border)}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background:linear-gradient(135deg,var(--primary),rgba(255,255,255,.12))
+    }
     .brand b{font-size:14px}
-    .brand span{display:block;font-size:12px;color:var(--muted)}
-    .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .brand span{font-size:12px;color:var(--muted)}
+    .toggle{display:flex;align-items:center;gap:8px}
+    .toggle input{display:none}
+    .toggle small{color:var(--muted);font-size:12px}
+    .switch{
+      width:44px;height:26px;border-radius:999px;
+      background:var(--card);border:1px solid var(--border);position:relative
+    }
+    .knob{
+      width:20px;height:20px;border-radius:50%;background:var(--text);
+      position:absolute;top:2px;left:2px;transition:.2s
+    }
+    input:checked+.switch .knob{left:22px}
 
-    .pill{
-      padding:8px 12px;border-radius:999px;border:1px solid var(--border);
-      background:color-mix(in srgb, var(--card) 80%, transparent);
-      color:var(--muted);font-size:13px;display:inline-flex;gap:8px;align-items:center;
+    .container{max-width:var(--max);margin:0 auto;padding:18px 16px}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 420px;
+      gap:16px;
+      align-items:start;
+      margin-top:14px;
     }
+    @media (max-width:980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    h1{margin:0 0 6px;font-size:22px}
+    .sub{color:var(--muted);line-height:1.5;margin:0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1}
+    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+    input[type="text"], select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:transparent;
+      color:var(--text);
+      outline:none;
+    }
+
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+    .kpi{
+      padding:12px;border-radius:14px;border:1px solid var(--border);
+      background:rgba(255,255,255,.03)
+    }
+    .kpi small{display:block;color:var(--muted);font-size:12px}
+    .kpi b{font-size:16px}
+
     .btn{
-      padding:11px 14px;border-radius:14px;border:1px solid var(--border);
-      background:var(--btn);color:#fff;cursor:pointer;
-      display:inline-flex;align-items:center;justify-content:center;gap:10px;
-      transition:filter .15s ease,transform .08s ease;
-      user-select:none;-webkit-tap-highlight-color:transparent;
-      font-size:14px;
+      width:100%;
+      padding:12px 0;
+      border-radius:14px;
+      background:var(--primary);
+      color:#fff;
+      border:1px solid var(--border);
+      cursor:pointer;
+      text-align:center;
+      transition:filter .15s ease, transform .08s ease;
     }
-    .btn.secondary{background:color-mix(in srgb, var(--btn2) 85%, transparent);color:var(--text)}
+    .btn:hover{filter:brightness(1.06)}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:var(--primary2);color:var(--text)}
     .btn:disabled{opacity:.55;cursor:not-allowed}
 
-    .toggle{display:inline-flex;align-items:center;gap:8px}
-    .toggle input{display:none}
-    .switch{width:44px;height:26px;border-radius:999px;border:1px solid var(--border);
-      background:color-mix(in srgb, var(--card) 80%, transparent);position:relative}
-    .knob{width:20px;height:20px;border-radius:50%;background:var(--text);position:absolute;top:2px;left:2px;transition:left .18s ease}
-    .toggle input:checked + .switch .knob{left:22px}
-    .toggle small{color:var(--muted);font-size:12px}
+    .actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
 
-    .wrap{max-width:var(--max);margin:0 auto;padding:18px 14px 34px}
-    .card{background:color-mix(in srgb, var(--card) 92%, transparent);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
-    .hd{padding:16px 16px 0}
-    .bd{padding:16px}
-    h1{margin:0;font-size:clamp(18px,2.6vw,26px)}
-    .sub{margin:6px 0 0;color:var(--muted);line-height:1.55}
-    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px}
-    input[type="text"], select{
-      width:100%;padding:12px 12px;border-radius:14px;border:1px solid var(--border);
-      background:color-mix(in srgb, var(--card2) 86%, transparent);
-      color:var(--text);outline:none;
+    /* sticky text */
+    .stickyWrap{
+      position:sticky; top:72px; z-index:5;
     }
-    .hr{height:1px;background:var(--border);margin:14px 0}
-    .resultLine{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .kpi{padding:10px 12px;border-radius:14px;border:1px solid var(--border);background:color-mix(in srgb, var(--card) 80%, transparent)}
-    .kpi b{display:block;font-size:14px}
-    .kpi span{color:var(--muted);font-size:12px}
-    .notice{padding:12px 14px;border-radius:14px;border:1px dashed var(--border);background:color-mix(in srgb, var(--card2) 80%, transparent);color:var(--muted);line-height:1.5;flex:1;min-width:240px}
-
-    .grid{display:grid;gap:14px}
-    .task{
+    .stickyHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:10px
+    }
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
       border:1px solid var(--border);
-      border-radius:16px;
-      background:color-mix(in srgb, var(--card2) 84%, transparent);
-      padding:14px;
+      color:var(--muted);font-size:12px;
+      background:rgba(255,255,255,.03)
     }
-    .task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .task h3{margin:0;font-size:15px}
-    .badge{padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
-    .hint{margin:8px 0 0;color:var(--muted);font-size:12px}
-    .q{margin:10px 0 0;line-height:1.55}
-    .answer{margin-top:10px}
+    .stickyBody{
+      max-height:260px;
+      overflow:auto;
+      border-radius:14px;
+      border:1px solid var(--border);
+      padding:12px;
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      line-height:1.6;
+    }
+    .stickyBody h2{margin:0 0 10px;font-size:16px}
+    .stickyBody p{margin:0 0 10px;color:var(--muted)}
+    .stickyBody b{color:var(--text)}
 
-    @media (max-width:860px){
-      .row3{grid-template-columns:1fr}
+    /* single-task */
+    .navRow{
+      display:flex;gap:10px;align-items:center;justify-content:space-between;
+      margin:12px 0;
     }
+    .navMid{
+      flex:1;text-align:center;color:var(--muted);font-size:14px
+    }
+
+    .task-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .task-top h3{margin:0;font-size:16px}
+    .hint{margin-top:8px;color:var(--muted);font-size:13px}
+    .q{margin-top:10px;line-height:1.6;color:var(--text)}
+    .answer{margin-top:12px}
+
+    footer{margin:22px 0 10px;text-align:center;color:var(--muted);font-size:13px}
   </style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <b id="uiSubject">Контрольная</b>
-          <span id="uiTitle">—</span>
-        </div>
-      </div>
 
-      <div class="controls">
-        <span class="pill"><span>⏱</span><span id="uiTimer">—</span></span>
-
-        <button class="btn secondary" id="btnFinish" type="button">Завершить</button>
-        <button class="btn" id="btnDownload" type="button" disabled>Скачать результат (JSON)</button>
-        <button class="btn secondary" id="btnEmail" type="button" disabled>Отправить учителю</button>
-
-        <label class="toggle" title="Светлая тема">
-          <input id="themeToggle" type="checkbox" />
-          <span class="switch"><span class="knob"></span></span>
-          <small id="themeLabel">Тёмная</small>
-        </label>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <b id="uiSubject">Контрольная</b><br>
+        <span id="uiTitle">Контрольная работа</span>
       </div>
     </div>
-  </div>
 
-  <div class="wrap">
-    <div class="grid">
-      <section class="card">
-        <div class="hd">
-          <h1 id="uiMainTitle">Контрольная работа</h1>
-          <p class="sub" id="uiSubtitle">—</p>
-        </div>
-        <div class="bd">
-          <div class="row3">
-            <div>
-              <label for="variantSelect">Вариант</label>
-              <select id="variantSelect"></select>
-            </div>
-            <div>
-              <label for="studentName">ФИО</label>
-              <input id="studentName" type="text" placeholder="Иванов Иван Иванович" autocomplete="name" />
-            </div>
-            <div>
-              <label for="studentClass">Класс</label>
-              <input id="studentClass" type="text" placeholder="11А" />
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="resultLine">
-            <div class="kpi"><b id="kpiPoints">—</b><span>Баллы</span></div>
-            <div class="kpi"><b id="kpiPercent">—</b><span>Процент</span></div>
-            <div class="kpi"><b id="kpiMark">—</b><span>Отметка</span></div>
-            <div class="notice">
-              <b style="color:var(--text)">Важно:</b> ответы сохраняются автоматически. После «Завершить»
-              станут доступны скачивание и отправка результата.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="hd">
-          <h1>Задания</h1>
-          <p class="sub" id="uiInstr">—</p>
-        </div>
-        <div class="bd">
-          <div id="stickyTextWrap" class="stickyText" style="display:none">
-  <div class="stickyTop">
-    <div>
-      <b id="stickyTextTitle">Текст</b>
-      <span id="stickyTextRange" class="stickyRange"></span>
+    <div class="toggle">
+      <small id="themeLabel">Тёмная</small>
+      <label>
+        <input id="themeToggle" type="checkbox">
+        <span class="switch"><span class="knob"></span></span>
+      </label>
     </div>
-    <button type="button" class="btn secondary" id="stickyToggle" style="padding:8px 12px;border-radius:12px;">
-      Скрыть
-    </button>
   </div>
-  <div id="stickyTextBody" class="stickyBody"></div>
 </div>
-          <div id="tasksContainer" class="grid"></div>
+
+<div class="container">
+  <div class="card">
+    <h1 id="uiMainTitle">Контрольная работа</h1>
+    <p class="sub" id="uiSubtitle">Заполните данные ученика, выполните задания, затем скачайте и отправьте результат.</p>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="card bd">
+      <div class="row">
+        <div>
+          <label for="studentName">ФИО</label>
+          <input id="studentName" type="text" placeholder="Например: Иванов Иван" />
         </div>
-      </section>
+        <div>
+          <label for="studentClass">Класс</label>
+          <input id="studentClass" type="text" placeholder="Например: 10А" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="variantSelect">Вариант</label>
+          <select id="variantSelect"></select>
+        </div>
+        <div>
+          <label>Таймер</label>
+          <input type="text" id="uiTimer" value="без лимита" readonly />
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><small>Баллы</small><b id="kpiPoints">0 / 0</b></div>
+        <div class="kpi"><small>Процент</small><b id="kpiPercent">0%</b></div>
+        <div class="kpi"><small>Отметка</small><b id="kpiMark">2</b></div>
+      </div>
+
+      <div class="actions">
+        <button id="btnFinish" class="btn" type="button">Завершить</button>
+        <button id="btnDownload" class="btn secondary" type="button" disabled>Скачать результат (JSON)</button>
+        <button id="btnEmail" class="btn secondary" type="button" disabled>Отправить учителю (email)</button>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div id="uiInstr" class="sub" style="margin:0">Выполните задания. Ответы сохраняются автоматически.</div>
+      </div>
+
+      <!-- NAV -->
+      <div class="navRow">
+        <button id="btnPrev" class="btn secondary" type="button">← Предыдущее</button>
+        <div class="navMid"><span id="uiTaskCounter">Задание 0 / 0</span></div>
+        <button id="btnNext" class="btn" type="button">Следующее →</button>
+      </div>
+
+      <!-- SINGLE TASK HERE -->
+      <div id="tasksContainer"></div>
+    </div>
+
+    <!-- RIGHT (STICKY TEXT) -->
+    <div class="stickyWrap" id="stickyTextWrap" style="display:none">
+      <div class="card">
+        <div class="stickyHead">
+          <div>
+            <div style="font-weight:700" id="stickyTextTitle">Текст</div>
+            <div class="badge" id="stickyTextRange">задания</div>
+          </div>
+          <button id="stickyToggle" class="btn secondary" type="button" style="width:auto;padding:10px 12px;border-radius:12px">
+            Скрыть
+          </button>
+        </div>
+
+        <div id="stickyTextBody" class="stickyBody"></div>
+      </div>
     </div>
   </div>
 
-  <script src="control_core.js"></script>
+  <footer>© Кодислово · Работает на компьютере, планшете и телефоне</footer>
+</div>
+
+<script src="./control_core.js"></script>
 </body>
 </html>
