@@ -521,49 +521,67 @@
   let stickyActiveKey = "";
 
   function stickyInitOrRefresh() {
-    const wrap = $("stickyTextWrap");
-    const btn = $("stickyToggle");
+  const wrap = $("stickyTextWrap");
+  const btn = $("stickyToggle");
 
-    stickyBlocks = getTextRangesFromMeta();
-    stickyTaskEls = getTaskElements();
-    stickyActiveKey = "";
+  stickyBlocks = getTextRangesFromMeta();
+  stickyTaskEls = getTaskElements();
+  stickyActiveKey = "";
 
-    if (!wrap || stickyBlocks.length === 0 || stickyTaskEls.length === 0) {
-      setStickyVisible(false);
-      return;
-    }
-
-    setStickyVisible(true);
-
-    if (btn) {
-      btn.onclick = () => {
-        stickyCollapsed = !stickyCollapsed;
-        const body = $("stickyTextBody");
-        if (body) body.style.display = stickyCollapsed ? "none" : "";
-        btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-      };
-    }
-
-    const onScroll = () => {
-      const taskId = currentTaskIdByScroll(stickyTaskEls);
-      const block = findBlockForTask(stickyBlocks, taskId);
-      if (!block) return;
-
-      setStickyVisible(true);
-
-      const key = `${block.from}-${block.to}-${block.title}`;
-      if (key !== stickyActiveKey) {
-        stickyActiveKey = key;
-        setStickyContent(block);
-      }
-    };
-
-    window.removeEventListener("scroll", stickyInitOrRefresh._onScroll);
-    stickyInitOrRefresh._onScroll = onScroll;
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    onScroll();
+  if (!wrap || stickyBlocks.length === 0 || stickyTaskEls.length === 0) {
+    setStickyVisible(false);
+    return;
   }
+
+  setStickyVisible(true);
+
+  // кнопка свернуть/развернуть
+  if (btn) {
+    btn.onclick = () => {
+      stickyCollapsed = !stickyCollapsed;
+      const body = $("stickyTextBody");
+      if (body) body.style.display = stickyCollapsed ? "none" : "";
+      btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+    };
+  }
+
+  const onScroll = () => {
+    const taskId = currentTaskIdByScroll(stickyTaskEls);
+    const block = findBlockForTask(stickyBlocks, taskId);
+    if (!block) return;
+
+    const key = `${block.from}-${block.to}-${block.title}`;
+    if (key !== stickyActiveKey) {
+      stickyActiveKey = key;
+      setStickyContent(block);
+    }
+  };
+
+  // снимаем старые слушатели
+  if (stickyInitOrRefresh._cleanup) stickyInitOrRefresh._cleanup();
+
+  // ищем “скроллер” (контейнер, который реально крутится)
+  const tasksCont = $("tasksContainer");
+  const scrollHost =
+    (tasksCont && tasksCont.closest(".bd")) || // если у тебя есть .bd
+    (tasksCont && tasksCont.parentElement) ||
+    null;
+
+  // ставим новые слушатели
+  window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+  document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+  if (scrollHost) scrollHost.addEventListener("scroll", onScroll, { passive: true });
+
+  // cleanup, чтобы не копились обработчики при смене варианта
+  stickyInitOrRefresh._cleanup = () => {
+    window.removeEventListener("scroll", onScroll, { capture: true });
+    document.removeEventListener("scroll", onScroll, { capture: true });
+    if (scrollHost) scrollHost.removeEventListener("scroll", onScroll);
+  };
+
+  // сразу проставим
+  onScroll();
+}
 
   init().catch((err) => {
     console.error(err);
