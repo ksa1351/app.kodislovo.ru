@@ -145,7 +145,7 @@
     );
   }
 
-  // ========= render tasks (БЕЗ вставки текстов, тексты показывает sticky) =========
+  // ========= render tasks (тексты показывает sticky) =========
   function renderTasks() {
     const cont = $("tasksContainer");
     if (!cont) return;
@@ -156,8 +156,8 @@
     for (const task of tasks) {
       const wrap = document.createElement("div");
       wrap.className = "task";
-      wrap.dataset.taskId = String(task.id);       // -> data-task-id
-      wrap.dataset.taskIdNum = String(task.id);    // -> data-task-id-num (для sticky)
+      wrap.dataset.taskId = String(task.id);       // data-task-id
+      wrap.dataset.taskIdNum = String(task.id);    // data-task-id-num
 
       wrap.innerHTML = `
         <div class="task-top">
@@ -383,7 +383,7 @@
 
     setHeader();
     renderTasks();
-    stickyInitOrRefresh(); // <-- sticky после отрисовки заданий
+    stickyInitOrRefresh();
     refreshScorePreview();
     startTimerIfNeeded();
 
@@ -442,16 +442,11 @@
         const r = Array.isArray(t.range) ? t.range : null;
         const from = r ? Number(r[0]) : NaN;
         const to = r ? Number(r[1]) : NaN;
-        return {
-          title: t.title || "Текст",
-          from,
-          to,
-          html: t.html || ""
-        };
+        return { title: t.title || "Текст", from, to, html: t.html || "" };
       })
-      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html)
+      .sort((a, b) => a.from - b.from);
 
-    blocks.sort((a, b) => a.from - b.from);
     return blocks;
   }
 
@@ -477,7 +472,6 @@
   }
 
   function getTaskElements() {
-    // ✅ правильные атрибуты: data-task-id и data-task-id-num
     return Array.from(document.querySelectorAll('.task[data-task-id], .task[data-task-id-num]'))
       .map(el => {
         const raw = el.dataset.taskIdNum || el.dataset.taskId;
@@ -488,27 +482,38 @@
       .sort((a, b) => a.id - b.id);
   }
 
+  // ✅ НАДЁЖНО: берём ближайшее задание к линии yLine
   function currentTaskIdByScroll(taskEls) {
     const yLine = 160;
-    let best = null;
+    let bestId = null;
+    let bestDist = Infinity;
 
     for (const t of taskEls) {
       const r = t.el.getBoundingClientRect();
       if (r.height === 0) continue;
-      if (r.top <= yLine) best = t.id;
-      else break;
+
+      const dist = Math.abs(r.top - yLine);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestId = t.id;
+      }
     }
-    return best ?? (taskEls[0]?.id ?? null);
+    return bestId ?? (taskEls[0]?.id ?? null);
   }
 
+  // ✅ НЕ ТЕРЯЕМ второй текст: если вне диапазона — держим последний начавшийся
   function findBlockForTask(blocks, taskId) {
     if (!taskId) return null;
 
-    // показываем текст, когда находимся внутри диапазона
     for (const b of blocks) {
       if (taskId >= b.from && taskId <= b.to) return b;
     }
-    return null; // вне диапазонов — скрыть sticky
+
+    let last = null;
+    for (const b of blocks) {
+      if (taskId >= b.from) last = b;
+    }
+    return last;
   }
 
   let stickyBlocks = [];
@@ -528,7 +533,8 @@
       return;
     }
 
-    // кнопка свернуть/развернуть
+    setStickyVisible(true);
+
     if (btn) {
       btn.onclick = () => {
         stickyCollapsed = !stickyCollapsed;
@@ -541,11 +547,7 @@
     const onScroll = () => {
       const taskId = currentTaskIdByScroll(stickyTaskEls);
       const block = findBlockForTask(stickyBlocks, taskId);
-
-      if (!block) {
-        setStickyVisible(false);
-        return;
-      }
+      if (!block) return;
 
       setStickyVisible(true);
 
