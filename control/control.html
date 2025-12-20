@@ -10,8 +10,7 @@
       --bg:#0b1020;--bg2:#070a14;--card:#121a33;
       --text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
       --primary:#2b3a7a;--primary2:#1f2a57;
-      --ok:#35d07f;--bad:#ff5b6e;
-      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:1100px;
+      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:980px;
     }
     [data-theme="light"]{
       --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;
@@ -26,6 +25,7 @@
       background:linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
     }
     a{color:inherit;text-decoration:none}
+
     .topbar{
       position:sticky;top:0;z-index:20;
       background:rgba(0,0,0,.35);backdrop-filter:blur(10px);
@@ -56,17 +56,6 @@
     input:checked+.switch .knob{left:22px}
 
     .container{max-width:var(--max);margin:0 auto;padding:18px 16px}
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr 420px;
-      gap:16px;
-      align-items:start;
-      margin-top:14px;
-    }
-    @media (max-width:980px){
-      .grid{grid-template-columns:1fr}
-    }
-
     .card{
       background:var(--card);
       border-radius:var(--radius);
@@ -74,10 +63,12 @@
       box-shadow:var(--shadow);
       padding:16px;
     }
+
     h1{margin:0 0 6px;font-size:22px}
     .sub{color:var(--muted);line-height:1.5;margin:0}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .row > *{flex:1}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+    .row > *{flex:1;min-width:220px}
     label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
     input[type="text"], select{
       width:100%;
@@ -115,14 +106,20 @@
 
     .actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
 
-    /* sticky text */
-    .stickyWrap{
-      position:sticky; top:72px; z-index:5;
+    /* текст над заданием */
+    .textBlock{
+      margin-top:14px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      line-height:1.65;
     }
-    .stickyHead{
+    .textTop{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
-      margin-bottom:10px
+      margin-bottom:10px;
     }
+    .textTop b{font-size:14px}
     .badge{
       display:inline-flex;align-items:center;gap:8px;
       padding:6px 10px;border-radius:999px;
@@ -130,36 +127,53 @@
       color:var(--muted);font-size:12px;
       background:rgba(255,255,255,.03)
     }
-    .stickyBody{
-      max-height:260px;
-      overflow:auto;
-      border-radius:14px;
-      border:1px solid var(--border);
-      padding:12px;
-      background:rgba(255,255,255,.03);
-      color:var(--text);
-      line-height:1.6;
-    }
-    .stickyBody h2{margin:0 0 10px;font-size:16px}
-    .stickyBody p{margin:0 0 10px;color:var(--muted)}
-    .stickyBody b{color:var(--text)}
+    .textBody{max-height:320px; overflow:auto; padding-right:4px}
+    .textBody h2{margin:0 0 10px;font-size:16px}
+    .textBody p{margin:0 0 10px;color:var(--muted)}
+    .textBody b{color:var(--text)}
 
-    /* single-task */
-    .navRow{
-      display:flex;gap:10px;align-items:center;justify-content:space-between;
-      margin:12px 0;
-    }
-    .navMid{
-      flex:1;text-align:center;color:var(--muted);font-size:14px
-    }
-
+    /* задание */
+    .task{margin-top:14px}
     .task-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
     .task-top h3{margin:0;font-size:16px}
     .hint{margin-top:8px;color:var(--muted);font-size:13px}
     .q{margin-top:10px;line-height:1.6;color:var(--text)}
-    .answer{margin-top:12px}
+
+    .answer{
+      margin-top:12px;
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:transparent;
+      color:var(--text);
+      outline:none;
+    }
+
+    /* навигация под вводом */
+    .navRow{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+    }
+    .navRow .btn{flex:1}
+
+    .navMeta{
+      margin-top:10px;
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+    }
 
     footer{margin:22px 0 10px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:560px){
+      .container{padding:16px 12px}
+      .topbar-inner{padding:10px 12px}
+      .row > *{min-width:160px}
+      .textBody{max-height:260px}
+      .navRow{flex-direction:column}
+    }
   </style>
 </head>
 
@@ -186,79 +200,53 @@
 </div>
 
 <div class="container">
+
   <div class="card">
     <h1 id="uiMainTitle">Контрольная работа</h1>
     <p class="sub" id="uiSubtitle">Заполните данные ученика, выполните задания, затем скачайте и отправьте результат.</p>
   </div>
 
-  <div class="grid">
-    <!-- LEFT -->
-    <div class="card bd">
-      <div class="row">
-        <div>
-          <label for="studentName">ФИО</label>
-          <input id="studentName" type="text" placeholder="Например: Иванов Иван" />
-        </div>
-        <div>
-          <label for="studentClass">Класс</label>
-          <input id="studentClass" type="text" placeholder="Например: 10А" />
-        </div>
+  <div class="card" style="margin-top:14px">
+    <div class="row">
+      <div>
+        <label for="studentName">ФИО</label>
+        <input id="studentName" type="text" placeholder="Например: Иванов Иван" />
       </div>
-
-      <div class="row">
-        <div>
-          <label for="variantSelect">Вариант</label>
-          <select id="variantSelect"></select>
-        </div>
-        <div>
-          <label>Таймер</label>
-          <input type="text" id="uiTimer" value="без лимита" readonly />
-        </div>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi"><small>Баллы</small><b id="kpiPoints">0 / 0</b></div>
-        <div class="kpi"><small>Процент</small><b id="kpiPercent">0%</b></div>
-        <div class="kpi"><small>Отметка</small><b id="kpiMark">2</b></div>
-      </div>
-
-      <div class="actions">
-        <button id="btnFinish" class="btn" type="button">Завершить</button>
-        <button id="btnDownload" class="btn secondary" type="button" disabled>Скачать результат (JSON)</button>
-        <button id="btnEmail" class="btn secondary" type="button" disabled>Отправить учителю (email)</button>
-      </div>
-
-      <div class="card" style="margin-top:14px">
-        <div id="uiInstr" class="sub" style="margin:0">Выполните задания. Ответы сохраняются автоматически.</div>
-      </div>
-
-      <!-- NAV -->
-      <div class="navRow">
-        <button id="btnPrev" class="btn secondary" type="button">← Предыдущее</button>
-        <div class="navMid"><span id="uiTaskCounter">Задание 0 / 0</span></div>
-        <button id="btnNext" class="btn" type="button">Следующее →</button>
-      </div>
-
-      <!-- SINGLE TASK HERE -->
-      <div id="tasksContainer"></div>
-    </div>
-
-    <!-- RIGHT (STICKY TEXT) -->
-    <div class="stickyWrap" id="stickyTextWrap" style="display:none">
-      <div class="card">
-        <div class="stickyHead">
-          <div>
-            <div style="font-weight:700" id="stickyTextTitle">Текст</div>
-            <div class="badge" id="stickyTextRange">задания</div>
-          </div>
-          <button id="stickyToggle" class="btn secondary" type="button" style="width:auto;padding:10px 12px;border-radius:12px">
-            Скрыть
-          </button>
-        </div>
-
-        <div id="stickyTextBody" class="stickyBody"></div>
+      <div>
+        <label for="studentClass">Класс</label>
+        <input id="studentClass" type="text" placeholder="Например: 10А" />
       </div>
     </div>
+
+    <div class="row">
+      <div>
+        <label for="variantSelect">Вариант</label>
+        <select id="variantSelect"></select>
+      </div>
+      <div>
+        <label>Таймер</label>
+        <input type="text" id="uiTimer" value="без лимита" readonly />
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><small>Баллы</small><b id="kpiPoints">0 / 0</b></div>
+      <div class="kpi"><small>Процент</small><b id="kpiPercent">0%</b></div>
+      <div class="kpi"><small>Отметка</small><b id="kpiMark">2</b></div>
+    </div>
+
+    <div class="actions">
+      <button id="btnFinish" class="btn" type="button">Завершить</button>
+      <button id="btnDownload" class="btn secondary" type="button" disabled>Сохранить работу</button>
+      <button id="btnEmail" class="btn secondary" type="button" disabled>Отправить на email</button>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div id="uiInstr" class="sub" style="margin:0">Выполните задания. Ответы сохраняются автоматически.</div>
+    </div>
+
+    <!-- ТУТ: только текст (если нужен) и текущее задание -->
+    <div id="tasksContainer"></div>
   </div>
 
   <footer>© Кодислово · Работает на компьютере, планшете и телефоне</footer>
