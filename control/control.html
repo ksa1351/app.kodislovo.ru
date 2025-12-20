@@ -80,14 +80,6 @@
       outline:none;
     }
 
-    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-    .kpi{
-      padding:12px;border-radius:14px;border:1px solid var(--border);
-      background:rgba(255,255,255,.03)
-    }
-    .kpi small{display:block;color:var(--muted);font-size:12px}
-    .kpi b{font-size:16px}
-
     .btn{
       width:100%;
       padding:12px 0;
@@ -104,7 +96,13 @@
     .btn.secondary{background:var(--primary2);color:var(--text)}
     .btn:disabled{opacity:.55;cursor:not-allowed}
 
-    .actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+    /* кнопки в ОДИН РЯД, одинаковые */
+    .actions{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
 
     /* текст над заданием */
     .textBlock{
@@ -173,6 +171,7 @@
       .row > *{min-width:160px}
       .textBody{max-height:260px}
       .navRow{flex-direction:column}
+      .actions{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -203,7 +202,8 @@
 
   <div class="card">
     <h1 id="uiMainTitle">Контрольная работа</h1>
-    <p class="sub" id="uiSubtitle">Заполните данные ученика, выполните задания, затем скачайте и отправьте результат.</p>
+    <!-- subtitle оставляем, но JS будет ставить короткий нейтральный текст -->
+    <p class="sub" id="uiSubtitle">Заполните данные ученика и выполняйте задания.</p>
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -229,23 +229,14 @@
       </div>
     </div>
 
-    <div class="kpis">
-      <div class="kpi"><small>Баллы</small><b id="kpiPoints">0 / 0</b></div>
-      <div class="kpi"><small>Процент</small><b id="kpiPercent">0%</b></div>
-      <div class="kpi"><small>Отметка</small><b id="kpiMark">2</b></div>
-    </div>
-
+    <!-- КНОПКИ В 1 РЯД -->
     <div class="actions">
       <button id="btnFinish" class="btn" type="button">Завершить</button>
       <button id="btnDownload" class="btn secondary" type="button" disabled>Сохранить работу</button>
       <button id="btnEmail" class="btn secondary" type="button" disabled>Отправить на email</button>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <div id="uiInstr" class="sub" style="margin:0">Выполните задания. Ответы сохраняются автоматически.</div>
-    </div>
-
-    <!-- ТУТ: только текст (если нужен) и текущее задание -->
+    <!-- тут: только текст (если нужен) и текущее задание -->
     <div id="tasksContainer"></div>
   </div>
 
