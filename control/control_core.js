@@ -415,6 +415,7 @@
 
     setHeader();
     renderTasks();
+    stickyInitOrRefresh();
     refreshScorePreview();
     startTimerIfNeeded();
 
