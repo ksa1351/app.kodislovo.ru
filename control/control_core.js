@@ -437,7 +437,7 @@
 
   function getTextRangesFromMeta() {
     const texts = variantMeta?.texts || {};
-    const blocks = Object.values(texts)
+    return Object.values(texts)
       .map(t => {
         const r = Array.isArray(t.range) ? t.range : null;
         const from = r ? Number(r[0]) : NaN;
@@ -446,8 +446,6 @@
       })
       .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html)
       .sort((a, b) => a.from - b.from);
-
-    return blocks;
   }
 
   function setStickyVisible(visible) {
@@ -472,7 +470,7 @@
   }
 
   function getTaskElements() {
-    return Array.from(document.querySelectorAll('.task[data-task-id], .task[data-task-id-num]'))
+    return Array.from(document.querySelectorAll(".task[data-task-id], .task[data-task-id-num]"))
       .map(el => {
         const raw = el.dataset.taskIdNum || el.dataset.taskId;
         const id = Number(raw);
@@ -482,7 +480,7 @@
       .sort((a, b) => a.id - b.id);
   }
 
-  // ✅ НАДЁЖНО: берём ближайшее задание к линии yLine
+  // Надёжно: берём ближайшее задание к линии
   function currentTaskIdByScroll(taskEls) {
     const yLine = 160;
     let bestId = null;
@@ -491,7 +489,6 @@
     for (const t of taskEls) {
       const r = t.el.getBoundingClientRect();
       if (r.height === 0) continue;
-
       const dist = Math.abs(r.top - yLine);
       if (dist < bestDist) {
         bestDist = dist;
@@ -501,7 +498,7 @@
     return bestId ?? (taskEls[0]?.id ?? null);
   }
 
-  // ✅ НЕ ТЕРЯЕМ второй текст: если вне диапазона — держим последний начавшийся
+  // Держим последний начавшийся текст (Текст 1 будет до 23, потом Текст 2)
   function findBlockForTask(blocks, taskId) {
     if (!taskId) return null;
 
@@ -520,62 +517,89 @@
   let stickyTaskEls = [];
   let stickyActiveKey = "";
 
+  // ✅ Версия под твою разметку:
+  // - скроллится .bd
+  // - stickyTextBody имеет внутренний скролл
+  // - колесо на тексте пробрасываем в .bd, когда текст дошёл до края
   function stickyInitOrRefresh() {
-  const wrap = $("stickyTextWrap");
-  const btn = $("stickyToggle");
+    const wrap = $("stickyTextWrap");
+    const btn = $("stickyToggle");
+    const body = $("stickyTextBody");
 
-  stickyBlocks = getTextRangesFromMeta();
-  stickyTaskEls = getTaskElements();
-  stickyActiveKey = "";
+    stickyBlocks = getTextRangesFromMeta();
+    stickyTaskEls = getTaskElements();
+    stickyActiveKey = "";
 
-  if (!wrap || stickyBlocks.length === 0 || stickyTaskEls.length === 0) {
-    setStickyVisible(false);
-    return;
-  }
-
-  setStickyVisible(true);
-
-  // кнопка свернуть/развернуть
-  if (btn) {
-    btn.onclick = () => {
-      stickyCollapsed = !stickyCollapsed;
-      const body = $("stickyTextBody");
-      if (body) body.style.display = stickyCollapsed ? "none" : "";
-      btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-    };
-  }
-
-  const onScroll = () => {
-    const taskId = currentTaskIdByScroll(stickyTaskEls);
-    const block = findBlockForTask(stickyBlocks, taskId);
-    if (!block) return;
-
-    const key = `${block.from}-${block.to}-${block.title}`;
-    if (key !== stickyActiveKey) {
-      stickyActiveKey = key;
-      setStickyContent(block);
+    if (!wrap || stickyBlocks.length === 0 || stickyTaskEls.length === 0) {
+      setStickyVisible(false);
+      return;
     }
-  };
+    setStickyVisible(true);
 
-  // снять старые слушатели (если были)
-  if (stickyInitOrRefresh._cleanup) stickyInitOrRefresh._cleanup();
+    if (stickyInitOrRefresh._cleanup) stickyInitOrRefresh._cleanup();
 
-  // ✅ главный скроллер — .bd
-  const bd = document.querySelector(".bd");
+    const bd = document.querySelector(".bd");
 
-  // слушаем scroll именно там
-  if (bd) bd.addEventListener("scroll", onScroll, { passive: true });
+    if (btn) {
+      btn.onclick = () => {
+        stickyCollapsed = !stickyCollapsed;
+        if (body) body.style.display = stickyCollapsed ? "none" : "";
+        btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+      };
+    }
 
-  // на всякий случай оставим и window (не мешает)
-  window.addEventListener("scroll", onScroll, { passive: true });
+    const onScroll = () => {
+      if (!stickyTaskEls || stickyTaskEls.length === 0) return;
 
-  stickyInitOrRefresh._cleanup = () => {
-    if (bd) bd.removeEventListener("scroll", onScroll);
-    window.removeEventListener("scroll", onScroll);
-  };
+      const taskId = currentTaskIdByScroll(stickyTaskEls);
+      const block = findBlockForTask(stickyBlocks, taskId);
+      if (!block) return;
 
-  onScroll(); // первичная установка
-}
+      const key = `${block.from}-${block.to}-${block.title}`;
+      if (key !== stickyActiveKey) {
+        stickyActiveKey = key;
+        setStickyContent(block);
+      }
+    };
+
+    // 1) основной скролл контейнера
+    const bdScroll = () => onScroll();
+    if (bd) bd.addEventListener("scroll", bdScroll, { passive: true });
+
+    // 2) ловим любые scroll внутри (scroll не bubble, поэтому capture)
+    const docScroll = () => onScroll();
+    document.addEventListener("scroll", docScroll, { passive: true, capture: true });
+
+    // 3) пробрасываем wheel из stickyBody в .bd на краях stickyBody
+    let bodyWheel = null;
+    if (bd && body) {
+      bodyWheel = (e) => {
+        if (stickyCollapsed) return;
+
+        const atTop = body.scrollTop <= 0;
+        const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 1;
+
+        if (e.deltaY > 0 && atBottom) {
+          bd.scrollTop += e.deltaY;
+          e.preventDefault();
+          onScroll();
+        } else if (e.deltaY < 0 && atTop) {
+          bd.scrollTop += e.deltaY;
+          e.preventDefault();
+          onScroll();
+        }
+      };
+      body.addEventListener("wheel", bodyWheel, { passive: false });
+    }
+
+    stickyInitOrRefresh._cleanup = () => {
+      if (bd) bd.removeEventListener("scroll", bdScroll);
+      document.removeEventListener("scroll", docScroll, { capture: true });
+      if (body && bodyWheel) body.removeEventListener("wheel", bodyWheel);
+    };
+
+    onScroll();
+  }
 
   init().catch((err) => {
     console.error(err);
