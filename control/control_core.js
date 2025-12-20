@@ -189,6 +189,7 @@
       const wrap = document.createElement("div");
       wrap.className = "task";
       wrap.dataset.taskId = String(task.id);
+      wrap.dataset.taskIdNum = String(task.id); // числовой id для sticky-логики
 
       wrap.innerHTML = `
         <div class="task-top">
@@ -464,6 +465,140 @@
     await loadManifest();
     await loadVariant(currentVariantFile);
   }
+  // ===== Sticky Text: авто-переключение по range =====
+let stickyCollapsed = false;
+
+function getTextRangesFromMeta() {
+  const texts = variantMeta?.texts || {};
+  const blocks = Object.values(texts)
+    .map(t => {
+      const r = Array.isArray(t.range) ? t.range : null;
+      const from = r ? Number(r[0]) : NaN;
+      const to = r ? Number(r[1]) : NaN;
+      return {
+        title: t.title || "Текст",
+        from,
+        to,
+        html: t.html || ""
+      };
+    })
+    .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+
+  // сортируем по "from"
+  blocks.sort((a,b) => a.from - b.from);
+  return blocks;
+}
+
+function setStickyVisible(visible) {
+  const wrap = $("stickyTextWrap");
+  if (!wrap) return;
+  wrap.style.display = visible ? "" : "none";
+}
+
+function setStickyContent(block) {
+  const title = $("stickyTextTitle");
+  const range = $("stickyTextRange");
+  const body = $("stickyTextBody");
+  if (!title || !range || !body) return;
+
+  title.textContent = block.title;
+  range.textContent = `задания ${block.from}–${block.to}`;
+  body.innerHTML = block.html;
+
+  // применяем состояние свернутости
+  body.style.display = stickyCollapsed ? "none" : "";
+  const btn = $("stickyToggle");
+  if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+}
+
+function getTaskElements() {
+  return Array.from(document.querySelectorAll('.task[data-task-id], .task[data-taskid], .task[data-taskId], .task[data-taskIdNum]'))
+    .map(el => {
+      const raw = el.dataset.taskIdNum || el.dataset.taskId || el.getAttribute("data-task-id");
+      const id = Number(raw);
+      return { el, id };
+    })
+    .filter(x => Number.isFinite(x.id))
+    .sort((a,b) => a.id - b.id);
+}
+
+function currentTaskIdByScroll(taskEls) {
+  // выбираем "текущую" задачу: ближайшую к верхней части viewport
+  const yLine = 160; // линия чуть ниже шапки
+  let best = null;
+
+  for (const t of taskEls) {
+    const r = t.el.getBoundingClientRect();
+    if (r.height === 0) continue;
+    // считаем кандидатом те, что уже дошли до линии
+    if (r.top <= yLine) best = t.id;
+    else break; // т.к. отсортировано по порядку в DOM, дальше только ниже
+  }
+  // если мы в самом верху и ничего не "дошло" — берём первую
+  return best ?? (taskEls[0]?.id ?? null);
+}
+
+function findBlockForTask(blocks, taskId) {
+  if (!taskId) return null;
+  // если задача попадает в диапазон — показываем этот текст
+  for (const b of blocks) if (taskId >= b.from && taskId <= b.to) return b;
+
+  // иначе: показываем последний текст, чей диапазон уже начался (чтобы при прокрутке между блоками оставался предыдущий)
+  let last = null;
+  for (const b of blocks) if (taskId >= b.from) last = b;
+  return last;
+}
+
+let stickyBlocks = [];
+let stickyTaskEls = [];
+let stickyActiveKey = "";
+
+function stickyInitOrRefresh() {
+  const wrap = $("stickyTextWrap");
+  const btn = $("stickyToggle");
+
+  stickyBlocks = getTextRangesFromMeta();
+  stickyTaskEls = getTaskElements();
+  stickyActiveKey = "";
+
+  if (!wrap || stickyBlocks.length === 0 || stickyTaskEls.length === 0) {
+    setStickyVisible(false);
+    return;
+  }
+
+  setStickyVisible(true);
+
+  // кнопка свернуть/развернуть
+  if (btn) {
+    btn.onclick = () => {
+      stickyCollapsed = !stickyCollapsed;
+      const body = $("stickyTextBody");
+      if (body) body.style.display = stickyCollapsed ? "none" : "";
+      btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+    };
+  }
+
+  // первичная установка + подписка на скролл
+  const onScroll = () => {
+    const taskId = currentTaskIdByScroll(stickyTaskEls);
+    const block = findBlockForTask(stickyBlocks, taskId);
+    if (!block) return;
+
+    const key = `${block.from}-${block.to}-${block.title}`;
+    if (key !== stickyActiveKey) {
+      stickyActiveKey = key;
+      setStickyContent(block);
+    }
+  };
+
+  // слушаем и окно, и скролл внутри body sticky (не мешает)
+  window.removeEventListener("scroll", stickyInitOrRefresh._onScroll);
+  stickyInitOrRefresh._onScroll = onScroll;
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  // сразу проставим
+  onScroll();
+}
 
   init().catch((err) => {
     console.error(err);
