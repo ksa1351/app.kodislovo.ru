@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  // ========= helpers =========
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
@@ -15,7 +14,6 @@
     return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
 
-  // /control/control.html -> варианты: ../controls/<subject>/variants/
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
@@ -43,23 +41,13 @@
     window.location.href = href;
   }
 
-  function computeMark(percent, grading) {
-    const p = Number(percent) || 0;
-    const pairs = Object.entries(grading || {})
-      .map(([k, v]) => [k, Number(v)])
-      .sort((a, b) => b[1] - a[1]);
-    for (const [mark, minP] of pairs) if (p >= minP) return mark;
-    return "2";
-  }
-
-  // ========= theme =========
+  // theme
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
     const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
     return prefersLight ? "light" : "dark";
   }
-
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
@@ -69,7 +57,7 @@
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
-  // ========= state =========
+  // state
   let subject = getParam("subject") || "russian";
   let base = variantsBase(subject);
 
@@ -129,25 +117,17 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
-  // ========= header =========
+  // header (НЕ показываем subtitle из meta)
   function setHeader() {
     setText("uiSubject", manifest?.subjectTitle || "Контрольная");
     setText("uiTitle", variantMeta?.title || "Контрольная работа");
     setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
 
-    setText("uiSubtitle",
-      variantMeta?.subtitle ||
-      "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат."
-    );
-
-    setHTML("uiInstr",
-      variantMeta?.instructions ||
-      variantMeta?.subtitle ||
-      "Выполните задания. Ответы сохраняются автоматически."
-    );
+    // нейтрально, без оценивания/баллов/перевода
+    setText("uiSubtitle", "Заполните данные ученика и выполняйте задания. Ответы сохраняются автоматически.");
   }
 
-  // ========= texts by range =========
+  // texts by range
   function getTextBlocks() {
     const texts = variantMeta?.texts || {};
     const blocks = Object.values(texts)
@@ -170,51 +150,7 @@
     return null;
   }
 
-  // ========= scoring =========
-  function checkOne(task, studentAnswerRaw) {
-    const acceptable = (task.answers || []).map(normalizeAnswer);
-    const a = normalizeAnswer(studentAnswerRaw);
-    if (!a) return { ok: false, earned: 0 };
-    const ok = acceptable.includes(a);
-    return { ok, earned: ok ? Number(task.points ?? 1) : 0 };
-  }
-
-  function calcScore() {
-    const tasks = getTasks();
-    let earned = 0, max = 0;
-    const perTask = [];
-
-    for (const task of tasks) {
-      const pts = Number(task.points ?? 1);
-      max += pts;
-
-      const studentRaw = answersMap[String(task.id)] ?? "";
-      const res = checkOne(task, studentRaw);
-      earned += res.earned;
-
-      perTask.push({
-        id: task.id,
-        earned: res.earned,
-        max: pts,
-        ok: res.ok,
-        student: safeText(studentRaw),
-        accepted: (task.answers || []).slice(0),
-      });
-    }
-
-    const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
-    const mark = computeMark(percent, variantMeta?.grading);
-    return { earned, max, percent, mark, perTask };
-  }
-
-  function refreshScorePreview() {
-    const { earned, max, percent, mark } = calcScore();
-    setText("kpiPoints", `${earned} / ${max}`);
-    setText("kpiPercent", `${percent}%`);
-    setText("kpiMark", mark);
-  }
-
-  // ========= timer =========
+  // timer
   function formatTime(sec) {
     const s = Math.max(0, Math.floor(sec));
     const hh = String(Math.floor(s / 3600)).padStart(2, "0");
@@ -241,7 +177,6 @@
     }, 250);
   }
 
-  // ========= finish =========
   function applyFinishedState() {
     const btnFinish = $("btnFinish");
     const btnDownload = $("btnDownload");
@@ -254,13 +189,12 @@
     if (btnDownload) btnDownload.disabled = !isFinished;
     if (btnEmail) btnEmail.disabled = !isFinished;
 
-    // текущие элементы задания тоже будут блокироваться после render()
     const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect");
     inputs.forEach((el) => { el.disabled = isFinished; });
   }
 
   function buildResultPayload() {
-    const score = calcScore();
+    // данные для проверки/учителя остаются в JSON (это не UI)
     return {
       schema: "kodislovo.result.v1",
       createdAt: nowIso(),
@@ -275,19 +209,11 @@
         title: variantMeta?.title || "",
         subtitle: variantMeta?.subtitle || ""
       },
-      grading: {
-        maxPoints: score.max,
-        earnedPoints: score.earned,
-        percent: score.percent,
-        mark: score.mark,
-        thresholds: variantMeta?.grading || null
-      },
       student: {
         name: safeText($("studentName")?.value),
         class: safeText($("studentClass")?.value)
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
-      perTask: score.perTask,
       meta: JSON.parse(JSON.stringify(variantMeta || {})),
       userAgent: navigator.userAgent
     };
@@ -298,12 +224,10 @@
     isFinished = true;
     finishedAt = nowIso();
     saveProgress();
-    refreshScorePreview();
     applyFinishedState();
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно сохранить и отправить результат.");
   }
 
-  // ========= render (текст над заданием только если нужен) =========
   function updateNavUI() {
     const tasks = getTasks();
     const total = tasks.length || 0;
@@ -330,7 +254,7 @@
     const task = tasks[currentTaskIndex];
     const taskIdNum = Number(task.id);
 
-    // 1) Текст (если есть для этого номера задания)
+    // Текст над заданием, если относится
     const textBlock = findTextForTaskId(taskIdNum);
     if (textBlock) {
       const textWrap = document.createElement("div");
@@ -345,13 +269,12 @@
       cont.appendChild(textWrap);
     }
 
-    // 2) Само задание
+    // Задание (БЕЗ баллов/бейджей про баллы)
     const wrap = document.createElement("div");
     wrap.className = "task card";
     wrap.innerHTML = `
       <div class="task-top">
         <h3>Задание ${task.id}</h3>
-        <span class="badge">${task.points ?? 1} балл</span>
       </div>
       ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
       <div class="q">${task.text || ""}</div>
@@ -371,12 +294,11 @@
       if (isFinished) return;
       answersMap[String(task.id)] = inp.value;
       saveProgress();
-      refreshScorePreview();
     });
 
     wrap.appendChild(inp);
 
-    // 3) Навигация ПОД вводом
+    // Навигация под вводом
     const nav = document.createElement("div");
     nav.innerHTML = `
       <div class="navRow">
@@ -389,14 +311,12 @@
 
     cont.appendChild(wrap);
 
-    // обработчики навигации
     const btnPrev = wrap.querySelector("#btnPrevTask");
     const btnNext = wrap.querySelector("#btnNextTask");
 
     if (btnPrev) btnPrev.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex - 1); };
     if (btnNext) btnNext.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex + 1); };
 
-    // блокировка при завершении
     if (isFinished) {
       inp.disabled = true;
       if (btnPrev) btnPrev.disabled = true;
@@ -414,9 +334,6 @@
     saveProgress();
     renderSingleTask();
   }
-
-  // ========= load =========
-  function extractVariantMeta(v) { return v.meta || {}; }
 
   async function loadManifest() {
     manifest = await fetchJson(base + "manifest.json");
@@ -453,7 +370,7 @@
 
   async function loadVariant(file) {
     variantData = await fetchJson(base + file);
-    variantMeta = extractVariantMeta(variantData);
+    variantMeta = variantData?.meta || {};
 
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
@@ -468,31 +385,24 @@
 
     answersMap = progress?.answers || {};
 
-    // восстановить позицию по текущему заданию
     const savedTaskId = progress?.currentTaskId;
     if (savedTaskId != null) {
       const idx = taskIndexById(savedTaskId);
       currentTaskIndex = idx >= 0 ? idx : 0;
-    } else {
-      currentTaskIndex = 0;
-    }
+    } else currentTaskIndex = 0;
 
     setHeader();
     renderSingleTask();
-    refreshScorePreview();
     startTimerIfNeeded();
 
     $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
     $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
-  // ========= init =========
   async function init() {
-    // theme
     setTheme(getPreferredTheme());
     $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
-    // finish/download/email
     $("btnFinish")?.addEventListener("click", () => finishNow(false));
 
     $("btnDownload")?.addEventListener("click", () => {
@@ -510,14 +420,10 @@
         return;
       }
       const payload = buildResultPayload();
-      const s = payload.grading;
       const subj = `Кодислово: ${payload.subjectTitle} — ${payload.variant.title || payload.variant.id}`;
       const body =
         `ФИО: ${payload.student.name}\n` +
         `Класс: ${payload.student.class}\n` +
-        `Баллы: ${s.earnedPoints}/${s.maxPoints}\n` +
-        `Процент: ${s.percent}%\n` +
-        `Отметка: ${s.mark}\n` +
         `Вариант: ${payload.variant.title || payload.variant.id}\n` +
         `Начало: ${payload.startedAt}\n` +
         `Окончание: ${payload.finishedAt}\n\n` +
@@ -534,10 +440,7 @@
     const hint =
       `Subject: ${subject}\n` +
       `Ожидаем manifest:\n${base}manifest.json\n` +
-      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
-      `Проверь:\n` +
-      `1) путь /controls/<subject>/variants/manifest.json\n` +
-      `2) путь /control/control.html\n`;
+      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n`;
     alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
