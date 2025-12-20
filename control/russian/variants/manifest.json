@@ -1,1 +1,13 @@
+{
+  "subject": "russian",
+  "subjectTitle": "Русский язык (ЕГЭ)",
+  "teacherEmail": "kovaleva-sa@yandex.ru",
+  "variants": [
+    {
+      "id": "variant_01",
+      "title": "ЕГЭ Русский — Контрольная №1",
+      "file": "variant_01.json"
+    }
+  ]
+}
 
