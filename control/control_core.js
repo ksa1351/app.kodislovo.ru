@@ -1,25 +1,38 @@
 (function () {
   "use strict";
 
+  // ========= helpers =========
+  const THEME_KEY = "kodislovo_theme";
+  const LS_PREFIX = "kodislovo_control:";
+  const $ = (id) => document.getElementById(id);
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
+  function nowIso() { return new Date().toISOString(); }
+  function safeText(s) { return (s ?? "").toString().trim(); }
+  function normalizeAnswer(s) {
+    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+  }
+
+  // Где лежат JSON-варианты относительно /control/control.html
   // -> ../controls/<subject>/variants/
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
 
-  const THEME_KEY = "kodislovo_theme";
-  const LS_PREFIX = "kodislovo_control:";
-
-  const $ = (id) => document.getElementById(id);
-
-  function nowIso() { return new Date().toISOString(); }
-  function safeText(s) { return (s ?? "").toString().trim(); }
-
-  function normalizeAnswer(s) {
-    return safeText(s)
-      .toLowerCase()
-      .replace(/ё/g, "е")
-      .replace(/\s+/g, " ")
-      .trim();
+  async function fetchJson(url) {
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`Не удалось загрузить: ${url} (HTTP ${r.status})`);
+    return await r.json();
   }
 
   function downloadJson(filename, obj) {
@@ -48,17 +61,7 @@
     return "2";
   }
 
-  function getParam(name) {
-    return new URLSearchParams(window.location.search).get(name);
-  }
-
-  async function fetchJson(url) {
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`Не удалось загрузить ${url} (HTTP ${r.status})`);
-    return await r.json();
-  }
-
-  // Theme
+  // ========= theme =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
@@ -75,7 +78,7 @@
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
-  // State
+  // ========= state =========
   let subject = getParam("subject") || "russian";
   let base = variantsBase(subject);
 
@@ -109,8 +112,8 @@
       finishedAt,
       isFinished,
       student: {
-        name: safeText($("studentName").value),
-        class: safeText($("studentClass").value),
+        name: safeText($("studentName")?.value),
+        class: safeText($("studentClass")?.value),
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
       savedAt: nowIso(),
@@ -124,23 +127,34 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  // ========= UI =========
   function setHeader() {
-    $("uiSubject").textContent = manifest?.subjectTitle || "Контрольная";
-    $("uiTitle").textContent = variantMeta?.title || "Контрольная работа";
-    $("uiMainTitle").textContent = variantMeta?.title || "Контрольная работа";
-    $("uiSubtitle").textContent =
-      variantMeta?.subtitle || "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат.";
-    $("uiInstr").innerHTML = variantMeta?.subtitle || variantMeta?.instructions || "Выполните задания. Ответы сохраняются автоматически.";
+    setText("uiSubject", manifest?.subjectTitle || "Контрольная");
+    setText("uiTitle", variantMeta?.title || "Контрольная работа");
+    setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
+
+    setText("uiSubtitle",
+      variantMeta?.subtitle ||
+      "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат."
+    );
+
+    // uiInstr может отсутствовать — теперь не падаем
+    setHTML("uiInstr",
+      variantMeta?.instructions ||
+      variantMeta?.subtitle ||
+      "Выполните задания. Ответы сохраняются автоматически."
+    );
   }
 
-  // ✅ ВСТАВКА ТЕКСТОВ ПО RANGE (1–3, 23–26 и т.д.)
+  // ========= render tasks + texts by range =========
   function renderTasks() {
+    const cont = $("tasksContainer");
+    if (!cont) return; // если в HTML нет контейнера — не падаем
+
     const tasks = variantData?.tasks || [];
     const texts = variantMeta?.texts || {};
-    const cont = $("tasksContainer");
     cont.innerHTML = "";
 
-    // подготовим список текстов с диапазонами
     const blocks = Object.values(texts)
       .map(t => ({
         title: t.title || "Текст",
@@ -154,7 +168,7 @@
     for (const task of tasks) {
       const taskId = Number(task.id);
 
-      // если перед этим заданием должен появиться текст — вставляем один раз
+      // вставить текст перед первым заданием диапазона
       for (const b of blocks) {
         if (!b.shown && taskId === b.from) {
           const textDiv = document.createElement("div");
@@ -209,7 +223,7 @@
     applyFinishedState();
   }
 
-  // Scoring
+  // ========= scoring =========
   function checkOne(task, studentAnswerRaw) {
     const acceptable = (task.answers || []).map(normalizeAnswer);
     const a = normalizeAnswer(studentAnswerRaw);
@@ -248,12 +262,12 @@
 
   function refreshScorePreview() {
     const { earned, max, percent, mark } = calcScore();
-    $("kpiPoints").textContent = `${earned} / ${max}`;
-    $("kpiPercent").textContent = `${percent}%`;
-    $("kpiMark").textContent = mark;
+    setText("kpiPoints", `${earned} / ${max}`);
+    setText("kpiPercent", `${percent}%`);
+    setText("kpiMark", mark);
   }
 
-  // Timer
+  // ========= timer =========
   function formatTime(sec) {
     const s = Math.max(0, Math.floor(sec));
     const hh = String(Math.floor(s / 3600)).padStart(2, "0");
@@ -267,7 +281,7 @@
     timerTick = null;
 
     if (!timeLimitSec || !startedAt) {
-      $("uiTimer").textContent = "без лимита";
+      setText("uiTimer", "без лимита");
       return;
     }
 
@@ -275,18 +289,23 @@
     timerTick = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startMs) / 1000);
       const left = timeLimitSec - elapsed;
-      $("uiTimer").textContent = formatTime(left);
+      setText("uiTimer", formatTime(left));
       if (!isFinished && left <= 0) finishNow(true);
     }, 250);
   }
 
-  // Finish
+  // ========= finish =========
   function applyFinishedState() {
-    $("btnFinish").textContent = isFinished ? "Завершено" : "Завершить";
-    $("btnFinish").disabled = isFinished;
+    const btnFinish = $("btnFinish");
+    const btnDownload = $("btnDownload");
+    const btnEmail = $("btnEmail");
 
-    $("btnDownload").disabled = !isFinished;
-    $("btnEmail").disabled = !isFinished;
+    if (btnFinish) {
+      btnFinish.textContent = isFinished ? "Завершено" : "Завершить";
+      btnFinish.disabled = isFinished;
+    }
+    if (btnDownload) btnDownload.disabled = !isFinished;
+    if (btnEmail) btnEmail.disabled = !isFinished;
 
     const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,.task input.answer");
     inputs.forEach((el) => { el.disabled = isFinished; });
@@ -316,8 +335,8 @@
         thresholds: variantMeta?.grading || null
       },
       student: {
-        name: safeText($("studentName").value),
-        class: safeText($("studentClass").value)
+        name: safeText($("studentName")?.value),
+        class: safeText($("studentClass")?.value)
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
       perTask: score.perTask,
@@ -336,11 +355,17 @@
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно скачать и отправить результат.");
   }
 
-  // Loaders
+  // ========= load =========
+  function extractVariantMeta(v) {
+    return v.meta || {};
+  }
+
   async function loadManifest() {
     manifest = await fetchJson(base + "manifest.json");
 
     const sel = $("variantSelect");
+    if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
+
     sel.innerHTML = "";
 
     (manifest.variants || []).forEach((v, idx) => {
@@ -358,6 +383,8 @@
     if (sel.options.length) {
       sel.value = currentVariantId;
       currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+    } else {
+      throw new Error("manifest.json: список variants пустой");
     }
 
     sel.addEventListener("change", async () => {
@@ -368,29 +395,21 @@
     });
   }
 
-  function extractVariantMeta(v) {
-    return v.meta || {};
-  }
-
   async function loadVariant(file) {
     variantData = await fetchJson(base + file);
     variantMeta = extractVariantMeta(variantData);
 
-    // meta.time_limit_minutes (если есть)
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
 
-    // прогресс
     const progress = loadProgress();
     startedAt = progress?.startedAt || nowIso();
     finishedAt = progress?.finishedAt || null;
     isFinished = Boolean(progress?.isFinished);
 
-    // восстановить ученика
-    if (progress?.student?.name) $("studentName").value = progress.student.name;
-    if (progress?.student?.class) $("studentClass").value = progress.student.class;
+    if (progress?.student?.name && $("studentName")) $("studentName").value = progress.student.name;
+    if (progress?.student?.class && $("studentClass")) $("studentClass").value = progress.student.class;
 
-    // ответы
     answersMap = progress?.answers || {};
 
     setHeader();
@@ -398,17 +417,20 @@
     refreshScorePreview();
     startTimerIfNeeded();
 
-    $("studentName").addEventListener("input", () => { if (!isFinished) saveProgress(); });
-    $("studentClass").addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
+  // ========= init =========
   async function init() {
+    // theme
     setTheme(getPreferredTheme());
-    $("themeToggle").addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
+    $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
-    $("btnFinish").addEventListener("click", () => finishNow(false));
+    // buttons
+    $("btnFinish")?.addEventListener("click", () => finishNow(false));
 
-    $("btnDownload").addEventListener("click", () => {
+    $("btnDownload")?.addEventListener("click", () => {
       const payload = buildResultPayload();
       const n = safeText(payload.student.name).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
       const c = safeText(payload.student.class).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
@@ -416,7 +438,7 @@
       downloadJson(fn, payload);
     });
 
-    $("btnEmail").addEventListener("click", () => {
+    $("btnEmail")?.addEventListener("click", () => {
       const to = manifest?.teacherEmail || "";
       if (!to || to.includes("example.com")) {
         alert("В manifest.json не задан teacherEmail. Укажи адрес учителя и опубликуй заново.");
@@ -438,12 +460,24 @@
       mailto(to, subj, body);
     });
 
+    // load
     await loadManifest();
     await loadVariant(currentVariantFile);
   }
 
   init().catch((err) => {
     console.error(err);
-    alert("Ошибка загрузки контрольной: " + err.message + "\n\nПроверь subject в URL и наличие manifest.json в controls/<subject>/variants/");
+
+    // более точная подсказка
+    const hint =
+      `Subject: ${subject}\n` +
+      `Ожидаем manifest:\n${base}manifest.json\n` +
+      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
+      `Проверь:\n` +
+      `1) путь /controls/<subject>/variants/manifest.json\n` +
+      `2) путь /control/control.html (а не /controls)\n` +
+      `3) что control.html содержит элементы: variantSelect, tasksContainer, btnFinish, btnDownload, btnEmail.\n`;
+
+    alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
