@@ -12,6 +12,44 @@
       --btn:#2b3a7a;--btn2:#1f2a57;--ok:#35d07f;--bad:#ff5b6e;
       --r:18px;--max:1100px;--shadow:0 14px 40px rgba(0,0,0,.26);
     }
+    /* Sticky-текст */
+.stickyText{
+  position: sticky;
+  top: 70px;               /* под шапку */
+  z-index: 25;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.stickyTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.stickyRange{
+  margin-left:10px;
+  font-size:12px;
+  color: var(--muted);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.stickyBody{
+  padding: 12px 14px 14px;
+  color: var(--muted);
+  line-height: 1.55;
+  max-height: 44vh;
+  overflow: auto;
+}
+.stickyBody h2{margin:8px 0 8px;font-size:16px;color:var(--text)}
+.stickyBody p{margin:8px 0}
+
     [data-theme="light"]{
       --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;--card2:#f1f4ff;
       --text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
