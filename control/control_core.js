@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  // Где лежат JSON-варианты относительно /control/control.html
   // -> ../controls/<subject>/variants/
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
@@ -59,7 +58,7 @@
     return await r.json();
   }
 
-  // ----- Theme
+  // Theme
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
@@ -76,7 +75,7 @@
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
-  // ----- State
+  // State
   let subject = getParam("subject") || "russian";
   let base = variantsBase(subject);
 
@@ -125,57 +124,66 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
-  // ----- Render
   function setHeader() {
     $("uiSubject").textContent = manifest?.subjectTitle || "Контрольная";
     $("uiTitle").textContent = variantMeta?.title || "Контрольная работа";
     $("uiMainTitle").textContent = variantMeta?.title || "Контрольная работа";
     $("uiSubtitle").textContent =
       variantMeta?.subtitle || "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат.";
-    $("uiInstr").innerHTML = variantMeta?.instructions || "Выполните задания. Ответы сохраняются автоматически.";
+    $("uiInstr").innerHTML = variantMeta?.subtitle || variantMeta?.instructions || "Выполните задания. Ответы сохраняются автоматически.";
   }
 
-  function renderTexts() {
-    const texts = variantMeta?.texts;
-    const box = $("textBlock");
-    const cont = $("textsContainer");
-    cont.innerHTML = "";
-
-    if (!texts || Object.keys(texts).length === 0) {
-      box.style.display = "none";
-      return;
-    }
-    box.style.display = "";
-
-    const keys = Object.keys(texts).sort();
-    for (const k of keys) {
-      const item = texts[k];
-      const div = document.createElement("div");
-      div.className = "task";
-      div.innerHTML =
-        `<div class="task-top"><h3>${(item.title || ("Текст " + k))}</h3><span class="badge">${k}</span></div>` +
-        `<div class="q">${item.html || ""}</div>`;
-      cont.appendChild(div);
-    }
-  }
-
+  // ✅ ВСТАВКА ТЕКСТОВ ПО RANGE (1–3, 23–26 и т.д.)
   function renderTasks() {
     const tasks = variantData?.tasks || [];
+    const texts = variantMeta?.texts || {};
     const cont = $("tasksContainer");
     cont.innerHTML = "";
 
+    // подготовим список текстов с диапазонами
+    const blocks = Object.values(texts)
+      .map(t => ({
+        title: t.title || "Текст",
+        from: Array.isArray(t.range) ? Number(t.range[0]) : null,
+        to: Array.isArray(t.range) ? Number(t.range[1]) : null,
+        html: t.html || "",
+        shown: false
+      }))
+      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+
     for (const task of tasks) {
+      const taskId = Number(task.id);
+
+      // если перед этим заданием должен появиться текст — вставляем один раз
+      for (const b of blocks) {
+        if (!b.shown && taskId === b.from) {
+          const textDiv = document.createElement("div");
+          textDiv.className = "task";
+          textDiv.innerHTML = `
+            <div class="task-top">
+              <h3>${b.title}</h3>
+              <span class="badge">Задания ${b.from}–${b.to}</span>
+            </div>
+            <div class="q">${b.html}</div>
+          `;
+          cont.appendChild(textDiv);
+          b.shown = true;
+        }
+      }
+
+      // само задание
       const wrap = document.createElement("div");
       wrap.className = "task";
       wrap.dataset.taskId = String(task.id);
 
-      wrap.innerHTML =
-        `<div class="task-top">
+      wrap.innerHTML = `
+        <div class="task-top">
           <h3>Задание ${task.id}</h3>
-          <span class="badge">${(task.points ?? 1)} балл(а)</span>
-        </div>` +
-        (task.hint ? `<div class="hint">${task.hint}</div>` : "") +
-        `<div class="q">${task.text || ""}</div>`;
+          <span class="badge">${task.points ?? 1} балл</span>
+        </div>
+        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
+        <div class="q">${task.text || ""}</div>
+      `;
 
       const inp = document.createElement("input");
       inp.type = "text";
@@ -201,7 +209,7 @@
     applyFinishedState();
   }
 
-  // ----- Scoring
+  // Scoring
   function checkOne(task, studentAnswerRaw) {
     const acceptable = (task.answers || []).map(normalizeAnswer);
     const a = normalizeAnswer(studentAnswerRaw);
@@ -245,7 +253,7 @@
     $("kpiMark").textContent = mark;
   }
 
-  // ----- Timer
+  // Timer
   function formatTime(sec) {
     const s = Math.max(0, Math.floor(sec));
     const hh = String(Math.floor(s / 3600)).padStart(2, "0");
@@ -272,7 +280,7 @@
     }, 250);
   }
 
-  // ----- Finish
+  // Finish
   function applyFinishedState() {
     $("btnFinish").textContent = isFinished ? "Завершено" : "Завершить";
     $("btnFinish").disabled = isFinished;
@@ -328,7 +336,7 @@
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно скачать и отправить результат.");
   }
 
-  // ----- Loaders
+  // Loaders
   async function loadManifest() {
     manifest = await fetchJson(base + "manifest.json");
 
@@ -361,7 +369,6 @@
   }
 
   function extractVariantMeta(v) {
-    // твой формат: {meta:{...}, tasks:[...]}
     return v.meta || {};
   }
 
@@ -369,7 +376,7 @@
     variantData = await fetchJson(base + file);
     variantMeta = extractVariantMeta(variantData);
 
-    // лимит времени: meta.time_limit_minutes (если есть)
+    // meta.time_limit_minutes (если есть)
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
 
@@ -387,7 +394,6 @@
     answersMap = progress?.answers || {};
 
     setHeader();
-    renderTexts();
     renderTasks();
     refreshScorePreview();
     startTimerIfNeeded();
@@ -396,7 +402,6 @@
     $("studentClass").addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
-  // ----- Init
   async function init() {
     setTheme(getPreferredTheme());
     $("themeToggle").addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
@@ -442,4 +447,3 @@
     alert("Ошибка загрузки контрольной: " + err.message + "\n\nПроверь subject в URL и наличие manifest.json в controls/<subject>/variants/");
   });
 })();
-
