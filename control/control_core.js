@@ -145,7 +145,7 @@
     );
   }
 
-  // ========= render tasks (тексты показывает sticky) =========
+  // ========= render tasks (БЕЗ вставки текстов, тексты показывает sticky) =========
   function renderTasks() {
     const cont = $("tasksContainer");
     if (!cont) return;
@@ -156,8 +156,8 @@
     for (const task of tasks) {
       const wrap = document.createElement("div");
       wrap.className = "task";
-      wrap.dataset.taskId = String(task.id);       // data-task-id
-      wrap.dataset.taskIdNum = String(task.id);    // data-task-id-num
+      wrap.dataset.taskId = String(task.id);       // -> data-task-id
+      wrap.dataset.taskIdNum = String(task.id);    // -> data-task-id-num (для sticky)
 
       wrap.innerHTML = `
         <div class="task-top">
@@ -383,7 +383,7 @@
 
     setHeader();
     renderTasks();
-    stickyInitOrRefresh();
+    stickyInitOrRefresh(); // <-- sticky после отрисовки заданий
     refreshScorePreview();
     startTimerIfNeeded();
 
@@ -437,15 +437,22 @@
 
   function getTextRangesFromMeta() {
     const texts = variantMeta?.texts || {};
-    return Object.values(texts)
+    const blocks = Object.values(texts)
       .map(t => {
         const r = Array.isArray(t.range) ? t.range : null;
         const from = r ? Number(r[0]) : NaN;
         const to = r ? Number(r[1]) : NaN;
-        return { title: t.title || "Текст", from, to, html: t.html || "" };
+        return {
+          title: t.title || "Текст",
+          from,
+          to,
+          html: t.html || ""
+        };
       })
-      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html)
-      .sort((a, b) => a.from - b.from);
+      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+
+    blocks.sort((a, b) => a.from - b.from);
+    return blocks;
   }
 
   function setStickyVisible(visible) {
@@ -470,7 +477,8 @@
   }
 
   function getTaskElements() {
-    return Array.from(document.querySelectorAll(".task[data-task-id], .task[data-task-id-num]"))
+    // ✅ правильные атрибуты: data-task-id и data-task-id-num
+    return Array.from(document.querySelectorAll('.task[data-task-id], .task[data-task-id-num]'))
       .map(el => {
         const raw = el.dataset.taskIdNum || el.dataset.taskId;
         const id = Number(raw);
@@ -480,51 +488,36 @@
       .sort((a, b) => a.id - b.id);
   }
 
-  // Надёжно: берём ближайшее задание к линии
   function currentTaskIdByScroll(taskEls) {
     const yLine = 160;
-    let bestId = null;
-    let bestDist = Infinity;
+    let best = null;
 
     for (const t of taskEls) {
       const r = t.el.getBoundingClientRect();
       if (r.height === 0) continue;
-      const dist = Math.abs(r.top - yLine);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestId = t.id;
-      }
+      if (r.top <= yLine) best = t.id;
+      else break;
     }
-    return bestId ?? (taskEls[0]?.id ?? null);
+    return best ?? (taskEls[0]?.id ?? null);
   }
 
-  // Держим последний начавшийся текст (Текст 1 будет до 23, потом Текст 2)
   function findBlockForTask(blocks, taskId) {
     if (!taskId) return null;
 
+    // показываем текст, когда находимся внутри диапазона
     for (const b of blocks) {
       if (taskId >= b.from && taskId <= b.to) return b;
     }
-
-    let last = null;
-    for (const b of blocks) {
-      if (taskId >= b.from) last = b;
-    }
-    return last;
+    return null; // вне диапазонов — скрыть sticky
   }
 
   let stickyBlocks = [];
   let stickyTaskEls = [];
   let stickyActiveKey = "";
 
-  // ✅ Версия под твою разметку:
-  // - скроллится .bd
-  // - stickyTextBody имеет внутренний скролл
-  // - колесо на тексте пробрасываем в .bd, когда текст дошёл до края
   function stickyInitOrRefresh() {
     const wrap = $("stickyTextWrap");
     const btn = $("stickyToggle");
-    const body = $("stickyTextBody");
 
     stickyBlocks = getTextRangesFromMeta();
     stickyTaskEls = getTaskElements();
@@ -534,26 +527,27 @@
       setStickyVisible(false);
       return;
     }
-    setStickyVisible(true);
 
-    if (stickyInitOrRefresh._cleanup) stickyInitOrRefresh._cleanup();
-
-    const bd = document.querySelector(".bd");
-
+    // кнопка свернуть/развернуть
     if (btn) {
       btn.onclick = () => {
         stickyCollapsed = !stickyCollapsed;
+        const body = $("stickyTextBody");
         if (body) body.style.display = stickyCollapsed ? "none" : "";
         btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
       };
     }
 
     const onScroll = () => {
-      if (!stickyTaskEls || stickyTaskEls.length === 0) return;
-
       const taskId = currentTaskIdByScroll(stickyTaskEls);
       const block = findBlockForTask(stickyBlocks, taskId);
-      if (!block) return;
+
+      if (!block) {
+        setStickyVisible(false);
+        return;
+      }
+
+      setStickyVisible(true);
 
       const key = `${block.from}-${block.to}-${block.title}`;
       if (key !== stickyActiveKey) {
@@ -562,41 +556,9 @@
       }
     };
 
-    // 1) основной скролл контейнера
-    const bdScroll = () => onScroll();
-    if (bd) bd.addEventListener("scroll", bdScroll, { passive: true });
-
-    // 2) ловим любые scroll внутри (scroll не bubble, поэтому capture)
-    const docScroll = () => onScroll();
-    document.addEventListener("scroll", docScroll, { passive: true, capture: true });
-
-    // 3) пробрасываем wheel из stickyBody в .bd на краях stickyBody
-    let bodyWheel = null;
-    if (bd && body) {
-      bodyWheel = (e) => {
-        if (stickyCollapsed) return;
-
-        const atTop = body.scrollTop <= 0;
-        const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 1;
-
-        if (e.deltaY > 0 && atBottom) {
-          bd.scrollTop += e.deltaY;
-          e.preventDefault();
-          onScroll();
-        } else if (e.deltaY < 0 && atTop) {
-          bd.scrollTop += e.deltaY;
-          e.preventDefault();
-          onScroll();
-        }
-      };
-      body.addEventListener("wheel", bodyWheel, { passive: false });
-    }
-
-    stickyInitOrRefresh._cleanup = () => {
-      if (bd) bd.removeEventListener("scroll", bdScroll);
-      document.removeEventListener("scroll", docScroll, { capture: true });
-      if (body && bodyWheel) body.removeEventListener("wheel", bodyWheel);
-    };
+    window.removeEventListener("scroll", stickyInitOrRefresh._onScroll);
+    stickyInitOrRefresh._onScroll = onScroll;
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     onScroll();
   }
