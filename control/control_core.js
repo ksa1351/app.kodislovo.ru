@@ -6,25 +6,16 @@
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
 
-  function setText(id, text) {
-    const el = $(id);
-    if (el) el.textContent = text;
-  }
-  function setHTML(id, html) {
-    const el = $(id);
-    if (el) el.innerHTML = html;
-  }
-  function getParam(name) {
-    return new URLSearchParams(window.location.search).get(name);
-  }
+  function setText(id, text) { const el = $(id); if (el) el.textContent = text; }
+  function setHTML(id, html) { const el = $(id); if (el) el.innerHTML = html; }
+  function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
   function nowIso() { return new Date().toISOString(); }
   function safeText(s) { return (s ?? "").toString().trim(); }
   function normalizeAnswer(s) {
     return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
 
-  // JSON варианты лежат тут относительно /control/control.html:
-  // ../controls/<subject>/variants/
+  // /control/control.html -> варианты: ../controls/<subject>/variants/
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
@@ -96,15 +87,11 @@
   let timerTick = null;
 
   let answersMap = {};
-  let currentTaskIndex = 0; // одно задание на экране
+  let currentTaskIndex = 0;
 
-  function lsKey() {
-    return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
-  }
-
-  function getTasks() {
-    return variantData?.tasks || [];
-  }
+  function lsKey() { return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`; }
+  function getTasks() { return variantData?.tasks || []; }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
   function taskIndexById(id) {
     const tasks = getTasks();
@@ -112,11 +99,8 @@
     return tasks.findIndex(t => Number(t.id) === n);
   }
 
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-  function saveProgressWithPosition() {
+  function saveProgress() {
     if (!currentVariantId) return;
-
     const tasks = getTasks();
     const curTaskId = tasks[currentTaskIndex]?.id ?? null;
 
@@ -145,7 +129,7 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
-  // ========= UI =========
+  // ========= header =========
   function setHeader() {
     setText("uiSubject", manifest?.subjectTitle || "Контрольная");
     setText("uiTitle", variantMeta?.title || "Контрольная работа");
@@ -161,6 +145,29 @@
       variantMeta?.subtitle ||
       "Выполните задания. Ответы сохраняются автоматически."
     );
+  }
+
+  // ========= texts by range =========
+  function getTextBlocks() {
+    const texts = variantMeta?.texts || {};
+    const blocks = Object.values(texts)
+      .map(t => {
+        const r = Array.isArray(t.range) ? t.range : null;
+        const from = r ? Number(r[0]) : NaN;
+        const to = r ? Number(r[1]) : NaN;
+        return { title: t.title || "Текст", from, to, html: t.html || "" };
+      })
+      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html)
+      .sort((a, b) => a.from - b.from);
+    return blocks;
+  }
+
+  function findTextForTaskId(taskId) {
+    const blocks = getTextBlocks();
+    for (const b of blocks) {
+      if (taskId >= b.from && taskId <= b.to) return b;
+    }
+    return null;
   }
 
   // ========= scoring =========
@@ -247,8 +254,8 @@
     if (btnDownload) btnDownload.disabled = !isFinished;
     if (btnEmail) btnEmail.disabled = !isFinished;
 
-    // блокируем ввод
-    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,.task input.answer,#btnPrev,#btnNext");
+    // текущие элементы задания тоже будут блокироваться после render()
+    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect");
     inputs.forEach((el) => { el.disabled = isFinished; });
   }
 
@@ -290,81 +297,23 @@
     if (isFinished) return;
     isFinished = true;
     finishedAt = nowIso();
-    saveProgressWithPosition();
+    saveProgress();
     refreshScorePreview();
     applyFinishedState();
-    alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно скачать и отправить результат.");
+    alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно сохранить и отправить результат.");
   }
 
-  // ========= Sticky Text by ranges (без прокрутки) =========
-  let stickyCollapsed = false;
-
-  function getTextRangesFromMeta() {
-    const texts = variantMeta?.texts || {};
-    const blocks = Object.values(texts)
-      .map(t => {
-        const r = Array.isArray(t.range) ? t.range : null;
-        const from = r ? Number(r[0]) : NaN;
-        const to = r ? Number(r[1]) : NaN;
-        return { title: t.title || "Текст", from, to, html: t.html || "" };
-      })
-      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
-
-    blocks.sort((a, b) => a.from - b.from);
-    return blocks;
-  }
-
-  function setStickyVisible(visible) {
-    const wrap = $("stickyTextWrap");
-    if (!wrap) return;
-    wrap.style.display = visible ? "" : "none";
-  }
-
-  function setStickyContent(block) {
-    const title = $("stickyTextTitle");
-    const range = $("stickyTextRange");
-    const body = $("stickyTextBody");
-    if (!title || !range || !body) return;
-
-    title.textContent = block.title;
-    range.textContent = `задания ${block.from}–${block.to}`;
-    body.innerHTML = block.html;
-
-    body.style.display = stickyCollapsed ? "none" : "";
-    const btn = $("stickyToggle");
-    if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-  }
-
-  // показывать текст ТОЛЬКО внутри диапазона
-  function findBlockForTask(blocks, taskId) {
-    if (!taskId) return null;
-    for (const b of blocks) {
-      if (taskId >= b.from && taskId <= b.to) return b;
-    }
-    return null;
-  }
-
-  function updateStickyForTaskId(taskId) {
-    const blocks = getTextRangesFromMeta();
-    const block = findBlockForTask(blocks, Number(taskId));
-    if (!block) {
-      setStickyVisible(false);
-      return;
-    }
-    setStickyVisible(true);
-    setStickyContent(block);
-  }
-
-  // ========= Single task render + navigation =========
+  // ========= render (текст над заданием только если нужен) =========
   function updateNavUI() {
     const tasks = getTasks();
     const total = tasks.length || 0;
     const cur = total ? currentTaskIndex + 1 : 0;
 
-    setText("uiTaskCounter", `Задание ${cur} / ${total}`);
+    const meta = document.querySelector("#tasksContainer .navMeta");
+    if (meta) meta.textContent = `Задание ${cur} / ${total}`;
 
-    const btnPrev = $("btnPrev");
-    const btnNext = $("btnNext");
+    const btnPrev = document.querySelector("#tasksContainer #btnPrevTask");
+    const btnNext = document.querySelector("#tasksContainer #btnNextTask");
     if (btnPrev) btnPrev.disabled = isFinished || currentTaskIndex <= 0;
     if (btnNext) btnNext.disabled = isFinished || currentTaskIndex >= total - 1;
   }
@@ -375,16 +324,30 @@
 
     const tasks = getTasks();
     cont.innerHTML = "";
-
     if (!tasks.length) return;
 
     currentTaskIndex = clamp(currentTaskIndex, 0, tasks.length - 1);
     const task = tasks[currentTaskIndex];
+    const taskIdNum = Number(task.id);
 
+    // 1) Текст (если есть для этого номера задания)
+    const textBlock = findTextForTaskId(taskIdNum);
+    if (textBlock) {
+      const textWrap = document.createElement("div");
+      textWrap.className = "textBlock";
+      textWrap.innerHTML = `
+        <div class="textTop">
+          <b>${textBlock.title}</b>
+          <span class="badge">задания ${textBlock.from}–${textBlock.to}</span>
+        </div>
+        <div class="textBody">${textBlock.html}</div>
+      `;
+      cont.appendChild(textWrap);
+    }
+
+    // 2) Само задание
     const wrap = document.createElement("div");
-    wrap.className = "task";
-    wrap.dataset.taskId = String(task.id);
-
+    wrap.className = "task card";
     wrap.innerHTML = `
       <div class="task-top">
         <h3>Задание ${task.id}</h3>
@@ -407,14 +370,39 @@
     inp.addEventListener("input", () => {
       if (isFinished) return;
       answersMap[String(task.id)] = inp.value;
-      saveProgressWithPosition();
+      saveProgress();
       refreshScorePreview();
     });
 
     wrap.appendChild(inp);
+
+    // 3) Навигация ПОД вводом
+    const nav = document.createElement("div");
+    nav.innerHTML = `
+      <div class="navRow">
+        <button id="btnPrevTask" class="btn secondary" type="button">← Предыдущее</button>
+        <button id="btnNextTask" class="btn" type="button">Следующее →</button>
+      </div>
+      <div class="navMeta"></div>
+    `;
+    wrap.appendChild(nav);
+
     cont.appendChild(wrap);
 
-    updateStickyForTaskId(task.id);
+    // обработчики навигации
+    const btnPrev = wrap.querySelector("#btnPrevTask");
+    const btnNext = wrap.querySelector("#btnNextTask");
+
+    if (btnPrev) btnPrev.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex - 1); };
+    if (btnNext) btnNext.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex + 1); };
+
+    // блокировка при завершении
+    if (isFinished) {
+      inp.disabled = true;
+      if (btnPrev) btnPrev.disabled = true;
+      if (btnNext) btnNext.disabled = true;
+    }
+
     updateNavUI();
     applyFinishedState();
   }
@@ -423,14 +411,12 @@
     const tasks = getTasks();
     if (!tasks.length) return;
     currentTaskIndex = clamp(idx, 0, tasks.length - 1);
-    saveProgressWithPosition();
+    saveProgress();
     renderSingleTask();
   }
 
   // ========= load =========
-  function extractVariantMeta(v) {
-    return v.meta || {};
-  }
+  function extractVariantMeta(v) { return v.meta || {}; }
 
   async function loadManifest() {
     manifest = await fetchJson(base + "manifest.json");
@@ -452,12 +438,10 @@
       }
     });
 
-    if (sel.options.length) {
-      sel.value = currentVariantId;
-      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
-    } else {
-      throw new Error("manifest.json: список variants пустой");
-    }
+    if (!sel.options.length) throw new Error("manifest.json: список variants пустой");
+
+    sel.value = currentVariantId;
+    currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -484,7 +468,7 @@
 
     answersMap = progress?.answers || {};
 
-    // восстановить позицию
+    // восстановить позицию по текущему заданию
     const savedTaskId = progress?.currentTaskId;
     if (savedTaskId != null) {
       const idx = taskIndexById(savedTaskId);
@@ -498,18 +482,8 @@
     refreshScorePreview();
     startTimerIfNeeded();
 
-    $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgressWithPosition(); });
-    $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgressWithPosition(); });
-
-    const btnToggle = $("stickyToggle");
-    if (btnToggle) {
-      btnToggle.onclick = () => {
-        stickyCollapsed = !stickyCollapsed;
-        const body = $("stickyTextBody");
-        if (body) body.style.display = stickyCollapsed ? "none" : "";
-        btnToggle.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-      };
-    }
+    $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
   // ========= init =========
@@ -518,11 +492,7 @@
     setTheme(getPreferredTheme());
     $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
-    // nav
-    $("btnPrev")?.addEventListener("click", () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex - 1); });
-    $("btnNext")?.addEventListener("click", () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex + 1); });
-
-    // finish + download + email
+    // finish/download/email
     $("btnFinish")?.addEventListener("click", () => finishNow(false));
 
     $("btnDownload")?.addEventListener("click", () => {
@@ -561,16 +531,13 @@
 
   init().catch((err) => {
     console.error(err);
-
     const hint =
       `Subject: ${subject}\n` +
       `Ожидаем manifest:\n${base}manifest.json\n` +
       `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
       `Проверь:\n` +
       `1) путь /controls/<subject>/variants/manifest.json\n` +
-      `2) путь /control/control.html (а не /controls)\n` +
-      `3) что control.html содержит элементы: variantSelect, tasksContainer, btnPrev, btnNext, stickyTextWrap.\n`;
-
+      `2) путь /control/control.html\n`;
     alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
