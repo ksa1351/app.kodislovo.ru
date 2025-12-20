@@ -1,1 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Контрольные — выбор предмета</title>
+  <style>
+    :root{--bg:#0b1020;--card:#121a33;--text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);--btn:#2b3a7a;--btn2:#1f2a57;--r:18px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(180deg,#070a14,var(--bg) 40%,#070a14);color:var(--text)}
+    .wrap{max-width:900px;margin:0 auto;padding:26px 14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+    h1{margin:0 0 10px;font-size:clamp(22px,3.4vw,34px)}
+    p{margin:0 0 18px;color:var(--muted);line-height:1.6}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    a.btn{display:flex;align-items:center;justify-content:center;text-align:center;gap:10px;
+      background:var(--btn);color:#fff;text-decoration:none;padding:14px 16px;border-radius:14px;border:1px solid var(--border)}
+    a.btn.secondary{background:var(--btn2);color:var(--text)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Контрольные работы</h1>
+      <p>Выберите предмет. Контрольная откроется в общем модуле <code>control/control.html</code> и подтянет варианты из <code>controls/&lt;subject&gt;/variants</code>.</p>
+      <div class="grid">
+        <a class="btn" href="control.html?subject=russian">Русский язык</a>
+        <a class="btn secondary" href="control.html?subject=literature">Литература</a>
+        <a class="btn" href="control.html?subject=informatics">Информатика</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
 
