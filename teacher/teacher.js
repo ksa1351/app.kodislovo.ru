@@ -2,7 +2,7 @@
 
 /* ========= CONFIG ========= */
 const API_BASE = "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net";
-const TEACHER_TOKEN = ""; // ← ВСТАВЬ ТОКЕН
+const TEACHER_TOKEN = "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f"; // ← ВСТАВЬ ТОКЕН
 
 /* ========= DOM HELPERS ========= */
 const $ = (id) => document.getElementById(id);
