@@ -4,221 +4,162 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Кодислово — Учительская панель</title>
-  <style>
-    :root{
-      --bg:#0b1020;--bg2:#070a14;--card:#121a33;
-      --text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
-      --primary:#2b3a7a;--primary2:#1f2a57;--bad:#ff5b6e;--ok:#35d07f;
-      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:1200px;
-    }
-    [data-theme="light"]{
-      --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;
-      --text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
-      --primary:#3254ff;--primary2:#e9edff;
-      --shadow:0 14px 40px rgba(15,24,60,.1);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
-      background:linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
-    }
-    a{color:inherit}
-    .topbar{position:sticky;top:0;z-index:10;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-    .topbar-inner{max-width:var(--max);margin:0 auto;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primary),rgba(255,255,255,.1))}
-    .brand b{font-size:14px}
-    .brand span{font-size:12px;color:var(--muted)}
-    .toggle{display:flex;align-items:center;gap:8px}
-    .toggle input{display:none}
-    .toggle small{color:var(--muted);font-size:12px}
-    .switch{width:44px;height:26px;border-radius:999px;background:var(--card);border:1px solid var(--border);position:relative}
-    .knob{width:20px;height:20px;border-radius:50%;background:var(--text);position:absolute;top:2px;left:2px;transition:.2s}
-    input:checked+.switch .knob{left:22px}
 
-    .container{max-width:var(--max);margin:0 auto;padding:16px 14px}
-    h1{margin:14px 0 6px;font-size:clamp(22px,3vw,30px)}
-    p.lead{margin:0 0 14px;color:var(--muted);line-height:1.5}
-
-    .grid{display:grid;grid-template-columns:1fr;gap:14px}
-    @media(min-width:960px){.grid{grid-template-columns:420px 1fr}}
-
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-    .row{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:560px){.row.cols2{grid-template-columns:1fr 1fr}}
-    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
-    label{font-size:12px;color:var(--muted)}
-    input,select,textarea{
-      width:100%;padding:10px 12px;border-radius:12px;
-      border:1px solid var(--border);background:transparent;color:var(--text)
-    }
-    textarea{min-height:90px;resize:vertical}
-    .btnbar{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
-    @media(min-width:560px){.btnbar{grid-template-columns:repeat(3,1fr)}}
-    .btn{
-      width:100%;padding:11px 12px;border-radius:14px;
-      background:var(--primary);color:#fff;border:1px solid var(--border);
-      cursor:pointer;text-align:center;transition:filter .15s, transform .08s
-    }
-    .btn:hover{filter:brightness(1.06)}
-    .btn:active{transform:translateY(1px)}
-    .btn.secondary{background:var(--primary2);color:var(--text)}
-    .btn.danger{background:transparent;color:var(--bad);border:1px solid rgba(255,91,110,.5)}
-    .hint{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px}
-    .status{margin-top:10px;font-size:13px;color:var(--muted);white-space:pre-wrap}
-    .status.ok{color:var(--ok)}
-    .status.bad{color:var(--bad)}
-
-    table{width:100%;border-collapse:separate;border-spacing:0 10px}
-    th{font-size:12px;color:var(--muted);text-align:left;padding:0 10px}
-    td{padding:12px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
-    [data-theme="light"] td{background:rgba(10,16,40,.03)}
-    tr td:first-child{border-radius:14px 0 0 14px}
-    tr td:last-child{border-radius:0 14px 14px 0}
-    .k{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;font-size:12px;color:var(--muted);word-break:break-all}
-    .small{font-size:12px;color:var(--muted)}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .aBtn{padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
-    .aBtn:hover{filter:brightness(1.06)}
-    .aBtn.danger{border-color:rgba(255,91,110,.5);color:var(--bad)}
-    .chk{transform:scale(1.2)}
-    footer{margin:18px 0 6px;text-align:center;color:var(--muted);font-size:12px}
-  </style>
+  <!-- Общие стили -->
+  <link rel="stylesheet" href="../assets/css/control-ui.css">
 </head>
-<body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <b>Кодислово · Учитель</b><br>
-          <span>проверка · таймер · сброс</span>
-        </div>
-      </div>
 
-      <div class="toggle">
-        <small>Тема</small>
-        <label>
-          <input id="themeToggle" type="checkbox">
-          <span class="switch"><span class="knob"></span></span>
-        </label>
+<body>
+  <!-- Topbar -->
+  <div class="kd-topbar">
+    <div class="kd-wrap">
+      <div class="kd-row">
+        <div>
+          <div style="font-weight:800;letter-spacing:.2px">Кодислово · Учитель</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px">проверка · таймер · сброс</div>
+        </div>
+
+        <div class="kd-row" style="justify-content:flex-end">
+          <div class="kd-theme" style="cursor:pointer">
+            <span id="themeLabel">Тёмная</span>
+            <label class="kd-switch" style="cursor:pointer">
+              <input id="themeToggle" type="checkbox" aria-label="Переключить тему">
+              <span>Тема</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="container">
-    <h1>Учительская панель</h1>
-    <p class="lead">Просмотр работ из Yandex Object Storage, настройка таймера и выдача кода для повторной сдачи (reset).</p>
+  <div class="kd-wrap">
+    <!-- Header -->
+    <header class="kd-header">
+      <h1 class="kd-title">Учительская панель</h1>
+      <p class="kd-subtitle">
+        Просмотр работ из Yandex Object Storage, настройка таймера и выдача кода для повторной сдачи (reset).
+      </p>
+    </header>
 
-    <div class="grid">
+    <!-- Main grid -->
+    <div class="kd-grid" style="margin-top:18px;grid-template-columns: 420px 1fr;">
       <!-- LEFT -->
-      <div class="card">
-        <h3 style="margin:0 0 10px">Настройки и сброс</h3>
+      <section class="kd-panel">
+        <h3 style="margin:0 0 12px 0;font-size:18px">Настройки и сброс</h3>
 
-        <div class="row cols2">
-          <div>
-            <label>Предмет</label>
-            <select id="subject">
+        <div class="kd-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div class="kd-field">
+            <label for="subjectSelect">Предмет</label>
+            <select class="kd-select" id="subjectSelect">
               <option value="russian">Русский</option>
               <option value="literature">Литература</option>
               <option value="informatics">Информатика</option>
             </select>
           </div>
-          <div>
-            <label>Вариант (например: v1, variant_01)</label>
-            <input id="variant" placeholder="например: variant_01" />
+
+          <div class="kd-field">
+            <label for="resetVariant">Вариант (например: variant_01)</label>
+            <input class="kd-input" id="resetVariant" placeholder="например: variant_01" />
           </div>
         </div>
 
-        <div class="row cols2" style="margin-top:10px">
-          <div>
-            <label>Таймер (минуты)</label>
-            <input id="timerMinutes" type="number" min="0" step="1" placeholder="0 = без лимита" />
+        <div class="kd-grid" style="margin-top:14px;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="kd-field">
+            <label for="timerMinutes">Таймер (минуты)</label>
+            <input class="kd-input" id="timerMinutes" type="number" min="0" step="1" placeholder="0 = без лимита" />
           </div>
-          <div>
-            <label>Класс (для reset-кода)</label>
-            <input id="cls" placeholder="например: 9А" />
-          </div>
-        </div>
 
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label>ФИО (для reset-кода)</label>
-            <input id="fio" placeholder="например: Иванов Иван" />
+          <div class="kd-field">
+            <label for="resetClass">Класс (для reset-кода)</label>
+            <input class="kd-input" id="resetClass" placeholder="например: 9А" />
           </div>
         </div>
 
-        <div class="btnbar">
-          <button class="btn secondary" id="btnCfgLoad">Загрузить таймер</button>
-          <button class="btn" id="btnCfgSave">Сохранить таймер</button>
-          <button class="btn danger" id="btnResetCreate">Сделать reset-код</button>
+        <div class="kd-field" style="margin-top:14px">
+          <label for="resetFio">ФИО (для reset-кода)</label>
+          <input class="kd-input" id="resetFio" placeholder="например: Иванов Иван" />
         </div>
 
-        <div class="hint">
-          <span class="pill">Reset</span>
-          Код сброса нужен, если ребёнок сдавал без интернета/ошибся браузером.
-          Выдаёшь код → ребёнок вводит его в контрольной (мы добавим поле позже, или ты вставишь в URL).
+        <div class="kd-actions" style="margin-top:14px">
+          <button class="kd-btn secondary" id="btnTimerLoad" type="button">Загрузить таймер</button>
+          <button class="kd-btn" id="btnTimerSave" type="button">Сохранить таймер</button>
+          <button class="kd-btn secondary" id="btnResetMake" type="button" style="border:1px solid rgba(255,91,110,.55);color:var(--bad);background:transparent">
+            Сделать reset-код
+          </button>
         </div>
 
-        <div id="leftStatus" class="status"></div>
-      </div>
+        <div class="kd-textbox muted" style="margin-top:14px">
+          <b>Reset</b> — код нужен, если ребёнок сдавал без интернета/ошибся браузером.
+          Выдаёшь код → ребёнок вводит его в контрольной.
+        </div>
+
+        <div id="statusLine" class="kd-textbox muted" style="margin-top:14px">
+          Готово.
+        </div>
+      </section>
 
       <!-- RIGHT -->
-      <div class="card">
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <section class="kd-panel">
+        <div class="kd-row" style="align-items:flex-end">
           <div>
-            <h3 style="margin:0 0 6px">Проверка работ</h3>
-            <div class="small">Фильтры влияют на list. Можно массово выделять и аннулировать.</div>
+            <h3 style="margin:0 0 6px 0;font-size:18px">Проверка работ</h3>
+            <div style="color:var(--muted);font-size:13px;line-height:1.45">
+              Фильтры влияют на list. Можно массово выделять и аннулировать.
+            </div>
           </div>
-          <div class="actions">
-            <button class="aBtn" id="btnRefresh">Обновить</button>
-            <button class="aBtn danger" id="btnVoidSelected">Аннулировать выбранные</button>
+
+          <div class="kd-row" style="justify-content:flex-end">
+            <button class="kd-btn secondary" id="btnList" type="button" style="height:42px;border-radius:14px;padding:0 14px">
+              Обновить
+            </button>
+            <button class="kd-btn secondary" id="btnVoidSelected" type="button"
+              style="height:42px;border-radius:14px;padding:0 14px;border:1px solid rgba(255,91,110,.55);color:var(--bad);background:transparent">
+              Аннулировать выбранные
+            </button>
           </div>
         </div>
 
-        <div class="row cols3" style="margin-top:12px">
-          <div>
-            <label>Класс (фильтр)</label>
-            <input id="filterClass" placeholder="например: 9А" />
+        <div class="kd-grid" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div class="kd-field">
+            <label for="classFilter">Класс (фильтр)</label>
+            <input class="kd-input" id="classFilter" placeholder="например: 9А" />
           </div>
-          <div>
-            <label>Вариант (фильтр)</label>
-            <input id="filterVariant" placeholder="например: variant_01" />
+
+          <div class="kd-field">
+            <label for="variantFilter">Вариант (фильтр)</label>
+            <input class="kd-input" id="variantFilter" placeholder="например: variant_01" />
           </div>
-          <div>
-            <label>Поиск ФИО</label>
-            <input id="filterFio" placeholder="часть ФИО" />
+
+          <div class="kd-field">
+            <label for="fioSearch">Поиск ФИО</label>
+            <input class="kd-input" id="fioSearch" placeholder="часть ФИО или класса" />
           </div>
         </div>
 
-        <div id="tableWrap" style="margin-top:12px;overflow:auto">
-          <table>
+        <div style="margin-top:14px;overflow:auto">
+          <table style="width:100%;border-collapse:collapse">
             <thead>
-              <tr>
-                <th style="width:42px"></th>
-                <th>ФИО / Класс</th>
-                <th>Вариант</th>
-                <th>Дата</th>
-                <th>Ключ (S3)</th>
-                <th>Действия</th>
+              <tr style="color:var(--muted);font-size:13px">
+                <th style="text-align:left;padding:10px;width:44px"></th>
+                <th style="text-align:left;padding:10px">ФИО / Класс</th>
+                <th style="text-align:left;padding:10px">Вариант</th>
+                <th style="text-align:left;padding:10px">Дата</th>
+                <th style="text-align:left;padding:10px">Ключ (S3)</th>
+                <th style="text-align:left;padding:10px">Действия</th>
               </tr>
             </thead>
-            <tbody id="rows"></tbody>
+            <tbody id="resultsTbody"></tbody>
           </table>
         </div>
 
-        <div id="rightStatus" class="status"></div>
-
-        <div style="margin-top:12px">
-          <label>Просмотр JSON</label>
-          <textarea id="jsonView" placeholder="Здесь откроется результат (get)"></textarea>
+        <div style="margin-top:14px">
+          <label style="display:block;font-size:13px;color:var(--muted);margin:0 0 8px 2px">Просмотр JSON</label>
+          <textarea id="jsonViewer"
+            style="width:100%;min-height:160px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);padding:12px;outline:none"
+            placeholder="Здесь откроется результат (get)"></textarea>
         </div>
-      </div>
+      </section>
     </div>
-
-    <footer>© Кодислово · teacher panel</footer>
   </div>
 
   <script src="./teacher.js"></script>
