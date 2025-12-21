@@ -2,7 +2,6 @@
   "schema": "kodislovo.manifest.v1",
   "subject": "russian",
   "subjectTitle": "Русский язык",
-
   "variants": [
     {
       "id": "variant_01",
@@ -10,12 +9,10 @@
       "file": "variant_01.json"
     }
   ],
-
   "submit": {
-    "url": "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net/submit/submit",
+    "url": "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net/submit",
     "token": "e601ff0e8fdfba014efb518f11b71aba3f2e4fdfe11845146c5e5fd3ed18fc1a"
   },
-
   "teacher": {
     "base_url": "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net",
     "token": "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f"
