@@ -14,10 +14,12 @@
   <div class="kd-topbar">
     <div class="kd-wrap">
       <div class="kd-row">
-        <div class="kd-theme">
-          <button class="kd-switch" id="themeBtn" type="button" aria-label="Переключить тему">
-            <span id="themeLabel">Тёмная</span>
-          </button>
+        <div class="kd-theme" id="themeWrap" style="cursor:pointer">
+          <span id="themeLabel">Тёмная</span>
+          <label class="kd-switch" style="cursor:pointer">
+            <input id="themeToggle" type="checkbox" aria-label="Переключить тему">
+            <span>Тема</span>
+          </label>
         </div>
         <div class="kd-theme">
           <span>Таймер:</span>
@@ -33,7 +35,7 @@
     <header class="kd-header">
       <h1 class="kd-title" id="uiMainTitle">Контрольная работа</h1>
       <p class="kd-subtitle" id="uiSubtitle">
-        Заполните данные, выполните задания, нажмите «Завершить», затем «Сохранить».
+        Заполните данные, выполните задания, нажмите «Завершить», затем «Отправить».
       </p>
     </header>
 
@@ -59,7 +61,7 @@
       <!-- ONE ROW: finish + save + reset code + reset -->
       <div class="kd-actions kd-actions-row" style="margin-top:14px">
         <button class="kd-btn" id="btnFinish" type="button">Завершить</button>
-        <button class="kd-btn secondary" id="btnSaveCloud" type="button" disabled>Сохранить</button>
+        <button class="kd-btn secondary" id="btnSubmit" type="button" disabled>Отправить</button>
 
         <input class="kd-input" id="resetCode" type="text" placeholder="Код сброса" autocomplete="off" spellcheck="false">
 
