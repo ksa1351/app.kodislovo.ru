@@ -5,97 +5,95 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Контрольная — Кодислово</title>
 
-  <!-- ЕДИНСТВЕННЫЙ CSS -->
-  <link rel="stylesheet" href="../assets/css/control-ui.css?v=6" />
+  <!-- Единый стиль -->
+  <link rel="stylesheet" href="../assets/css/control-ui.css" />
 </head>
 
 <body>
-  <!-- TOPBAR -->
+  <!-- верхняя липкая панель -->
   <div class="kd-topbar">
     <div class="kd-wrap">
       <div class="kd-row">
         <div class="kd-theme">
-          <span id="statusLine" class="muted">Готово</span>
+          <span class="kd-switch">
+            <input id="themeToggle" type="checkbox" />
+            <span id="themeLabel">Тёмная</span>
+          </span>
+          <span style="opacity:.85">⏱ <span id="uiTimer">без лимита</span></span>
         </div>
 
-        <div class="kd-switch" title="Сменить тему">
-          <input type="checkbox" id="themeToggle" />
-          <span id="themeLabel">Тёмная</span>
-        </div>
+        <div id="statusLine" class="kd-theme" aria-live="polite"></div>
       </div>
     </div>
   </div>
 
   <div class="kd-wrap">
-    <!-- HEADER -->
-    <div class="kd-header">
+    <!-- шапка -->
+    <header class="kd-header">
       <h1 class="kd-title" id="workTitle">Контрольная работа</h1>
       <p class="kd-subtitle" id="workSubtitle">
         Заполните ФИО и класс. Выполняйте задания по одному, переходите кнопками «Предыдущее/Следующее».
       </p>
-    </div>
+    </header>
 
-    <!-- PANEL: identity + actions -->
-    <div class="kd-panel" id="identityPanel">
+    <!-- панель ученика + вариант -->
+    <section class="kd-panel">
       <div class="kd-grid">
         <div class="kd-field">
           <label for="studentName">ФИО</label>
-          <input id="studentName" class="kd-input" autocomplete="name" placeholder="Например: Иванов Иван" />
+          <input id="studentName" class="kd-input" type="text" placeholder="Иванов Иван" autocomplete="name" />
         </div>
 
         <div class="kd-field">
           <label for="studentClass">Класс</label>
-          <input id="studentClass" class="kd-input" autocomplete="off" placeholder="Например: 10А" />
+          <input id="studentClass" class="kd-input" type="text" placeholder="10А" autocomplete="off" />
         </div>
 
-        <div class="kd-field">
+        <div class="kd-field" style="grid-column:1 / -1">
           <label for="variantSelect">Вариант</label>
           <select id="variantSelect" class="kd-select"></select>
         </div>
-
-        <div class="kd-field">
-          <label>Таймер</label>
-          <div id="uiTimer" class="kd-input" style="display:flex;align-items:center;">
-            без лимита
-          </div>
-        </div>
       </div>
 
-      <!-- Кнопки в одном ряду (на узких экранах уходят в колонку по CSS) -->
+      <!-- действия (в один ряд, одинаковая ширина) -->
       <div class="kd-actions">
-        <button id="btnFinish" class="kd-btn">Завершить</button>
-        <button id="btnDownload" class="kd-btn secondary" disabled>Сохранить работу</button>
-        <button id="btnEmail" class="kd-btn secondary" disabled>Отправить на email</button>
+        <button id="btnFinish" class="kd-btn" type="button">Завершить</button>
+        <button id="btnDownload" class="kd-btn secondary" type="button" disabled>Сохранить работу</button>
+        <button id="btnEmail" class="kd-btn secondary" type="button" disabled>Отправить</button>
       </div>
-    </div>
+    </section>
 
-    <!-- STAGE: text + single task -->
-    <div class="kd-stage" id="stage">
-      <!-- Текст (если есть) -->
-      <div class="kd-textbox kd-hidden" id="textBox">
+    <!-- сцена: текст + одно задание -->
+    <main class="kd-stage">
+      <!-- текст (если есть для диапазона) -->
+      <section id="textBox" class="kd-textbox kd-hidden">
         <div id="textContent"></div>
-      </div>
+      </section>
 
-      <!-- Одно задание -->
-      <div class="kd-task" id="taskCard">
+      <!-- одно задание -->
+      <section class="kd-task" id="taskCard">
         <h3 id="taskTitle">Задание</h3>
 
         <div id="taskHint" class="hint kd-hidden"></div>
-
         <div id="taskText" class="q"></div>
 
-        <input id="taskAnswer" class="kd-answer" placeholder="Введите ответ…" />
+        <input
+          id="taskAnswer"
+          class="kd-answer"
+          type="text"
+          placeholder="Введите ответ…"
+          autocomplete="off"
+          spellcheck="false"
+        />
 
-        <!-- Навигация строго под вводом ответа -->
-        <div class="kd-nav" id="navButtons">
-          <button id="btnPrev" class="kd-btn secondary">← Предыдущее</button>
-          <button id="btnNext" class="kd-btn secondary">Следующее →</button>
+        <div class="kd-nav">
+          <button id="btnPrev" class="kd-btn secondary" type="button">← Предыдущее</button>
+          <button id="btnNext" class="kd-btn secondary" type="button">Следующее →</button>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 
-  <!-- JS -->
-  <script defer src="./control_core.js?v=6"></script>
+  <script src="./control_core.js"></script>
 </body>
 </html>
