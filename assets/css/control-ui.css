@@ -142,6 +142,7 @@ a{ color:inherit; }
   color:var(--text);
   padding:0 14px;
   outline:none;
+  min-width:0; /* важно для grid: не переполнять */
 }
 :root[data-theme="light"] .kd-input,
 :root[data-theme="light"] .kd-select{
@@ -169,6 +170,7 @@ a{ color:inherit; }
   letter-spacing:.2px;
   cursor:pointer;
   box-shadow: 0 10px 22px rgba(0,0,0,.25);
+  width:100%;
 }
 .kd-btn.secondary{
   background: var(--btn2);
@@ -203,8 +205,12 @@ a{ color:inherit; }
   border:1px solid var(--line);
   border-radius:999px;
   background: rgba(255,255,255,.05);
+  cursor:pointer;
+  user-select:none;
 }
-.kd-switch input{ width:18px; height:18px; }
+:root[data-theme="light"] .kd-switch{
+  background: rgba(16,20,40,.03);
+}
 
 .kd-stage{
   margin-top:18px;
@@ -289,25 +295,51 @@ a{ color:inherit; }
 
 /* скрываем служебное, если нужно */
 .kd-hidden{ display:none !important; }
-/* ==== PATCH: 4 элемента в одну строку (Завершить / Сохранить / Код / Сбросить) ==== */
 
-/* делаем поле "Вариант" на всю ширину в сетке */
-.kd-span2{ grid-column: 1 / -1; }
+/* =========================================================
+   NEW: kd-actions-row — 4 элемента в одну строку,
+   на телефоне -> 2 строки (2x2), аккуратно и без наезда.
+   ========================================================= */
 
-/* 4 колонки в одну строку */
-.kd-actions.kd-actions-4{
-  grid-template-columns: 1fr 1fr 1.2fr 220px;
-  align-items: center;
+.kd-actions-row{
+  /* переопределяем общий kd-actions */
+  display:grid;
+  gap:12px;
+  align-items:stretch;
+
+  /* 4 колонки: кнопка, кнопка, поле, кнопка */
+  grid-template-columns: 1fr 1fr minmax(220px, 1.2fr) 1fr;
 }
 
-/* инпут "Код сброса" визуально как кнопки по высоте */
-.kd-reset{
+/* все элементы в row — одинаковая высота */
+.kd-actions-row .kd-btn,
+.kd-actions-row .kd-input{
   height:46px;
+  margin:0;
 }
 
-/* на узких экранах аккуратно складываемся */
-@media (max-width: 900px){
-  .kd-actions.kd-actions-4{
+/* поле для кода не “распирает” сетку */
+.kd-actions-row .kd-input{
+  min-width:0;
+}
+
+/* если экран уже, но ещё не телефон — оставляем 4 в ряд, но уменьшаем поле */
+@media (max-width: 860px){
+  .kd-actions-row{
+    grid-template-columns: 1fr 1fr minmax(180px, 1fr) 1fr;
+  }
+}
+
+/* телефон: 2 строки по 2 элемента */
+@media (max-width: 620px){
+  .kd-actions-row{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* очень узкий экран: в одну колонку */
+@media (max-width: 360px){
+  .kd-actions-row{
     grid-template-columns: 1fr;
   }
 }
