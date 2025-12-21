@@ -1,248 +1,231 @@
 (() => {
   "use strict";
 
-  // === НАСТРОЙКА: URL API Gateway ===
-  const API_BASE = "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net";
+  // ====== НАСТРОЙКИ (впиши свои) ======
+  const BASE_URL = "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net"; // <-- сюда реальный base URL шлюза
+  const TEACHER_TOKEN = "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f"; // <-- секретный токен учителя (как SUBMIT_TOKEN, но отдельный)
 
+  // ====== UI helpers ======
   const $ = (id) => document.getElementById(id);
-  const rowsEl = $("rows");
-
   const THEME_KEY = "kodislovo_theme";
-  const TOKEN_KEY = "kodislovo_teacher_token";
 
-  function setTheme(t){
-    document.documentElement.dataset.theme = t;
-    localStorage.setItem(THEME_KEY, t);
+  function setTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+    const t = $("themeToggle");
+    if (t) t.checked = theme === "light";
+  }
+  function getPreferredTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved;
+    const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    return prefersLight ? "light" : "dark";
   }
 
-  function getToken(){
-    return ($("teacherToken").value || "").trim();
+  function status(el, msg, kind = "") {
+    if (!el) return;
+    el.className = "status" + (kind ? " " + kind : "");
+    el.textContent = msg || "";
   }
 
-  async function api(path, { method="GET", body=null } = {}) {
-    const token = getToken();
-    if (!token) throw new Error("Не задан токен учителя");
-
-    const res = await fetch(API_BASE + path, {
-      method,
+  async function api(path, payload) {
+    const url = BASE_URL.replace(/\/+$/,"") + path;
+    const r = await fetch(url, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Teacher-Token": token
+        "X-Teacher-Token": TEACHER_TOKEN,
       },
-      body: body ? JSON.stringify(body) : null
+      body: JSON.stringify(payload || {}),
     });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(()=> "");
-      throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+    const text = await r.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+    if (!r.ok) {
+      const m = data?.error || data?.message || text || `HTTP ${r.status}`;
+      throw new Error(m);
     }
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("application/json")) return await res.json();
-    return await res.text();
+    return data;
   }
 
-  function escapeHtml(s){
-    return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function safe(s){ return (s ?? "").toString().trim(); }
+  function fmtDate(iso){
+    if(!iso) return "";
+    try{
+      const d = new Date(iso);
+      return d.toLocaleString("ru-RU");
+    }catch{ return iso; }
   }
 
-  function csvCell(s){
-    const v = String(s ?? "");
-    if (/[,"\n]/.test(v)) return `"${v.replace(/"/g,'""')}"`;
-    return v;
-  }
+  // ====== table render ======
+  function renderRows(items) {
+    const tbody = $("rows");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-  let lastList = [];
-
-  function renderList(items){
-    lastList = items || [];
-    rowsEl.innerHTML = "";
-
-    for (const it of lastList) {
+    for (const it of (items || [])) {
       const tr = document.createElement("tr");
-      tr.dataset.key = it.key;
 
-      tr.innerHTML = `
-        <td><input type="checkbox" class="chk"></td>
-        <td class="mono">${escapeHtml(it.createdAt || it.ts || "")}</td>
-        <td>${escapeHtml(it.fio || it.studentName || "")}</td>
-        <td>${escapeHtml(it.cls || it.studentClass || "")}</td>
-        <td>${escapeHtml(it.subject || "")}</td>
-        <td class="mono">${escapeHtml(it.variant || it.variantId || "")}</td>
-        <td>
-          <span class="tag ${it.voided ? "bad" : "ok"}">
-            ${it.voided ? "VOID" : (it.percent != null ? `${it.percent}%` : "ok")}
-          </span>
-        </td>
-        <td style="text-align:right;white-space:nowrap">
-          <button class="btn secondary" data-act="open">Открыть</button>
-          <button class="btn danger" data-act="void">VOID</button>
-        </td>
-      `;
+      const td0 = document.createElement("td");
+      td0.innerHTML = `<input class="chk" type="checkbox" data-key="${it.key}">`;
+      tr.appendChild(td0);
 
-      tr.querySelector('[data-act="open"]').onclick = () => openWork(it.key);
-      tr.querySelector('[data-act="void"]').onclick = () => voidWorks([it.key]);
+      const td1 = document.createElement("td");
+      td1.innerHTML = `<div><b>${it.fio || ""}</b></div><div class="small">${it.cls || ""}</div>`;
+      tr.appendChild(td1);
 
-      rowsEl.appendChild(tr);
+      const td2 = document.createElement("td");
+      td2.textContent = it.variant || "";
+      tr.appendChild(td2);
+
+      const td3 = document.createElement("td");
+      td3.textContent = fmtDate(it.createdAt || it.ts || it.date);
+      tr.appendChild(td3);
+
+      const td4 = document.createElement("td");
+      td4.innerHTML = `<div class="k">${it.key}</div>`;
+      tr.appendChild(td4);
+
+      const td5 = document.createElement("td");
+      td5.className = "actions";
+      const bOpen = document.createElement("button");
+      bOpen.className = "aBtn";
+      bOpen.textContent = "Открыть";
+      bOpen.onclick = () => openOne(it.key);
+
+      const bVoid = document.createElement("button");
+      bVoid.className = "aBtn danger";
+      bVoid.textContent = "Аннулировать";
+      bVoid.onclick = () => voidKeys([it.key]);
+
+      td5.appendChild(bOpen);
+      td5.appendChild(bVoid);
+      tr.appendChild(td5);
+
+      tbody.appendChild(tr);
     }
   }
 
-  function selectedKeys(){
-    return Array.from(rowsEl.querySelectorAll("tr"))
-      .filter(tr => tr.querySelector(".chk")?.checked)
-      .map(tr => tr.dataset.key)
+  function selectedKeys() {
+    return Array.from(document.querySelectorAll('input.chk[type="checkbox"]:checked'))
+      .map(x => x.getAttribute("data-key"))
       .filter(Boolean);
   }
 
-  async function loadList(){
-    $("apiStatus").textContent = "загрузка…";
-    const subject = $("fSubject").value;
-    const variant = ($("fVariant").value || "").trim();
-    const cls = ($("fClass").value || "").trim();
-    const limit = Number($("fLimit").value || 50);
+  // ====== actions ======
+  async function refreshList() {
+    const right = $("rightStatus");
+    status(right, "Загружаю список…");
+
+    const subject = $("subject")?.value || "russian";
+    const fCls = safe($("filterClass")?.value);
+    const fVar = safe($("filterVariant")?.value);
+    const fFio = safe($("filterFio")?.value);
 
     const data = await api("/teacher/list", {
-      method: "POST",
-      body: { subject, variant, cls, limit }
+      subject,
+      filter: { cls: fCls || null, variant: fVar || null, fio: fFio || null },
+      limit: 200
     });
 
-    renderList(data.items || []);
-    $("apiStatus").textContent = "ok ✅";
+    renderRows(data.items || []);
+    status(right, `Готово: ${data.items?.length || 0} работ`, "ok");
   }
 
-  async function openWork(key){
-    $("apiStatus").textContent = "чтение…";
-    const data = await api("/teacher/get", { method: "POST", body: { key } });
+  async function openOne(key) {
+    const right = $("rightStatus");
+    status(right, "Открываю…");
 
-    $("modal").classList.add("open");
-    $("modalTitle").textContent = "Работа: " + key;
+    const subject = $("subject")?.value || "russian";
+    const data = await api("/teacher/get", { subject, key });
 
-    const meta = [];
-    meta.push(`<span class="pill">ФИО: <b>${escapeHtml(data.student?.name || data.identity?.fio || "")}</b></span>`);
-    meta.push(`<span class="pill">Класс: <b>${escapeHtml(data.student?.class || data.identity?.cls || "")}</b></span>`);
-    meta.push(`<span class="pill">Предмет: <b>${escapeHtml(data.subject || "")}</b></span>`);
-    meta.push(`<span class="pill">Вариант: <b class="mono">${escapeHtml(data.variant?.id || data.variantId || data.meta?.variant || "")}</b></span>`);
-    meta.push(`<span class="pill">Итог: <b>${escapeHtml(data.grading?.earnedPoints ?? "")}/${escapeHtml(data.grading?.maxPoints ?? "")}</b> · <b>${escapeHtml(data.grading?.percent ?? "")}%</b> · <b>${escapeHtml(data.grading?.mark ?? "")}</b></span>`);
-    $("modalMeta").innerHTML = meta.join("");
-
-    $("modalPre").textContent = JSON.stringify(data, null, 2);
-    $("apiStatus").textContent = "ok ✅";
+    $("jsonView").value = JSON.stringify(data.result || data, null, 2);
+    status(right, "Открыто", "ok");
   }
 
-  async function voidWorks(keys){
-    if (!keys.length) return alert("Не выбрано ни одной работы");
-    if (!confirm(`Аннулировать (VOID) выбранные работы: ${keys.length}?`)) return;
+  async function voidKeys(keys) {
+    if (!keys || !keys.length) return;
 
-    $("apiStatus").textContent = "void…";
-    await api("/teacher/void", { method: "POST", body: { keys } });
-    await loadList();
+    const right = $("rightStatus");
+    status(right, "Аннулирую…");
+
+    const subject = $("subject")?.value || "russian";
+    const data = await api("/teacher/void", { subject, keys });
+
+    status(right, `Аннулировано: ${data.voided || keys.length}`, "ok");
+    await refreshList();
   }
 
-  function exportCsv(){
-    if (!lastList.length) return alert("Список пуст");
+  async function cfgLoad() {
+    const left = $("leftStatus");
+    status(left, "Загружаю таймер…");
 
-    const header = ["createdAt","fio","cls","subject","variant","percent","mark","key","voided"];
-    const lines = [header.join(",")];
+    const subject = $("subject")?.value || "russian";
+    const variant = safe($("variant")?.value) || null;
 
-    for (const it of lastList) {
-      const row = [
-        it.createdAt || "",
-        it.fio || "",
-        it.cls || "",
-        it.subject || "",
-        it.variant || "",
-        it.percent ?? "",
-        it.mark ?? "",
-        it.key || "",
-        it.voided ? "1" : "0"
-      ].map(csvCell);
-      lines.push(row.join(","));
+    const data = await api("/teacher/config/get", { subject, variant });
+    $("timerMinutes").value = (data?.minutes ?? 0);
+
+    status(left, "Таймер загружен", "ok");
+  }
+
+  async function cfgSave() {
+    const left = $("leftStatus");
+    status(left, "Сохраняю таймер…");
+
+    const subject = $("subject")?.value || "russian";
+    const variant = safe($("variant")?.value) || null;
+    const minutes = Number($("timerMinutes")?.value || 0);
+
+    const data = await api("/teacher/config/set", { subject, variant, minutes });
+    status(left, `Сохранено. minutes=${data?.minutes ?? minutes}`, "ok");
+  }
+
+  async function resetCreate() {
+    const left = $("leftStatus");
+    status(left, "Создаю reset-код…");
+
+    const subject = $("subject")?.value || "russian";
+    const variant = safe($("variant")?.value) || null;
+    const fio = safe($("fio")?.value);
+    const cls = safe($("cls")?.value);
+
+    if (!fio || !cls) {
+      status(left, "Нужно заполнить ФИО и класс для reset-кода.", "bad");
+      return;
     }
 
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `kodislovo_results_${$("fSubject").value}_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    const data = await api("/teacher/reset", { subject, variant, fio, cls });
+
+    const code = data.code || data.resetCode || "";
+    const hint =
+      `Reset-код создан: ${code}\n` +
+      `Срок: ${data.ttlMinutes ? data.ttlMinutes + " мин." : "по настройке"}\n\n` +
+      `Как использовать:\n` +
+      `1) Дай код ученику\n` +
+      `2) Ученик вводит код в форме контрольной (мы добавим поле) ИЛИ открывает ссылку:\n` +
+      `   .../control/control.html?subject=${encodeURIComponent(subject)}&reset=${encodeURIComponent(code)}\n`;
+
+    status(left, hint, "ok");
   }
 
-  async function cfgLoad(){
-    $("apiStatus").textContent = "config…";
-    const subject = $("cfgSubject").value;
-    const variant = ($("cfgVariant").value || "").trim();
-
-    const data = await api("/teacher/config/get", { method: "POST", body: { subject, variant } });
-    $("cfgTimer").value = Number(data?.time_limit_minutes || 0);
-    $("apiStatus").textContent = "ok ✅";
-  }
-
-  async function cfgSave(){
-    $("apiStatus").textContent = "config save…";
-    const subject = $("cfgSubject").value;
-    const variant = ($("cfgVariant").value || "").trim();
-    const time_limit_minutes = Math.max(0, Number($("cfgTimer").value || 0));
-
-    await api("/teacher/config/set", {
-      method: "POST",
-      body: { subject, variant, time_limit_minutes }
-    });
-    $("apiStatus").textContent = "сохранено ✅";
-  }
-
-  async function makeReset(){
-    const fio = ($("rFio").value || "").trim();
-    const cls = ($("rClass").value || "").trim();
-    const variant = ($("rVariant").value || "").trim();
-    const subject = $("cfgSubject").value;
-
-    if (!fio || !cls || !variant) return alert("Заполни ФИО, класс и вариант");
-
-    $("apiStatus").textContent = "reset…";
-    const data = await api("/teacher/reset", {
-      method: "POST",
-      body: { subject, fio, cls, variant }
-    });
-
-    $("resetOut").innerHTML = `
-      <div class="pill">Код сброса: <b class="mono">${escapeHtml(data.code || "")}</b></div>
-      <div class="pill">Действует до: <b class="mono">${escapeHtml(data.expiresAt || "")}</b></div>
-    `;
-    $("apiStatus").textContent = "ok ✅";
-  }
-
-  function init(){
-    $("apiUrl").textContent = API_BASE;
-
+  // ===== init =====
+  async function init() {
     // theme
-    const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
-    $("themeSel").value = savedTheme;
-    setTheme(savedTheme);
-    $("themeSel").onchange = () => setTheme($("themeSel").value);
+    setTheme(getPreferredTheme());
+    $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
-    // token remember
-    $("teacherToken").value = localStorage.getItem(TOKEN_KEY) || "";
-    $("teacherToken").addEventListener("input", () => {
-      localStorage.setItem(TOKEN_KEY, $("teacherToken").value);
-    });
+    // buttons
+    $("btnRefresh").onclick = () => refreshList().catch(err => status($("rightStatus"), err.message, "bad"));
+    $("btnVoidSelected").onclick = () => voidKeys(selectedKeys()).catch(err => status($("rightStatus"), err.message, "bad"));
 
-    $("btnList").onclick = () => loadList().catch(e => alert(e.message));
-    $("btnExportCsv").onclick = exportCsv;
-    $("btnVoidSelected").onclick = () => voidWorks(selectedKeys()).catch(e => alert(e.message));
+    $("btnCfgLoad").onclick = () => cfgLoad().catch(err => status($("leftStatus"), err.message, "bad"));
+    $("btnCfgSave").onclick = () => cfgSave().catch(err => status($("leftStatus"), err.message, "bad"));
+    $("btnResetCreate").onclick = () => resetCreate().catch(err => status($("leftStatus"), err.message, "bad"));
 
-    $("chkAll").onchange = (e) => {
-      const on = e.target.checked;
-      rowsEl.querySelectorAll(".chk").forEach(ch => ch.checked = on);
-    };
-
-    $("btnCfgLoad").onclick = () => cfgLoad().catch(e => alert(e.message));
-    $("btnCfgSave").onclick = () => cfgSave().catch(e => alert(e.message));
-    $("btnReset").onclick = () => makeReset().catch(e => alert(e.message));
-
-    $("modalClose").onclick = () => $("modal").classList.remove("open");
-    $("modal").onclick = (e) => { if (e.target.id === "modal") $("modal").classList.remove("open"); };
+    // auto refresh
+    await refreshList().catch(err => status($("rightStatus"), err.message, "bad"));
   }
 
   init();
 })();
-
