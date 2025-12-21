@@ -28,6 +28,48 @@
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
+    // ===== Reset API (student-side) =====
+  // Учитель выдаёт reset-код, ученик открывает ссылку с ?reset=CODE
+  const RESET_API_BASE = "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net";
+
+  function resetLsKey(subject, variantId) {
+    return `${LS_PREFIX}${subject}:${variantId || "variant"}`;
+  }
+
+  function clearAttemptLocal(subject, variantId) {
+    // очищаем сохранённую попытку
+    localStorage.removeItem(resetLsKey(subject, variantId));
+  }
+
+  async function consumeResetCode(code, subject, variantId) {
+    // Не отправляем teacher_token в браузер. Код сам по себе служит "пропуском".
+    const url = RESET_API_BASE.replace(/\/+$/,"") + "/teacher/reset/consume";
+    const payload = { code, subject, variant: variantId };
+
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const txt = await r.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch { data = { raw: txt }; }
+
+    if (!r.ok) {
+      const msg = data?.error || data?.message || txt || `HTTP ${r.status}`;
+      throw new Error(msg);
+    }
+    return data || { ok: true };
+  }
+
+  function stripResetFromUrl() {
+    const u = new URL(window.location.href);
+    if (!u.searchParams.has("reset")) return;
+    u.searchParams.delete("reset");
+    // чтобы не "съедать" back, используем replaceState
+    history.replaceState(null, "", u.toString());
+  }
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
@@ -440,6 +482,49 @@
 
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
+      // ===== Reset API (student-side) =====
+  // Учитель выдаёт reset-код, ученик открывает ссылку с ?reset=CODE
+  const RESET_API_BASE = "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net";
+
+  function resetLsKey(subject, variantId) {
+    return `${LS_PREFIX}${subject}:${variantId || "variant"}`;
+  }
+
+  function clearAttemptLocal(subject, variantId) {
+    // очищаем сохранённую попытку
+    localStorage.removeItem(resetLsKey(subject, variantId));
+  }
+
+  async function consumeResetCode(code, subject, variantId) {
+    // Не отправляем teacher_token в браузер. Код сам по себе служит "пропуском".
+    const url = RESET_API_BASE.replace(/\/+$/,"") + "/teacher/reset/consume";
+    const payload = { code, subject, variant: variantId };
+
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const txt = await r.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch { data = { raw: txt }; }
+
+    if (!r.ok) {
+      const msg = data?.error || data?.message || txt || `HTTP ${r.status}`;
+      throw new Error(msg);
+    }
+    return data || { ok: true };
+  }
+
+  function stripResetFromUrl() {
+    const u = new URL(window.location.href);
+    if (!u.searchParams.has("reset")) return;
+    u.searchParams.delete("reset");
+    // чтобы не "съедать" back, используем replaceState
+    history.replaceState(null, "", u.toString());
+  }
+
 
     const progress = loadProgress();
     startedAt = progress?.startedAt || nowIso();
