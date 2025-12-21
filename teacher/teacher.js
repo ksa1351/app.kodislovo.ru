@@ -1,18 +1,39 @@
+// teacher.js — Kodislovo Teacher Panel (GitHub Pages)
+// Frontend for Yandex API Gateway Teacher API (POST + X-Teacher-Token).
+// Features: list/get/void, timer config, reset-code create, CSV export, print (variant+answers), autocheck by key.
+// IMPORTANT: Works with backend that accepts POST/OPTIONS only and reads JSON body.
+
 "use strict";
 
-/* ========= DOM ========= */
+/* ===================== DOM HELPERS ===================== */
 const $ = (id) => document.getElementById(id);
-const status = (msg) => { const el = $("statusLine"); if (el) el.textContent = msg; };
+const status = (msg) => {
+  const el = $("statusLine");
+  if (!el) return;
+  el.textContent = msg;
+};
 
-/* ========= Repo prefix for GitHub Pages (/app.kodislovo.ru) ========= */
+/* ===================== GITHUB PAGES PREFIX ===================== */
 function repoPrefixGuess() {
+  // GitHub Pages: https://user.github.io/<repo>/...
   const parts = location.pathname.split("/").filter(Boolean);
   if (!parts.length) return "";
-  if (parts[0].includes(".")) return "/" + parts[0];
-  return "";
+  // first segment is usually repo name (app.kodislovo.ru)
+  return "/" + parts[0];
 }
 
-/* ========= Manifest load ========= */
+/* ===================== THEME ===================== */
+function applyTheme(t) {
+  const theme = t === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = theme;
+  const toggle = $("themeToggle");
+  const label = $("themeLabel");
+  if (toggle) toggle.checked = theme === "light";
+  if (label) label.textContent = theme === "light" ? "Светлая" : "Тёмная";
+  localStorage.setItem("kd-theme", theme);
+}
+
+/* ===================== MANIFEST LOAD ===================== */
 let manifestCache = { subject: null, manifest: null, baseUrl: null };
 
 async function loadManifest(subject) {
@@ -24,8 +45,6 @@ async function loadManifest(subject) {
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
-    status(`Reset-код: ${r.code} (скопирован)\nПуть: ${r.key}`);
-    try { await navigator.clipboard.writeText(r.code); } catch {}
     if (!r.ok) throw new Error(`manifest.json ${r.status}`);
     return r.json();
   }
@@ -47,14 +66,14 @@ function getApiFromManifest(m) {
   return { base, token };
 }
 
-/* ========= API (POST only, X-Teacher-Token only) ========= */
+/* ===================== API CALL (POST ONLY) ===================== */
 async function apiCall(path, body) {
   const subject = $("subjectSelect")?.value || "russian";
   const m = await loadManifest(subject);
   const { base, token } = getApiFromManifest(m);
 
   if (!base || !token) {
-    throw new Error("В manifest.json нет teacher.base_url или teacher.token");
+    throw new Error("В manifest.json не задан teacher.base_url / teacher.token");
   }
 
   const url = base + path;
@@ -62,9 +81,9 @@ async function apiCall(path, body) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Teacher-Token": token
+      "X-Teacher-Token": token,
     },
-    body: JSON.stringify(body || {})
+    body: JSON.stringify(body || {}),
   });
 
   const txt = await res.text();
@@ -74,75 +93,49 @@ async function apiCall(path, body) {
   return data;
 }
 
-/* ========= Theme ========= */
-function applyTheme(t) {
-  const theme = (t === "light") ? "light" : "dark";
-  document.documentElement.dataset.theme = theme;
-  const toggle = $("themeToggle");
-  const label = $("themeLabel");
-  if (toggle) toggle.checked = (theme === "light");
-  if (label) label.textContent = (theme === "light") ? "Светлая" : "Тёмная";
-  localStorage.setItem("kd-theme", theme);
-}
-applyTheme(localStorage.getItem("kd-theme") || "dark");
-$("themeToggle")?.addEventListener("change", (e) => {
-  applyTheme(e.target.checked ? "light" : "dark");
-});
-
-/* ========= Utilities ========= */
+/* ===================== UTILITIES ===================== */
 function escapeHtml(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
-function normalizeVariantName(v) {
+function normalizeVariantDigits(v) {
+  // "variant_01" -> "01", "1" -> "01"
   const s = String(v || "").trim();
-  if (!s) return "";
   const m = s.match(/(\d+)/);
-  if (!m) return s;
+  if (!m) return "";
   const n = m[1];
   return n.length === 1 ? `0${n}` : n;
 }
 
-/* ========= Variant JSON load for print/autocheck ========= */
-async function loadVariantJson(subject, variantInput) {
-  const m = await loadManifest(subject);
-  const base = manifestCache.baseUrl || "";
-  const vNorm = normalizeVariantName(variantInput);
-
-  // mapping via manifest
-  if (Array.isArray(m?.variants)) {
-    const found = m.variants.find(x => {
-      const id = normalizeVariantName(x.id || x.variant || x.name || "");
-      const file = String(x.file || x.path || "");
-      return id === vNorm || file.includes(vNorm);
-    });
-    if (found?.file) {
-      const r = await fetch(base + found.file, { cache: "no-store" });
-      if (r.ok) return r.json();
-    }
-  }
-
-  // fallback: variant_XX.json
-  if (vNorm) {
-    const r = await fetch(base + `variant_${vNorm}.json`, { cache: "no-store" });
-    if (r.ok) return r.json();
-  }
-  return null;
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "download";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
-/* ========= State ========= */
+function downloadJson(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+  downloadBlob(blob, filename || "result.json");
+}
+
+/* ===================== STATE ===================== */
 let lastList = [];
 let visibleList = [];
 let keyStore = null;
 
-/* ========= Inject extra buttons/controls ========= */
+/* ===================== EXTRA UI (CSV / PRINT / KEY LOAD) ===================== */
 function ensureExtras() {
-  // Buttons row on right
+  // Right-side actions row (where btnList exists)
   const btnList = $("btnList");
-  const btnVoidSelected = $("btnVoidSelected");
   const row = btnList?.parentElement;
   if (row) {
     if (!$("btnCsv")) {
@@ -152,8 +145,11 @@ function ensureExtras() {
       b.className = "kd-btn secondary";
       b.textContent = "CSV";
       b.style.cssText = "height:42px;border-radius:14px;padding:0 14px";
-      b.onclick = exportCsv;
-      row.insertBefore(b, btnVoidSelected);
+      b.addEventListener("click", exportCsv);
+      // Insert before "Аннулировать выбранные" if exists
+      const voidBtn = $("btnVoidSelected");
+      if (voidBtn) row.insertBefore(b, voidBtn);
+      else row.appendChild(b);
     }
     if (!$("btnPrintSelected")) {
       const b = document.createElement("button");
@@ -162,12 +158,12 @@ function ensureExtras() {
       b.className = "kd-btn secondary";
       b.textContent = "Печать выбранного";
       b.style.cssText = "height:42px;border-radius:14px;padding:0 14px";
-      b.onclick = printSelected;
+      b.addEventListener("click", printSelected);
       row.appendChild(b);
     }
   }
 
-  // Key loader on left panel (after actions)
+  // Key loader in left panel (near reset)
   if (!$("keyFile")) {
     const actions = $("btnResetMake")?.closest(".kd-actions");
     if (actions) {
@@ -184,7 +180,7 @@ function ensureExtras() {
       b.type = "button";
       b.className = "kd-btn secondary";
       b.textContent = "Загрузить ключ";
-      b.onclick = async () => {
+      b.addEventListener("click", async () => {
         const f = inp.files?.[0];
         if (!f) { status("Выбери файл ключа (JSON)."); return; }
         try {
@@ -193,7 +189,7 @@ function ensureExtras() {
         } catch {
           status("Ошибка: ключ должен быть JSON.");
         }
-      };
+      });
 
       wrap.appendChild(inp);
       wrap.appendChild(b);
@@ -202,14 +198,14 @@ function ensureExtras() {
   }
 }
 
-/* ========= Filters ========= */
+/* ===================== FILTERS ===================== */
 function applyClientFilters(items) {
   const q = ($("fioSearch")?.value || "").trim().toLowerCase();
   if (!q) return items.slice();
   return items.filter(it => (`${it.fio||""} ${it.cls||""} ${it.variant||""} ${it.key||""}`).toLowerCase().includes(q));
 }
 
-/* ========= Render ========= */
+/* ===================== RENDER TABLE ===================== */
 function renderTable(items) {
   const tbody = $("resultsTbody");
   if (!tbody) return;
@@ -218,14 +214,20 @@ function renderTable(items) {
   for (const it of items) {
     const tr = document.createElement("tr");
     tr.style.borderTop = "1px solid var(--line)";
+
     const created = (it.createdAt || "").replace("T", " ").slice(0, 16);
 
     tr.innerHTML = `
-      <td style="padding:10px;width:44px"><input type="checkbox" data-key="${escapeHtml(it.key)}"></td>
-      <td style="padding:10px">${escapeHtml(it.fio||"")}<br><span style="color:var(--muted)">${escapeHtml(it.cls||"")}</span></td>
-      <td style="padding:10px">${escapeHtml(it.variant||"")}</td>
+      <td style="padding:10px;width:44px">
+        <input type="checkbox" data-key="${escapeHtml(it.key)}">
+      </td>
+      <td style="padding:10px">
+        ${escapeHtml(it.fio || "")}<br>
+        <span style="color:var(--muted)">${escapeHtml(it.cls || "")}</span>
+      </td>
+      <td style="padding:10px">${escapeHtml(it.variant || "")}</td>
       <td style="padding:10px">${escapeHtml(created)}</td>
-      <td style="padding:10px;font-size:12px;opacity:.9">${escapeHtml(it.key||"")}</td>
+      <td style="padding:10px;font-size:12px;opacity:.9">${escapeHtml(it.key || "")}</td>
       <td style="padding:10px;white-space:nowrap">
         <button class="kd-btn secondary" data-get="${escapeHtml(it.key)}">JSON</button>
         <button class="kd-btn secondary" data-dl="${escapeHtml(it.key)}">Скачать</button>
@@ -237,48 +239,59 @@ function renderTable(items) {
   }
 }
 
-/* ========= List ========= */
+/* ===================== LIST ===================== */
 async function loadList() {
   ensureExtras();
   status("Загрузка списка…");
 
-  const variant = normalizeVariantName(($("variantFilter")?.value || "").replace(/^variant_/, ""));
+  // Backend list reads JSON body: {variant, cls, limit}
+  const variantDigits = normalizeVariantDigits(($("variantFilter")?.value || "").trim());
   const cls = ($("classFilter")?.value || "").trim();
 
-  const data = await apiCall("/teacher/list", { variant, cls, limit: 200 });
+  const data = await apiCall("/teacher/list", {
+    variant: variantDigits, // backend expects "01" if results stored in results/variant_01/...
+    cls,
+    limit: 200,
+  });
+
   lastList = Array.isArray(data.items) ? data.items : [];
   visibleList = applyClientFilters(lastList);
   renderTable(visibleList);
+
   status(`Загружено: ${visibleList.length}`);
 }
 
-/* ========= Get/Download ========= */
+/* ===================== VOID SELECTED ===================== */
+async function voidSelected() {
+  const keys = Array.from($("resultsTbody")?.querySelectorAll("input[type='checkbox'][data-key]:checked") || [])
+    .map(x => x.getAttribute("data-key"))
+    .filter(Boolean);
+
+  if (!keys.length) { status("Ничего не выбрано."); return; }
+
+  status("Аннулирование…");
+  await apiCall("/teacher/void", { keys });
+  status("Аннулировано ✅");
+  await loadList();
+}
+
+/* ===================== GET RESULT ===================== */
 async function getResultByKey(key) {
   return apiCall("/teacher/get", { key });
 }
-function downloadJson(obj, filename) {
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename || "result.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
-/* ========= CSV ========= */
+/* ===================== CSV EXPORT ===================== */
 function toCsv(rows) {
-  const cols = Array.from(rows.reduce((s, r) => (Object.keys(r||{}).forEach(k => s.add(k)), s), new Set()));
+  const cols = Array.from(rows.reduce((s, r) => (Object.keys(r || {}).forEach(k => s.add(k)), s), new Set()));
   const esc = (v) => {
     const s = String(v ?? "");
-    return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+    return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [cols.join(";"), ...rows.map(r => cols.map(c => esc(r[c])).join(";"))].join("\r\n");
 }
+
 function exportCsv() {
-  const rows = (visibleList||[]).map(it => ({
+  const rows = (visibleList || []).map(it => ({
     fio: it.fio || "",
     cls: it.cls || "",
     variant: it.variant || "",
@@ -286,78 +299,84 @@ function exportCsv() {
     percent: it.percent ?? "",
     mark: it.mark ?? "",
     voided: it.voided ? 1 : 0,
-    key: it.key || ""
+    key: it.key || "",
   }));
+
   const csv = toCsv(rows);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `kodislovo_results_${$("subjectSelect")?.value||"subject"}_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `kodislovo_results_${$("subjectSelect")?.value || "subject"}_${new Date().toISOString().slice(0, 10)}.csv`);
   status("CSV скачан ✅");
 }
 
-/* ========= Void selected ========= */
-$("btnVoidSelected")?.addEventListener("click", async () => {
-  try {
-    const keys = Array.from($("resultsTbody").querySelectorAll("input[type='checkbox'][data-key]:checked"))
-      .map(x => x.getAttribute("data-key")).filter(Boolean);
-    if (!keys.length) { status("Ничего не выбрано."); return; }
-    status("Аннулирование…");
-    await apiCall("/teacher/void", { keys });
-    status("Аннулировано ✅");
-    await loadList();
-  } catch (e) {
-    status("Void ошибка: " + e.message);
-  }
-});
+/* ===================== TIMER CONFIG ===================== */
+async function timerLoad() {
+  status("Загрузка таймера…");
+  const r = await apiCall("/teacher/config/get", { subject: $("subjectSelect")?.value || "russian" });
+  $("timerMinutes").value = r.time_limit_minutes || 0;
+  status("Таймер загружен ✅");
+}
 
-/* ========= Reset code create ========= */
-$("btnResetMake")?.addEventListener("click", async () => {
-  try {
-    status("Создание reset-кода…");
-    const subject = $("subjectSelect")?.value || "russian";
-    const variant = ($("resetVariant")?.value || "").trim(); // ВАЖНО: без нормализации, чтобы совпало с учеником (variant_01)
-    const cls = ($("resetClass")?.value || "").trim();
-    const fio = ($("resetFio")?.value || "").trim();
+async function timerSave() {
+  status("Сохранение таймера…");
+  await apiCall("/teacher/config/set", {
+    subject: $("subjectSelect")?.value || "russian",
+    time_limit_minutes: Number($("timerMinutes").value || 0),
+  });
+  status("Таймер сохранён ✅");
+}
 
-    const r = await apiCall("/teacher/reset", { subject, variant, cls, fio });
-    try { await navigator.clipboard.writeText(r.code); } catch {}
-    status(`Reset-код: ${r.code} (скопирован)`);
-  } catch (e) {
-    status("Reset ошибка: " + e.message);
-  }
-});
+/* ===================== RESET CODE CREATE ===================== */
+async function resetMake() {
+  status("Создание reset-кода…");
+  const subject = $("subjectSelect")?.value || "russian";
 
-/* ========= Timer ========= */
-$("btnTimerLoad")?.addEventListener("click", async () => {
-  try {
-    status("Загрузка таймера…");
-    const r = await apiCall("/teacher/config/get", { subject: $("subjectSelect")?.value || "russian" });
-    $("timerMinutes").value = r.time_limit_minutes || 0;
-    status("Таймер загружен ✅");
-  } catch (e) {
-    status("Timer load ошибка: " + e.message);
+  // CRITICAL FIX: DO NOT normalize variant here.
+  // Student sends currentVariantId like "variant_01", so we must store code under the same variant string.
+  const variant = ($("resetVariant")?.value || "").trim(); // e.g. "variant_01"
+  const cls = ($("resetClass")?.value || "").trim();
+  const fio = ($("resetFio")?.value || "").trim();
+
+  if (!variant || !cls || !fio) {
+    status("Заполни: вариант, класс, ФИО (для reset-кода).");
+    return;
   }
-});
-$("btnTimerSave")?.addEventListener("click", async () => {
-  try {
-    status("Сохранение таймера…");
-    await apiCall("/teacher/config/set", {
-      subject: $("subjectSelect")?.value || "russian",
-      time_limit_minutes: Number($("timerMinutes").value || 0)
+
+  const r = await apiCall("/teacher/reset", { subject, variant, cls, fio });
+
+  // Show EXACT key where code is stored. This helps diagnose NoSuchKey instantly.
+  status(`Reset-код: ${r.code} (скопирован)\nПуть: ${r.key}`);
+
+  try { await navigator.clipboard.writeText(r.code); } catch {}
+}
+
+/* ===================== VARIANT LOAD (for print/autocheck) ===================== */
+async function loadVariantJson(subject, variantStr) {
+  const m = await loadManifest(subject);
+  const base = manifestCache.baseUrl || "";
+  const digits = normalizeVariantDigits(variantStr);
+
+  // mapping via manifest if available
+  if (Array.isArray(m?.variants)) {
+    const found = m.variants.find(x => {
+      const id = normalizeVariantDigits(x.id || x.variant || x.name || "");
+      const file = String(x.file || x.path || "");
+      return id === digits || file.includes(digits);
     });
-    status("Таймер сохранён ✅");
-  } catch (e) {
-    status("Timer save ошибка: " + e.message);
+    if (found?.file) {
+      const r = await fetch(base + found.file, { cache: "no-store" });
+      if (r.ok) return r.json();
+    }
   }
-});
 
-/* ========= Autocheck ========= */
+  // fallback: variant_XX.json
+  if (digits) {
+    const r = await fetch(base + `variant_${digits}.json`, { cache: "no-store" });
+    if (r.ok) return r.json();
+  }
+  return null;
+}
+
+/* ===================== AUTOCHECK ===================== */
 function extractStudentAnswers(result) {
   if (result && typeof result.answers === "object" && !Array.isArray(result.answers)) return result.answers;
   if (result && typeof result.userAnswers === "object" && !Array.isArray(result.userAnswers)) return result.userAnswers;
@@ -379,7 +398,7 @@ function extractKeyAnswers(variantJson, loadedKey) {
   if (loadedKey && typeof loadedKey === "object") {
     if (loadedKey.answers && typeof loadedKey.answers === "object") return loadedKey.answers;
     if (loadedKey.key && typeof loadedKey.key === "object") return loadedKey.key;
-    // assume direct map
+
     const ks = Object.keys(loadedKey);
     if (ks.length && ks.every(k => typeof loadedKey[k] !== "object")) return loadedKey;
   }
@@ -419,12 +438,12 @@ function gradeAnswers(studentMap, keyMap) {
     if (good) ok++;
     details.push({ id, given, correct, ok: good });
   }
-  return { total, ok, percent: total ? Math.round(ok / total * 100) : 0, details };
+  return { total, ok, percent: total ? Math.round((ok / total) * 100) : 0, details };
 }
 
 async function autocheck(subject, listItem, resultJson) {
-  const v = listItem?.variant || "";
-  const variantJson = await loadVariantJson(subject, v);
+  const variantStr = listItem?.variant || "";
+  const variantJson = await loadVariantJson(subject, variantStr);
   const studentMap = extractStudentAnswers(resultJson);
   const keyMap = extractKeyAnswers(variantJson, keyStore);
 
@@ -434,10 +453,10 @@ async function autocheck(subject, listItem, resultJson) {
   return gradeAnswers(studentMap, keyMap);
 }
 
-/* ========= Print ========= */
+/* ===================== PRINT WINDOW ===================== */
 function openPrintWindow({ title, subject, variantJson, resultJson, grade }) {
   const w = window.open("", "_blank");
-  if (!w) { status("Popup заблокирован."); return; }
+  if (!w) { status("Popup заблокирован браузером."); return; }
 
   const theme = document.documentElement.dataset.theme || "dark";
   const prefix = repoPrefixGuess();
@@ -496,8 +515,35 @@ function openPrintWindow({ title, subject, variantJson, resultJson, grade }) {
   w.document.close();
 }
 
-/* ========= Table actions ========= */
-$("resultsTbody")?.addEventListener("click", async (e) => {
+/* ===================== PRINT SELECTED ===================== */
+async function printSelected() {
+  const checked = Array.from($("resultsTbody")?.querySelectorAll("input[type='checkbox'][data-key]:checked") || [])
+    .map(x => x.getAttribute("data-key"))
+    .filter(Boolean);
+
+  if (checked.length !== 1) {
+    status("Для печати выбери ровно 1 работу (галочка слева).");
+    return;
+  }
+
+  const key = checked[0];
+  const it = (visibleList || []).find(x => x.key === key) || (lastList || []).find(x => x.key === key);
+  const subject = $("subjectSelect")?.value || "russian";
+
+  status("Готовлю печать…");
+  const result = await getResultByKey(key);
+
+  let grade = null;
+  try { grade = await autocheck(subject, it || {}, result); } catch { /* ok */ }
+
+  const variantJson = await loadVariantJson(subject, it?.variant || "");
+  const title = `${it?.fio || "Ученик"} • ${it?.cls || ""} • ${it?.variant || ""}`.trim();
+  openPrintWindow({ title, subject, variantJson, resultJson: result, grade });
+  status("Окно печати открыто ✅");
+}
+
+/* ===================== TABLE ACTIONS (JSON / DL / PRINT / CHECK) ===================== */
+async function onTableClick(e) {
   const btn = e.target.closest("button");
   if (!btn) return;
 
@@ -507,87 +553,78 @@ $("resultsTbody")?.addEventListener("click", async (e) => {
   const it = (visibleList || []).find(x => x.key === key) || (lastList || []).find(x => x.key === key);
   const subject = $("subjectSelect")?.value || "russian";
 
-  try {
-    status("Загрузка результата…");
-    const result = await getResultByKey(key);
+  status("Загрузка результата…");
+  const result = await getResultByKey(key);
 
-    if (btn.dataset.get) {
-      $("jsonViewer").value = JSON.stringify(result, null, 2);
-      status("JSON открыт ✅");
-      return;
-    }
-
-    if (btn.dataset.dl) {
-      const fio = (it?.fio || "student").replace(/\s+/g, "_");
-      const cls = (it?.cls || "").replace(/\s+/g, "_");
-      const v = it?.variant || "";
-      downloadJson(result, `result_${subject}_${cls}_${fio}_${v}.json`);
-      status("Скачано ✅");
-      return;
-    }
-
-    if (btn.dataset.check) {
-      status("Автопроверка…");
-      const g = await autocheck(subject, it || {}, result);
-      $("jsonViewer").value = JSON.stringify({ grade: g, result }, null, 2);
-      status(`Проверено ✅ ${g.ok}/${g.total} (${g.percent}%)`);
-      return;
-    }
-
-    if (btn.dataset.print) {
-      status("Печать…");
-      let g = null;
-      try { g = await autocheck(subject, it || {}, result); } catch { /* ok */ }
-      const variantJson = await loadVariantJson(subject, it?.variant || "");
-      const title = `${it?.fio || "Ученик"} • ${it?.cls || ""} • ${it?.variant || ""}`.trim();
-      openPrintWindow({ title, subject, variantJson, resultJson: result, grade: g });
-      status("Окно печати открыто ✅");
-      return;
-    }
-  } catch (err) {
-    status("Ошибка: " + err.message);
+  if (btn.dataset.get) {
+    $("jsonViewer").value = JSON.stringify(result, null, 2);
+    status("JSON открыт ✅");
+    return;
   }
-});
 
-/* ========= Print selected ========= */
-async function printSelected() {
-  const checked = Array.from($("resultsTbody").querySelectorAll("input[type='checkbox'][data-key]:checked"))
-    .map(x => x.getAttribute("data-key")).filter(Boolean);
-  if (checked.length !== 1) { status("Выбери ровно 1 работу для печати."); return; }
+  if (btn.dataset.dl) {
+    const fio = (it?.fio || "student").replace(/\s+/g, "_");
+    const cls = (it?.cls || "").replace(/\s+/g, "_");
+    const v = (it?.variant || "").replace(/\s+/g, "_");
+    downloadJson(result, `result_${subject}_${cls}_${fio}_${v}.json`);
+    status("Скачано ✅");
+    return;
+  }
 
-  const key = checked[0];
-  const it = (visibleList || []).find(x => x.key === key) || (lastList || []).find(x => x.key === key);
-  const subject = $("subjectSelect")?.value || "russian";
+  if (btn.dataset.check) {
+    status("Автопроверка…");
+    const g = await autocheck(subject, it || {}, result);
+    $("jsonViewer").value = JSON.stringify({ grade: g, result }, null, 2);
+    status(`Проверено ✅ ${g.ok}/${g.total} (${g.percent}%)`);
+    return;
+  }
 
-  try {
-    status("Печать…");
-    const result = await getResultByKey(key);
-    let g = null;
-    try { g = await autocheck(subject, it || {}, result); } catch { /* ok */ }
+  if (btn.dataset.print) {
+    status("Готовлю печать…");
+    let grade = null;
+    try { grade = await autocheck(subject, it || {}, result); } catch { /* ok */ }
     const variantJson = await loadVariantJson(subject, it?.variant || "");
     const title = `${it?.fio || "Ученик"} • ${it?.cls || ""} • ${it?.variant || ""}`.trim();
-    openPrintWindow({ title, subject, variantJson, resultJson: result, grade: g });
+    openPrintWindow({ title, subject, variantJson, resultJson: result, grade });
     status("Окно печати открыто ✅");
-  } catch (e) {
-    status("Печать ошибка: " + e.message);
+    return;
   }
 }
 
-/* ========= Bind base buttons ========= */
-$("btnList")?.addEventListener("click", () => loadList());
-$("fioSearch")?.addEventListener("input", () => {
-  visibleList = applyClientFilters(lastList);
-  renderTable(visibleList);
-  status(`Фильтр: ${visibleList.length}`);
-});
+/* ===================== INIT (BIND BUTTONS) ===================== */
+function init() {
+  // Theme
+  applyTheme(localStorage.getItem("kd-theme") || "dark");
+  $("themeToggle")?.addEventListener("change", (ev) => applyTheme(ev.target.checked ? "light" : "dark"));
 
-/* ========= Start ========= */
-(async () => {
-  try {
-    ensureExtras();
-    status("Готово. (teacher.js загружен)");
-  } catch (e) {
-    status("JS ошибка: " + e.message);
-    console.error(e);
-  }
-})();
+  // Extras (CSV/Print/Key)
+  ensureExtras();
+
+  // Core buttons
+  $("btnList")?.addEventListener("click", () => loadList().catch(e => status("Ошибка list: " + e.message)));
+  $("btnVoidSelected")?.addEventListener("click", () => voidSelected().catch(e => status("Ошибка void: " + e.message)));
+  $("btnTimerLoad")?.addEventListener("click", () => timerLoad().catch(e => status("Ошибка timer load: " + e.message)));
+  $("btnTimerSave")?.addEventListener("click", () => timerSave().catch(e => status("Ошибка timer save: " + e.message)));
+  $("btnResetMake")?.addEventListener("click", () => resetMake().catch(e => status("Ошибка reset: " + e.message)));
+
+  // Search filter
+  $("fioSearch")?.addEventListener("input", () => {
+    visibleList = applyClientFilters(lastList);
+    renderTable(visibleList);
+    status(`Фильтр: ${visibleList.length}`);
+  });
+
+  // Table actions
+  $("resultsTbody")?.addEventListener("click", (e) => {
+    onTableClick(e).catch(err => status("Ошибка: " + err.message));
+  });
+
+  status("Готово ✅ (teacher.js загружен)");
+}
+
+// Ensure DOM is ready (fixes 'buttons not working' when script loads before DOM)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
