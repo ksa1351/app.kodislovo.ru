@@ -1,19 +1,30 @@
 (function () {
   "use strict";
 
+  // ========= helpers =========
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
 
-  function setText(id, text) { const el = $(id); if (el) el.textContent = text; }
-  function setHTML(id, html) { const el = $(id); if (el) el.innerHTML = html; }
-  function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
   function nowIso() { return new Date().toISOString(); }
   function safeText(s) { return (s ?? "").toString().trim(); }
   function normalizeAnswer(s) {
     return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
 
+  // Где лежат JSON-варианты относительно /control/control.html
+  // -> ../controls/<subject>/variants/
   function variantsBase(subject) {
     return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
@@ -41,13 +52,23 @@
     window.location.href = href;
   }
 
-  // theme
+  function computeMark(percent, grading) {
+    const p = Number(percent) || 0;
+    const pairs = Object.entries(grading || {})
+      .map(([k, v]) => [k, Number(v)])
+      .sort((a, b) => b[1] - a[1]);
+    for (const [mark, minP] of pairs) if (p >= minP) return mark;
+    return "2";
+  }
+
+  // ========= theme =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
     const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
     return prefersLight ? "light" : "dark";
   }
+
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
@@ -57,7 +78,7 @@
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
-  // state
+  // ========= state =========
   let subject = getParam("subject") || "russian";
   let base = variantsBase(subject);
 
@@ -75,23 +96,13 @@
   let timerTick = null;
 
   let answersMap = {};
-  let currentTaskIndex = 0;
 
-  function lsKey() { return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`; }
-  function getTasks() { return variantData?.tasks || []; }
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-  function taskIndexById(id) {
-    const tasks = getTasks();
-    const n = Number(id);
-    return tasks.findIndex(t => Number(t.id) === n);
+  function lsKey() {
+    return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
   }
 
   function saveProgress() {
     if (!currentVariantId) return;
-    const tasks = getTasks();
-    const curTaskId = tasks[currentTaskIndex]?.id ?? null;
-
     const payload = {
       schema: "kodislovo.control.v1",
       subject,
@@ -105,7 +116,6 @@
         class: safeText($("studentClass")?.value),
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
-      currentTaskId: curTaskId,
       savedAt: nowIso(),
     };
     localStorage.setItem(lsKey(), JSON.stringify(payload));
@@ -117,40 +127,136 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
-  // header (НЕ показываем subtitle из meta)
+  // ========= UI =========
   function setHeader() {
     setText("uiSubject", manifest?.subjectTitle || "Контрольная");
     setText("uiTitle", variantMeta?.title || "Контрольная работа");
     setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
 
-    // нейтрально, без оценивания/баллов/перевода
-    setText("uiSubtitle", "Заполните данные ученика и выполняйте задания. Ответы сохраняются автоматически.");
+    setText("uiSubtitle",
+      variantMeta?.subtitle ||
+      "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат."
+    );
+
+    setHTML("uiInstr",
+      variantMeta?.instructions ||
+      variantMeta?.subtitle ||
+      "Выполните задания. Ответы сохраняются автоматически."
+    );
   }
 
-  // texts by range
-  function getTextBlocks() {
-    const texts = variantMeta?.texts || {};
-    const blocks = Object.values(texts)
-      .map(t => {
-        const r = Array.isArray(t.range) ? t.range : null;
-        const from = r ? Number(r[0]) : NaN;
-        const to = r ? Number(r[1]) : NaN;
-        return { title: t.title || "Текст", from, to, html: t.html || "" };
-      })
-      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html)
-      .sort((a, b) => a.from - b.from);
-    return blocks;
-  }
+  // ========= render tasks (БЕЗ вставки текстов — тексты показывает sticky) =========
+  function renderTasks() {
+    const cont = $("tasksContainer");
+    if (!cont) return;
 
-  function findTextForTaskId(taskId) {
-    const blocks = getTextBlocks();
-    for (const b of blocks) {
-      if (taskId >= b.from && taskId <= b.to) return b;
+    const tasks = variantData?.tasks || [];
+    cont.innerHTML = "";
+
+    for (const task of tasks) {
+      const wrap = document.createElement("div");
+      wrap.className = "task";
+      wrap.dataset.taskId = String(task.id);       // data-task-id
+      wrap.dataset.taskIdNum = String(task.id);    // data-task-id-num (для sticky)
+
+      wrap.innerHTML = `
+        <div class="task-top">
+          <h3>Задание ${task.id}</h3>
+        </div>
+        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
+        <div class="q">${task.text || ""}</div>
+      `;
+
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.className = "answer";
+      inp.placeholder = "Введите ответ…";
+      inp.autocomplete = "off";
+      inp.spellcheck = false;
+
+      const saved = answersMap[String(task.id)];
+      if (typeof saved === "string") inp.value = saved;
+
+      inp.addEventListener("input", () => {
+        if (isFinished) return;
+        answersMap[String(task.id)] = inp.value;
+        saveProgress();
+        refreshScorePreview();
+      });
+
+      wrap.appendChild(inp);
+
+      // Навигация по заданиям (если кнопки существуют в HTML — подключим)
+      // Кнопки должны быть ВНУТРИ карточки задания под вводом ответа (как у тебя сейчас)
+      const nav = document.createElement("div");
+      nav.className = "task-nav";
+      nav.innerHTML = `
+        <button type="button" class="navbtn" data-nav="prev">← Предыдущее</button>
+        <button type="button" class="navbtn" data-nav="next">Следующее →</button>
+      `;
+      nav.addEventListener("click", (e) => {
+        const btn = e.target?.closest?.("button[data-nav]");
+        if (!btn) return;
+        if (btn.dataset.nav === "prev") showPrevTask();
+        if (btn.dataset.nav === "next") showNextTask();
+      });
+      wrap.appendChild(nav);
+
+      cont.appendChild(wrap);
     }
-    return null;
+
+    applyFinishedState();
+    // после отрисовки — покажем первое задание
+    collectTaskList();
+    showTaskByIndex(0);
   }
 
-  // timer
+  // ========= scoring =========
+  function checkOne(task, studentAnswerRaw) {
+    const acceptable = (task.answers || []).map(normalizeAnswer);
+    const a = normalizeAnswer(studentAnswerRaw);
+    if (!a) return { ok: false, earned: 0 };
+    const ok = acceptable.includes(a);
+    return { ok, earned: ok ? Number(task.points ?? 1) : 0 };
+  }
+
+  function calcScore() {
+    const tasks = variantData?.tasks || [];
+    let earned = 0, max = 0;
+    const perTask = [];
+
+    for (const task of tasks) {
+      const pts = Number(task.points ?? 1);
+      max += pts;
+
+      const studentRaw = answersMap[String(task.id)] ?? "";
+      const res = checkOne(task, studentRaw);
+      earned += res.earned;
+
+      perTask.push({
+        id: task.id,
+        earned: res.earned,
+        max: pts,
+        ok: res.ok,
+        student: safeText(studentRaw),
+        accepted: (task.answers || []).slice(0),
+      });
+    }
+
+    const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
+    const mark = computeMark(percent, variantMeta?.grading);
+    return { earned, max, percent, mark, perTask };
+  }
+
+  function refreshScorePreview() {
+    // KPI в интерфейсе вы убрали — оставляем расчёт, но не показываем, если элементов нет
+    const { earned, max, percent, mark } = calcScore();
+    setText("kpiPoints", `${earned} / ${max}`);
+    setText("kpiPercent", `${percent}%`);
+    setText("kpiMark", mark);
+  }
+
+  // ========= timer =========
   function formatTime(sec) {
     const s = Math.max(0, Math.floor(sec));
     const hh = String(Math.floor(s / 3600)).padStart(2, "0");
@@ -177,6 +283,7 @@
     }, 250);
   }
 
+  // ========= finish =========
   function applyFinishedState() {
     const btnFinish = $("btnFinish");
     const btnDownload = $("btnDownload");
@@ -189,12 +296,16 @@
     if (btnDownload) btnDownload.disabled = !isFinished;
     if (btnEmail) btnEmail.disabled = !isFinished;
 
-    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect");
+    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,.task input.answer");
     inputs.forEach((el) => { el.disabled = isFinished; });
+
+    // навкнопки тоже блокируем
+    const navBtns = document.querySelectorAll(".task .navbtn");
+    navBtns.forEach((b) => { b.disabled = isFinished; });
   }
 
   function buildResultPayload() {
-    // данные для проверки/учителя остаются в JSON (это не UI)
+    const score = calcScore();
     return {
       schema: "kodislovo.result.v1",
       createdAt: nowIso(),
@@ -209,11 +320,19 @@
         title: variantMeta?.title || "",
         subtitle: variantMeta?.subtitle || ""
       },
+      grading: {
+        maxPoints: score.max,
+        earnedPoints: score.earned,
+        percent: score.percent,
+        mark: score.mark,
+        thresholds: variantMeta?.grading || null
+      },
       student: {
         name: safeText($("studentName")?.value),
         class: safeText($("studentClass")?.value)
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
+      perTask: score.perTask,
       meta: JSON.parse(JSON.stringify(variantMeta || {})),
       userAgent: navigator.userAgent
     };
@@ -224,115 +343,60 @@
     isFinished = true;
     finishedAt = nowIso();
     saveProgress();
+    refreshScorePreview();
     applyFinishedState();
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно сохранить и отправить результат.");
   }
 
-  function updateNavUI() {
-    const tasks = getTasks();
-    const total = tasks.length || 0;
-    const cur = total ? currentTaskIndex + 1 : 0;
+  // ========= Yandex Cloud submit =========
+  async function uploadToYandexCloud(resultPayload) {
+    // URL API Gateway /submit
+    const url = (manifest && manifest.cloudSubmitUrl)
+      ? manifest.cloudSubmitUrl
+      : "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net/submit";
 
-    const meta = document.querySelector("#tasksContainer .navMeta");
-    if (meta) meta.textContent = `Задание ${cur} / ${total}`;
+    // токен (понимай: в браузере он виден, но для базовой защиты подходит)
+    const token = (manifest && manifest.submitToken) ? String(manifest.submitToken) : "";
 
-    const btnPrev = document.querySelector("#tasksContainer #btnPrevTask");
-    const btnNext = document.querySelector("#tasksContainer #btnNextTask");
-    if (btnPrev) btnPrev.disabled = isFinished || currentTaskIndex <= 0;
-    if (btnNext) btnNext.disabled = isFinished || currentTaskIndex >= total - 1;
-  }
+    const fio = safeText(resultPayload?.student?.name);
+    const cls = safeText(resultPayload?.student?.class);
+    const variant = String(resultPayload?.variant?.id || resultPayload?.variantId || currentVariantId || "");
 
-  function renderSingleTask() {
-    const cont = $("tasksContainer");
-    if (!cont) return;
+    // Обёртка под твою Cloud Function
+    const submitBody = {
+      identity: {
+        fio: fio,
+        name: fio,
+        cls: cls,
+        class: cls
+      },
+      meta: {
+        variant: variant
+      },
+      subject: resultPayload.subject,
+      subjectTitle: resultPayload.subjectTitle,
+      result: resultPayload
+    };
 
-    const tasks = getTasks();
-    cont.innerHTML = "";
-    if (!tasks.length) return;
-
-    currentTaskIndex = clamp(currentTaskIndex, 0, tasks.length - 1);
-    const task = tasks[currentTaskIndex];
-    const taskIdNum = Number(task.id);
-
-    // Текст над заданием, если относится
-    const textBlock = findTextForTaskId(taskIdNum);
-    if (textBlock) {
-      const textWrap = document.createElement("div");
-      textWrap.className = "textBlock";
-      textWrap.innerHTML = `
-        <div class="textTop">
-          <b>${textBlock.title}</b>
-          <span class="badge">задания ${textBlock.from}–${textBlock.to}</span>
-        </div>
-        <div class="textBody">${textBlock.html}</div>
-      `;
-      cont.appendChild(textWrap);
-    }
-
-    // Задание (БЕЗ баллов/бейджей про баллы)
-    const wrap = document.createElement("div");
-    wrap.className = "task card";
-    wrap.innerHTML = `
-      <div class="task-top">
-        <h3>Задание ${task.id}</h3>
-      </div>
-      ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
-      <div class="q">${task.text || ""}</div>
-    `;
-
-    const inp = document.createElement("input");
-    inp.type = "text";
-    inp.className = "answer";
-    inp.placeholder = "Введите ответ…";
-    inp.autocomplete = "off";
-    inp.spellcheck = false;
-
-    const saved = answersMap[String(task.id)];
-    if (typeof saved === "string") inp.value = saved;
-
-    inp.addEventListener("input", () => {
-      if (isFinished) return;
-      answersMap[String(task.id)] = inp.value;
-      saveProgress();
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Submit-Token": token
+      },
+      body: JSON.stringify(submitBody)
     });
 
-    wrap.appendChild(inp);
-
-    // Навигация под вводом
-    const nav = document.createElement("div");
-    nav.innerHTML = `
-      <div class="navRow">
-        <button id="btnPrevTask" class="btn secondary" type="button">← Предыдущее</button>
-        <button id="btnNextTask" class="btn" type="button">Следующее →</button>
-      </div>
-      <div class="navMeta"></div>
-    `;
-    wrap.appendChild(nav);
-
-    cont.appendChild(wrap);
-
-    const btnPrev = wrap.querySelector("#btnPrevTask");
-    const btnNext = wrap.querySelector("#btnNextTask");
-
-    if (btnPrev) btnPrev.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex - 1); };
-    if (btnNext) btnNext.onclick = () => { if (!isFinished) gotoTaskByIndex(currentTaskIndex + 1); };
-
-    if (isFinished) {
-      inp.disabled = true;
-      if (btnPrev) btnPrev.disabled = true;
-      if (btnNext) btnNext.disabled = true;
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      throw new Error(`Cloud submit HTTP ${r.status}: ${t}`);
     }
-
-    updateNavUI();
-    applyFinishedState();
+    return await r.json().catch(() => ({ ok: true }));
   }
 
-  function gotoTaskByIndex(idx) {
-    const tasks = getTasks();
-    if (!tasks.length) return;
-    currentTaskIndex = clamp(idx, 0, tasks.length - 1);
-    saveProgress();
-    renderSingleTask();
+  // ========= load =========
+  function extractVariantMeta(v) {
+    return v.meta || {};
   }
 
   async function loadManifest() {
@@ -355,10 +419,12 @@
       }
     });
 
-    if (!sel.options.length) throw new Error("manifest.json: список variants пустой");
-
-    sel.value = currentVariantId;
-    currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+    if (sel.options.length) {
+      sel.value = currentVariantId;
+      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+    } else {
+      throw new Error("manifest.json: список variants пустой");
+    }
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -370,7 +436,7 @@
 
   async function loadVariant(file) {
     variantData = await fetchJson(base + file);
-    variantMeta = variantData?.meta || {};
+    variantMeta = extractVariantMeta(variantData);
 
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
@@ -385,34 +451,55 @@
 
     answersMap = progress?.answers || {};
 
-    const savedTaskId = progress?.currentTaskId;
-    if (savedTaskId != null) {
-      const idx = taskIndexById(savedTaskId);
-      currentTaskIndex = idx >= 0 ? idx : 0;
-    } else currentTaskIndex = 0;
-
     setHeader();
-    renderSingleTask();
+    renderTasks();
+    stickyInitOrRefresh(); // sticky после отрисовки заданий
+    refreshScorePreview();
     startTimerIfNeeded();
 
     $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
     $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
+  // ========= init =========
   async function init() {
     setTheme(getPreferredTheme());
     $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
+    // Кнопки верхней панели (у тебя они в одном ряду и одинаковой ширины)
     $("btnFinish")?.addEventListener("click", () => finishNow(false));
 
-    $("btnDownload")?.addEventListener("click", () => {
+    // "Сохранить работу" -> скачивание + (если настроено) отправка в YC
+    $("btnDownload")?.addEventListener("click", async () => {
       const payload = buildResultPayload();
       const n = safeText(payload.student.name).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
       const c = safeText(payload.student.class).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
       const fn = `result_${subject}_${currentVariantId}_${c || "class"}_${n || "student"}.json`;
+
+      // 1) скачиваем ученику
       downloadJson(fn, payload);
+
+      // 2) пробуем отправить в Yandex Cloud (только если задан токен/URL)
+      try {
+        const hasToken = manifest?.submitToken && String(manifest.submitToken).length > 0;
+        const hasUrl = manifest?.cloudSubmitUrl && String(manifest.cloudSubmitUrl).length > 0;
+
+        // если ты не хочешь требовать токен — убери hasToken из условия
+        if (hasUrl && hasToken) {
+          const res = await uploadToYandexCloud(payload);
+          console.log("Cloud submit:", res);
+          alert("Работа сохранена и отправлена в облако ✅");
+        } else {
+          // если не настроено — просто молча
+          console.log("Cloud submit skipped: cloudSubmitUrl/submitToken not set in manifest.json");
+        }
+      } catch (e) {
+        console.warn(e);
+        alert("Работа сохранена ✅\nНо в облако не отправилась ❗\n" + (e.message || e));
+      }
     });
 
+    // Email (как было)
     $("btnEmail")?.addEventListener("click", () => {
       const to = manifest?.teacherEmail || "";
       if (!to || to.includes("example.com")) {
@@ -420,10 +507,14 @@
         return;
       }
       const payload = buildResultPayload();
+      const s = payload.grading;
       const subj = `Кодислово: ${payload.subjectTitle} — ${payload.variant.title || payload.variant.id}`;
       const body =
         `ФИО: ${payload.student.name}\n` +
         `Класс: ${payload.student.class}\n` +
+        `Баллы: ${s.earnedPoints}/${s.maxPoints}\n` +
+        `Процент: ${s.percent}%\n` +
+        `Отметка: ${s.mark}\n` +
         `Вариант: ${payload.variant.title || payload.variant.id}\n` +
         `Начало: ${payload.startedAt}\n` +
         `Окончание: ${payload.finishedAt}\n\n` +
@@ -435,12 +526,156 @@
     await loadVariant(currentVariantFile);
   }
 
+  // ===== Sticky Text: показываем текст только для диапазонов =====
+  let stickyCollapsed = false;
+
+  function getTextRangesFromMeta() {
+    const texts = variantMeta?.texts || {};
+    const blocks = Object.values(texts)
+      .map(t => {
+        const r = Array.isArray(t.range) ? t.range : null;
+        const from = r ? Number(r[0]) : NaN;
+        const to = r ? Number(r[1]) : NaN;
+        return {
+          title: t.title || "Текст",
+          from,
+          to,
+          html: t.html || ""
+        };
+      })
+      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+
+    blocks.sort((a, b) => a.from - b.from);
+    return blocks;
+  }
+
+  function setStickyVisible(visible) {
+    const wrap = $("stickyTextWrap");
+    if (!wrap) return;
+    wrap.style.display = visible ? "" : "none";
+  }
+
+  function setStickyContent(block) {
+    const title = $("stickyTextTitle");
+    const range = $("stickyTextRange");
+    const body = $("stickyTextBody");
+    if (!title || !range || !body) return;
+
+    title.textContent = block.title;
+    range.textContent = `задания ${block.from}–${block.to}`;
+    body.innerHTML = block.html;
+
+    body.style.display = stickyCollapsed ? "none" : "";
+    const btn = $("stickyToggle");
+    if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+  }
+
+  function findBlockForTask(blocks, taskId) {
+    if (!taskId) return null;
+    for (const b of blocks) {
+      if (taskId >= b.from && taskId <= b.to) return b;
+    }
+    return null; // вне диапазонов — скрыть sticky
+  }
+
+  let stickyBlocks = [];
+  let stickyActiveKey = "";
+
+  function stickyInitOrRefresh() {
+    const wrap = $("stickyTextWrap");
+    const btn = $("stickyToggle");
+
+    stickyBlocks = getTextRangesFromMeta();
+    stickyActiveKey = "";
+
+    if (!wrap || stickyBlocks.length === 0) {
+      setStickyVisible(false);
+      return;
+    }
+
+    if (btn) {
+      btn.onclick = () => {
+        stickyCollapsed = !stickyCollapsed;
+        const body = $("stickyTextBody");
+        if (body) body.style.display = stickyCollapsed ? "none" : "";
+        btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+      };
+    }
+
+    // при навигации по заданиям мы будем вызывать stickyUpdateForTask(taskId)
+    const firstId = getVisibleTaskId();
+    stickyUpdateForTask(firstId);
+  }
+
+  function stickyUpdateForTask(taskId) {
+    const block = findBlockForTask(stickyBlocks, taskId);
+    if (!block) {
+      setStickyVisible(false);
+      return;
+    }
+    setStickyVisible(true);
+    const key = `${block.from}-${block.to}-${block.title}`;
+    if (key !== stickyActiveKey) {
+      stickyActiveKey = key;
+      setStickyContent(block);
+    }
+  }
+
+  // ===== Навигация: показываем только одно задание на экране =====
+  let taskEls = [];
+  let taskIndex = 0;
+
+  function collectTaskList() {
+    taskEls = Array.from(document.querySelectorAll("#tasksContainer .task"));
+    // проставим индекс, если его нет
+    taskEls.forEach((el, i) => (el.dataset._idx = String(i)));
+    taskIndex = 0;
+  }
+
+  function getTaskIdByEl(el) {
+    const raw = el?.dataset?.taskIdNum || el?.dataset?.taskId;
+    const id = Number(raw);
+    return Number.isFinite(id) ? id : null;
+  }
+
+  function showTaskByIndex(idx) {
+    if (!taskEls.length) return;
+    const n = taskEls.length;
+    taskIndex = Math.max(0, Math.min(n - 1, idx));
+
+    taskEls.forEach((el, i) => {
+      el.style.display = (i === taskIndex) ? "" : "none";
+    });
+
+    const currentEl = taskEls[taskIndex];
+    const currentId = getTaskIdByEl(currentEl);
+    stickyUpdateForTask(currentId);
+
+    // фокус в поле ответа
+    const inp = currentEl?.querySelector?.("input.answer");
+    if (inp) setTimeout(() => inp.focus(), 0);
+  }
+
+  function showPrevTask() { showTaskByIndex(taskIndex - 1); }
+  function showNextTask() { showTaskByIndex(taskIndex + 1); }
+
+  function getVisibleTaskId() {
+    const el = taskEls[taskIndex];
+    return getTaskIdByEl(el);
+  }
+
   init().catch((err) => {
     console.error(err);
+
     const hint =
       `Subject: ${subject}\n` +
       `Ожидаем manifest:\n${base}manifest.json\n` +
-      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n`;
+      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
+      `Проверь:\n` +
+      `1) путь /controls/<subject>/variants/manifest.json\n` +
+      `2) путь /control/control.html (а не /controls)\n` +
+      `3) что control.html содержит элементы: variantSelect, tasksContainer, btnFinish, btnDownload, btnEmail, stickyTextWrap.\n`;
+
     alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
