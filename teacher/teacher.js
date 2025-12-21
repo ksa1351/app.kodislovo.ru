@@ -1,63 +1,22 @@
 "use strict";
 
-/* ========= CONFIG ========= */
-const API_BASE = "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net";
-const TEACHER_TOKEN = "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f"; // ← ВСТАВЬ ТОКЕН
-
-/* ========= DOM HELPERS ========= */
+/* ========= DOM ========= */
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { const el = $("statusLine"); if (el) el.textContent = msg; };
 
+/* ========= Repo prefix for GitHub Pages (/app.kodislovo.ru) ========= */
 function repoPrefixGuess() {
-  // GitHub Pages: https://user.github.io/<repo>/...
   const parts = location.pathname.split("/").filter(Boolean);
   if (!parts.length) return "";
   if (parts[0].includes(".")) return "/" + parts[0];
   return "";
 }
 
-/* ========= API ========= */
-async function api(path, body) {
-  const res = await fetch(API_BASE + path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Teacher-Token": 42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f
-    },
-    body: JSON.stringify(body || {})
-  });
-
-  const txt = await res.text();
-  let data;
-  try { data = txt ? JSON.parse(txt) : {}; } catch { data = { raw: txt }; }
-
-  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
-  return data;
-}
-
-/* ========= THEME ========= */
-const themeToggle = $("themeToggle");
-const themeLabel = $("themeLabel");
-
-function applyTheme(t) {
-  const theme = (t === "light") ? "light" : "dark";
-  document.documentElement.dataset.theme = theme;
-  if (themeToggle) themeToggle.checked = (theme === "light");
-  if (themeLabel) themeLabel.textContent = (theme === "light") ? "Светлая" : "Тёмная";
-  localStorage.setItem("kd-theme", theme);
-}
-
-applyTheme(localStorage.getItem("kd-theme") || "dark");
-
-themeToggle?.addEventListener("change", () => {
-  applyTheme(themeToggle.checked ? "light" : "dark");
-});
-
-/* ========= MANIFEST / VARIANTS ========= */
-let manifestCache = null;
+/* ========= Manifest load ========= */
+let manifestCache = { subject: null, manifest: null, baseUrl: null };
 
 async function loadManifest(subject) {
-  if (manifestCache && manifestCache.subject === subject) return manifestCache.manifest;
+  if (manifestCache.manifest && manifestCache.subject === subject) return manifestCache.manifest;
 
   const prefix = repoPrefixGuess();
   const url1 = `${prefix}/controls/${subject}/variants/manifest.json`;
@@ -65,7 +24,7 @@ async function loadManifest(subject) {
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`manifest ${r.status}`);
+    if (!r.ok) throw new Error(`manifest.json ${r.status}`);
     return r.json();
   }
 
@@ -80,8 +39,63 @@ async function loadManifest(subject) {
   }
 }
 
+function getApiFromManifest(m) {
+  const base = String(m?.teacher?.base_url || "").replace(/\/+$/, "");
+  const token = String(m?.teacher?.token || "");
+  return { base, token };
+}
+
+/* ========= API (POST only, X-Teacher-Token only) ========= */
+async function apiCall(path, body) {
+  const subject = $("subjectSelect")?.value || "russian";
+  const m = await loadManifest(subject);
+  const { base, token } = getApiFromManifest(m);
+
+  if (!base || !token) {
+    throw new Error("В manifest.json нет teacher.base_url или teacher.token");
+  }
+
+  const url = base + path;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Teacher-Token": token
+    },
+    body: JSON.stringify(body || {})
+  });
+
+  const txt = await res.text();
+  let data;
+  try { data = txt ? JSON.parse(txt) : {}; } catch { data = { raw: txt }; }
+  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ========= Theme ========= */
+function applyTheme(t) {
+  const theme = (t === "light") ? "light" : "dark";
+  document.documentElement.dataset.theme = theme;
+  const toggle = $("themeToggle");
+  const label = $("themeLabel");
+  if (toggle) toggle.checked = (theme === "light");
+  if (label) label.textContent = (theme === "light") ? "Светлая" : "Тёмная";
+  localStorage.setItem("kd-theme", theme);
+}
+applyTheme(localStorage.getItem("kd-theme") || "dark");
+$("themeToggle")?.addEventListener("change", (e) => {
+  applyTheme(e.target.checked ? "light" : "dark");
+});
+
+/* ========= Utilities ========= */
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function normalizeVariantName(v) {
-  // accepts: "variant_01", "01", "1", "variant_1"
   const s = String(v || "").trim();
   if (!s) return "";
   const m = s.match(/(\d+)/);
@@ -90,133 +104,110 @@ function normalizeVariantName(v) {
   return n.length === 1 ? `0${n}` : n;
 }
 
+/* ========= Variant JSON load for print/autocheck ========= */
 async function loadVariantJson(subject, variantInput) {
-  const vNorm = normalizeVariantName(variantInput);
   const m = await loadManifest(subject);
-  const base = manifestCache?.baseUrl || "";
+  const base = manifestCache.baseUrl || "";
+  const vNorm = normalizeVariantName(variantInput);
 
-  // 1) try manifest mapping if exists
-  if (m && Array.isArray(m.variants)) {
+  // mapping via manifest
+  if (Array.isArray(m?.variants)) {
     const found = m.variants.find(x => {
       const id = normalizeVariantName(x.id || x.variant || x.name || "");
       const file = String(x.file || x.path || "");
       return id === vNorm || file.includes(vNorm);
     });
     if (found?.file) {
-      const url = base + found.file;
-      const r = await fetch(url, { cache: "no-store" });
+      const r = await fetch(base + found.file, { cache: "no-store" });
       if (r.ok) return r.json();
     }
   }
 
-  // 2) fallback: variant_XX.json рядом с manifest
+  // fallback: variant_XX.json
   if (vNorm) {
-    const guess = base + `variant_${vNorm}.json`;
-    const r = await fetch(guess, { cache: "no-store" });
+    const r = await fetch(base + `variant_${vNorm}.json`, { cache: "no-store" });
     if (r.ok) return r.json();
   }
-
   return null;
 }
 
-/* ========= LIST + FILTER ========= */
-let lastList = [];     // raw from api
-let visibleList = [];  // after filters
+/* ========= State ========= */
+let lastList = [];
+let visibleList = [];
+let keyStore = null;
 
-function applyClientFilters(items) {
-  const fioQ = ($("fioSearch")?.value || "").trim().toLowerCase();
-  if (!fioQ) return items.slice();
-
-  return items.filter(it => {
-    const hay = `${it.fio || ""} ${it.cls || ""} ${it.variant || ""} ${it.key || ""}`.toLowerCase();
-    return hay.includes(fioQ);
-  });
-}
-
-function makeBtn(label, attrs = {}) {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "kd-btn secondary";
-  b.textContent = label;
-  Object.entries(attrs).forEach(([k, v]) => b.setAttribute(k, v));
-  return b;
-}
-
-function ensureExtraButtons() {
-  const row = $("btnList")?.parentElement;
-  if (!row) return;
-
-  if (!$("btnCsv")) {
-    const b = makeBtn("CSV", { id: "btnCsv", style: "height:42px;border-radius:14px;padding:0 14px" });
-    row.insertBefore(b, $("btnVoidSelected"));
-    b.onclick = exportCsv;
+/* ========= Inject extra buttons/controls ========= */
+function ensureExtras() {
+  // Buttons row on right
+  const btnList = $("btnList");
+  const btnVoidSelected = $("btnVoidSelected");
+  const row = btnList?.parentElement;
+  if (row) {
+    if (!$("btnCsv")) {
+      const b = document.createElement("button");
+      b.id = "btnCsv";
+      b.type = "button";
+      b.className = "kd-btn secondary";
+      b.textContent = "CSV";
+      b.style.cssText = "height:42px;border-radius:14px;padding:0 14px";
+      b.onclick = exportCsv;
+      row.insertBefore(b, btnVoidSelected);
+    }
+    if (!$("btnPrintSelected")) {
+      const b = document.createElement("button");
+      b.id = "btnPrintSelected";
+      b.type = "button";
+      b.className = "kd-btn secondary";
+      b.textContent = "Печать выбранного";
+      b.style.cssText = "height:42px;border-radius:14px;padding:0 14px";
+      b.onclick = printSelected;
+      row.appendChild(b);
+    }
   }
 
-  if (!$("btnPrintSelected")) {
-    const b = makeBtn("Печать выбранного", { id: "btnPrintSelected", style: "height:42px;border-radius:14px;padding:0 14px" });
-    row.appendChild(b);
-    b.onclick = printSelected;
-  }
-
-  if (!$("btnKeyLoad")) {
-    const leftPanel = $("btnResetMake")?.parentElement; // kd-actions
-    if (leftPanel) {
+  // Key loader on left panel (after actions)
+  if (!$("keyFile")) {
+    const actions = $("btnResetMake")?.closest(".kd-actions");
+    if (actions) {
       const wrap = document.createElement("div");
-      wrap.style.display = "flex";
-      wrap.style.gap = "10px";
-      wrap.style.alignItems = "center";
-      wrap.style.marginTop = "10px";
+      wrap.style.cssText = "display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap";
 
       const inp = document.createElement("input");
       inp.type = "file";
       inp.accept = "application/json";
       inp.id = "keyFile";
-      inp.style.maxWidth = "210px";
+      inp.style.maxWidth = "240px";
 
-      const b = makeBtn("Загрузить ключ", { id: "btnKeyLoad" });
-
-      wrap.appendChild(inp);
-      wrap.appendChild(b);
-
-      leftPanel.parentElement.appendChild(wrap);
-
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "kd-btn secondary";
+      b.textContent = "Загрузить ключ";
       b.onclick = async () => {
         const f = inp.files?.[0];
         if (!f) { status("Выбери файл ключа (JSON)."); return; }
         try {
-          const txt = await f.text();
-          keyStore = JSON.parse(txt);
-          status("Ключ загружен ✅ (автопроверка доступна).");
-        } catch (e) {
-          status("Ошибка ключа: нужен валидный JSON.");
+          keyStore = JSON.parse(await f.text());
+          status("Ключ загружен ✅");
+        } catch {
+          status("Ошибка: ключ должен быть JSON.");
         }
       };
+
+      wrap.appendChild(inp);
+      wrap.appendChild(b);
+      actions.parentElement.appendChild(wrap);
     }
   }
 }
 
-async function loadList() {
-  status("Загрузка списка…");
-
-  ensureExtraButtons();
-
-  // server-side filters
-  const variant = normalizeVariantName(($("variantFilter")?.value || "").replace(/^variant_/, ""));
-  const cls = $("classFilter")?.value || "";
-
-  const data = await api("/teacher/list", {
-    variant,
-    cls,
-    limit: 200
-  });
-
-  lastList = Array.isArray(data.items) ? data.items : [];
-  visibleList = applyClientFilters(lastList);
-
-  renderTable(visibleList);
-  status(`Загружено: ${visibleList.length}`);
+/* ========= Filters ========= */
+function applyClientFilters(items) {
+  const q = ($("fioSearch")?.value || "").trim().toLowerCase();
+  if (!q) return items.slice();
+  return items.filter(it => (`${it.fio||""} ${it.cls||""} ${it.variant||""} ${it.key||""}`).toLowerCase().includes(q));
 }
 
+/* ========= Render ========= */
 function renderTable(items) {
   const tbody = $("resultsTbody");
   if (!tbody) return;
@@ -225,20 +216,14 @@ function renderTable(items) {
   for (const it of items) {
     const tr = document.createElement("tr");
     tr.style.borderTop = "1px solid var(--line)";
-
     const created = (it.createdAt || "").replace("T", " ").slice(0, 16);
 
     tr.innerHTML = `
-      <td style="padding:10px">
-        <input type="checkbox" data-key="${escapeHtml(it.key)}">
-      </td>
-      <td style="padding:10px">
-        ${escapeHtml(it.fio || "")}<br>
-        <span style="color:var(--muted)">${escapeHtml(it.cls || "")}</span>
-      </td>
-      <td style="padding:10px">${escapeHtml(it.variant || "")}</td>
+      <td style="padding:10px;width:44px"><input type="checkbox" data-key="${escapeHtml(it.key)}"></td>
+      <td style="padding:10px">${escapeHtml(it.fio||"")}<br><span style="color:var(--muted)">${escapeHtml(it.cls||"")}</span></td>
+      <td style="padding:10px">${escapeHtml(it.variant||"")}</td>
       <td style="padding:10px">${escapeHtml(created)}</td>
-      <td style="padding:10px;font-size:12px;opacity:.9">${escapeHtml(it.key || "")}</td>
+      <td style="padding:10px;font-size:12px;opacity:.9">${escapeHtml(it.key||"")}</td>
       <td style="padding:10px;white-space:nowrap">
         <button class="kd-btn secondary" data-get="${escapeHtml(it.key)}">JSON</button>
         <button class="kd-btn secondary" data-dl="${escapeHtml(it.key)}">Скачать</button>
@@ -246,30 +231,29 @@ function renderTable(items) {
         <button class="kd-btn secondary" data-check="${escapeHtml(it.key)}">Проверить</button>
       </td>
     `;
-
     tbody.appendChild(tr);
   }
 }
 
-function escapeHtml(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+/* ========= List ========= */
+async function loadList() {
+  ensureExtras();
+  status("Загрузка списка…");
 
-$("btnList")?.addEventListener("click", () => loadList());
-$("fioSearch")?.addEventListener("input", () => {
+  const variant = normalizeVariantName(($("variantFilter")?.value || "").replace(/^variant_/, ""));
+  const cls = ($("classFilter")?.value || "").trim();
+
+  const data = await apiCall("/teacher/list", { variant, cls, limit: 200 });
+  lastList = Array.isArray(data.items) ? data.items : [];
   visibleList = applyClientFilters(lastList);
   renderTable(visibleList);
-  status(`Фильтр: ${visibleList.length}`);
-});
-
-/* ========= GET / DOWNLOAD ========= */
-async function getResultByKey(key) {
-  return api("/teacher/get", { key });
+  status(`Загружено: ${visibleList.length}`);
 }
 
+/* ========= Get/Download ========= */
+async function getResultByKey(key) {
+  return apiCall("/teacher/get", { key });
+}
 function downloadJson(obj, filename) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -282,63 +266,47 @@ function downloadJson(obj, filename) {
   URL.revokeObjectURL(url);
 }
 
-/* ========= CSV EXPORT ========= */
+/* ========= CSV ========= */
 function toCsv(rows) {
-  const cols = Array.from(rows.reduce((s, r) => {
-    Object.keys(r || {}).forEach(k => s.add(k));
-    return s;
-  }, new Set()));
-
-  const esc = (val) => {
-    const s = String(val ?? "");
-    if (/[;"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
+  const cols = Array.from(rows.reduce((s, r) => (Object.keys(r||{}).forEach(k => s.add(k)), s), new Set()));
+  const esc = (v) => {
+    const s = String(v ?? "");
+    return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
   };
-
-  const header = cols.map(esc).join(";");
-  const lines = rows.map(r => cols.map(c => esc(r?.[c])).join(";"));
-  return [header, ...lines].join("\r\n");
+  return [cols.join(";"), ...rows.map(r => cols.map(c => esc(r[c])).join(";"))].join("\r\n");
 }
-
 function exportCsv() {
-  try {
-    const rows = (visibleList || []).map(it => ({
-      fio: it.fio || "",
-      cls: it.cls || "",
-      variant: it.variant || "",
-      createdAt: it.createdAt || "",
-      percent: it.percent ?? "",
-      mark: it.mark ?? "",
-      voided: it.voided ? 1 : 0,
-      key: it.key || ""
-    }));
-    const csv = toCsv(rows);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `kodislovo_results_${$("subjectSelect")?.value || "subject"}_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    status("CSV скачан ✅");
-  } catch (e) {
-    status("CSV ошибка: " + e.message);
-  }
+  const rows = (visibleList||[]).map(it => ({
+    fio: it.fio || "",
+    cls: it.cls || "",
+    variant: it.variant || "",
+    createdAt: it.createdAt || "",
+    percent: it.percent ?? "",
+    mark: it.mark ?? "",
+    voided: it.voided ? 1 : 0,
+    key: it.key || ""
+  }));
+  const csv = toCsv(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kodislovo_results_${$("subjectSelect")?.value||"subject"}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  status("CSV скачан ✅");
 }
 
-/* ========= VOID SELECTED ========= */
+/* ========= Void selected ========= */
 $("btnVoidSelected")?.addEventListener("click", async () => {
   try {
     const keys = Array.from($("resultsTbody").querySelectorAll("input[type='checkbox'][data-key]:checked"))
-      .map(x => x.getAttribute("data-key"))
-      .filter(Boolean);
-
+      .map(x => x.getAttribute("data-key")).filter(Boolean);
     if (!keys.length) { status("Ничего не выбрано."); return; }
-
     status("Аннулирование…");
-    await api("/teacher/void", { keys });
+    await apiCall("/teacher/void", { keys });
     status("Аннулировано ✅");
     await loadList();
   } catch (e) {
@@ -346,18 +314,16 @@ $("btnVoidSelected")?.addEventListener("click", async () => {
   }
 });
 
-/* ========= RESET ========= */
+/* ========= Reset code create ========= */
 $("btnResetMake")?.addEventListener("click", async () => {
   try {
     status("Создание reset-кода…");
+    const subject = $("subjectSelect")?.value || "russian";
+    const variant = ($("resetVariant")?.value || "").trim(); // ВАЖНО: без нормализации, чтобы совпало с учеником (variant_01)
+    const cls = ($("resetClass")?.value || "").trim();
+    const fio = ($("resetFio")?.value || "").trim();
 
-    const subject = $("subjectSelect").value;
-    const variant = normalizeVariantName(($("resetVariant").value || "").replace(/^variant_/, ""));
-    const cls = ($("resetClass").value || "").trim();
-    const fio = ($("resetFio").value || "").trim();
-
-    const r = await api("/teacher/reset", { subject, variant, cls, fio });
-
+    const r = await apiCall("/teacher/reset", { subject, variant, cls, fio });
     try { await navigator.clipboard.writeText(r.code); } catch {}
     status(`Reset-код: ${r.code} (скопирован)`);
   } catch (e) {
@@ -365,69 +331,57 @@ $("btnResetMake")?.addEventListener("click", async () => {
   }
 });
 
-/* ========= TIMER ========= */
+/* ========= Timer ========= */
 $("btnTimerLoad")?.addEventListener("click", async () => {
   try {
     status("Загрузка таймера…");
-    const r = await api("/teacher/config/get", { subject: $("subjectSelect").value });
+    const r = await apiCall("/teacher/config/get", { subject: $("subjectSelect")?.value || "russian" });
     $("timerMinutes").value = r.time_limit_minutes || 0;
     status("Таймер загружен ✅");
   } catch (e) {
-    status("Таймер load ошибка: " + e.message);
+    status("Timer load ошибка: " + e.message);
   }
 });
-
 $("btnTimerSave")?.addEventListener("click", async () => {
   try {
     status("Сохранение таймера…");
-    await api("/teacher/config/set", {
-      subject: $("subjectSelect").value,
-      time_limit_minutes: Number($("timerMinutes").value || 0),
+    await apiCall("/teacher/config/set", {
+      subject: $("subjectSelect")?.value || "russian",
+      time_limit_minutes: Number($("timerMinutes").value || 0)
     });
     status("Таймер сохранён ✅");
   } catch (e) {
-    status("Таймер save ошибка: " + e.message);
+    status("Timer save ошибка: " + e.message);
   }
 });
 
-/* ========= AUTOCHECK ========= */
-let keyStore = null;
-
-// Heuristics: try to extract answers map from result json
+/* ========= Autocheck ========= */
 function extractStudentAnswers(result) {
-  // 1) direct maps
   if (result && typeof result.answers === "object" && !Array.isArray(result.answers)) return result.answers;
   if (result && typeof result.userAnswers === "object" && !Array.isArray(result.userAnswers)) return result.userAnswers;
-  if (result && typeof result.responses === "object" && !Array.isArray(result.responses)) return result.responses;
 
-  // 2) array items
-  const arr = result?.items || result?.tasks || result?.responses || null;
+  const arr = result?.items || result?.tasks || result?.responses;
   if (Array.isArray(arr)) {
     const map = {};
     for (const x of arr) {
       const id = x?.id ?? x?.qid ?? x?.key ?? x?.taskId;
-      const val = x?.answer ?? x?.value ?? x?.response ?? x?.selected ?? x?.choice;
+      const val = x?.answer ?? x?.value ?? x?.response ?? x?.selected;
       if (id != null) map[String(id)] = val;
     }
-    if (Object.keys(map).length) return map;
+    return map;
   }
   return {};
 }
 
-// Heuristics: extract key (correct answers) from variant json OR uploaded key json
 function extractKeyAnswers(variantJson, loadedKey) {
-  // A) loadedKey is direct map {id:answer}
-  if (loadedKey && typeof loadedKey === "object" && !Array.isArray(loadedKey)) {
-    // if has nested "answers"
+  if (loadedKey && typeof loadedKey === "object") {
     if (loadedKey.answers && typeof loadedKey.answers === "object") return loadedKey.answers;
-    // if has "key"
     if (loadedKey.key && typeof loadedKey.key === "object") return loadedKey.key;
-    // else assume itself is the map
-    const keys = Object.keys(loadedKey);
-    if (keys.length && keys.every(k => typeof loadedKey[k] !== "object")) return loadedKey;
+    // assume direct map
+    const ks = Object.keys(loadedKey);
+    if (ks.length && ks.every(k => typeof loadedKey[k] !== "object")) return loadedKey;
   }
 
-  // B) variantJson has tasks with answer/correct
   const tasks = variantJson?.tasks || variantJson?.items || variantJson?.questions;
   if (Array.isArray(tasks)) {
     const map = {};
@@ -439,19 +393,15 @@ function extractKeyAnswers(variantJson, loadedKey) {
     if (Object.keys(map).length) return map;
   }
 
-  // C) variantJson.answers map
   if (variantJson && typeof variantJson.answers === "object" && !Array.isArray(variantJson.answers)) return variantJson.answers;
-
   return {};
 }
 
-function normalizeAnswer(a) {
-  if (a === null || a === undefined) return "";
+function normAns(a) {
+  if (a == null) return "";
   if (typeof a === "string") return a.trim().toLowerCase();
   if (typeof a === "number" || typeof a === "boolean") return String(a);
-  // arrays -> join
-  if (Array.isArray(a)) return a.map(x => normalizeAnswer(x)).join("|");
-  // objects -> JSON
+  if (Array.isArray(a)) return a.map(normAns).join("|");
   return JSON.stringify(a);
 }
 
@@ -459,55 +409,38 @@ function gradeAnswers(studentMap, keyMap) {
   const ids = Object.keys(keyMap || {});
   let total = 0, ok = 0;
   const details = [];
-
   for (const id of ids) {
     total++;
     const correct = keyMap[id];
     const given = studentMap[id];
-
-    const good = normalizeAnswer(given) === normalizeAnswer(correct);
+    const good = normAns(given) === normAns(correct);
     if (good) ok++;
-
-    details.push({
-      id,
-      given,
-      correct,
-      ok: good
-    });
+    details.push({ id, given, correct, ok: good });
   }
-
-  const percent = total ? Math.round((ok / total) * 100) : 0;
-  return { total, ok, percent, details };
+  return { total, ok, percent: total ? Math.round(ok / total * 100) : 0, details };
 }
 
-async function autocheckOne(subject, listItem, resultJson) {
-  const variantId = listItem.variant || normalizeVariantName(($("variantFilter")?.value || "").replace(/^variant_/, "")) || normalizeVariantName(($("resetVariant")?.value || "").replace(/^variant_/, ""));
-  const variantJson = await loadVariantJson(subject, variantId);
-
+async function autocheck(subject, listItem, resultJson) {
+  const v = listItem?.variant || "";
+  const variantJson = await loadVariantJson(subject, v);
   const studentMap = extractStudentAnswers(resultJson);
   const keyMap = extractKeyAnswers(variantJson, keyStore);
 
   if (!Object.keys(keyMap).length) {
-    throw new Error("Не найден ключ. Загрузите ключ JSON или добавьте ответы в variant JSON (tasks[].answer/answers).");
+    throw new Error("Не найден ключ. Загрузите ключ JSON или добавьте ответы в variant JSON.");
   }
-
-  const g = gradeAnswers(studentMap, keyMap);
-  return { variantId, keyFound: Object.keys(keyMap).length, ...g };
+  return gradeAnswers(studentMap, keyMap);
 }
 
-/* ========= PRINT ========= */
+/* ========= Print ========= */
 function openPrintWindow({ title, subject, variantJson, resultJson, grade }) {
   const w = window.open("", "_blank");
-  if (!w) { status("Popup заблокирован. Разреши всплывающие окна."); return; }
+  if (!w) { status("Popup заблокирован."); return; }
 
   const theme = document.documentElement.dataset.theme || "dark";
   const prefix = repoPrefixGuess();
   const css1 = `${prefix}/assets/css/control-ui.css`;
   const css2 = `/assets/css/control-ui.css`;
-
-  const gradeLine = grade
-    ? `Автопроверка: ${grade.ok}/${grade.total} (${grade.percent}%)`
-    : "";
 
   w.document.open();
   w.document.write(`<!doctype html>
@@ -524,59 +457,135 @@ function openPrintWindow({ title, subject, variantJson, resultJson, grade }) {
        border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;margin-bottom:14px}
   .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
   pre{white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}
-  h1{margin:0 0 6px}
-  h2{margin:18px 0 10px}
-  .muted{opacity:.85}
   table{width:100%;border-collapse:collapse}
   td,th{border-top:1px solid rgba(255,255,255,.12);padding:8px;text-align:left;vertical-align:top}
   @media print {.bar{display:none} body{padding:0}}
 </style>
 </head>
 <body>
-  <div class="bar">
-    <button class="btn" onclick="window.print()">Печать / Сохранить в PDF</button>
-  </div>
-
+  <div class="bar"><button class="btn" onclick="window.print()">Печать / PDF</button></div>
   <h1>${escapeHtml(title)}</h1>
-  <div class="muted">Предмет: ${escapeHtml(subject)} ${gradeLine ? " • " + escapeHtml(gradeLine) : ""}</div>
+  <div style="opacity:.85">Предмет: ${escapeHtml(subject)}${grade ? ` • ${grade.ok}/${grade.total} (${grade.percent}%)` : ""}</div>
 
   <h2>Вариант</h2>
-  ${variantJson ? `<pre>${escapeHtml(JSON.stringify(variantJson, null, 2))}</pre>` : `<div class="muted">Не удалось подгрузить variant JSON (печать ответов всё равно доступна).</div>`}
+  ${variantJson ? `<pre>${escapeHtml(JSON.stringify(variantJson, null, 2))}</pre>` : `<div style="opacity:.8">Вариант не подгрузился.</div>`}
 
   <h2>Ответы ученика</h2>
   <pre>${escapeHtml(JSON.stringify(resultJson, null, 2))}</pre>
 
-  ${grade && grade.details ? `
-  <h2>Автопроверка (по ключу)</h2>
-  <table>
-    <thead><tr><th>ID</th><th>Ответ ученика</th><th>Правильно</th><th>OK</th></tr></thead>
-    <tbody>
-      ${grade.details.map(d => `
-        <tr>
-          <td>${escapeHtml(d.id)}</td>
-          <td>${escapeHtml(typeof d.given === "string" ? d.given : JSON.stringify(d.given))}</td>
-          <td>${escapeHtml(typeof d.correct === "string" ? d.correct : JSON.stringify(d.correct))}</td>
-          <td>${d.ok ? "✅" : "❌"}</td>
-        </tr>
-      `).join("")}
-    </tbody>
-  </table>
+  ${grade ? `
+    <h2>Автопроверка</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Ответ ученика</th><th>Правильно</th><th>OK</th></tr></thead>
+      <tbody>
+        ${grade.details.map(d => `
+          <tr>
+            <td>${escapeHtml(d.id)}</td>
+            <td>${escapeHtml(typeof d.given === "string" ? d.given : JSON.stringify(d.given))}</td>
+            <td>${escapeHtml(typeof d.correct === "string" ? d.correct : JSON.stringify(d.correct))}</td>
+            <td>${d.ok ? "✅" : "❌"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
   ` : ""}
-
 </body>
 </html>`);
   w.document.close();
 }
 
-/* ========= TABLE ACTIONS ========= */
+/* ========= Table actions ========= */
 $("resultsTbody")?.addEventListener("click", async (e) => {
-  const btnGet = e.target.closest("button[data-get]");
-  const btnDl = e.target.closest("button[data-dl]");
-  const btnPrint = e.target.closest("button[data-print]");
-  const btnCheck = e.target.closest("button[data-check]");
+  const btn = e.target.closest("button");
+  if (!btn) return;
 
-  if (!(btnGet || btnDl || btnPrint || btnCheck)) return;
+  const key = btn.dataset.get || btn.dataset.dl || btn.dataset.print || btn.dataset.check;
+  if (!key) return;
 
-  const key =
-    (btnGet?.dataset.get) ||
-    (
+  const it = (visibleList || []).find(x => x.key === key) || (lastList || []).find(x => x.key === key);
+  const subject = $("subjectSelect")?.value || "russian";
+
+  try {
+    status("Загрузка результата…");
+    const result = await getResultByKey(key);
+
+    if (btn.dataset.get) {
+      $("jsonViewer").value = JSON.stringify(result, null, 2);
+      status("JSON открыт ✅");
+      return;
+    }
+
+    if (btn.dataset.dl) {
+      const fio = (it?.fio || "student").replace(/\s+/g, "_");
+      const cls = (it?.cls || "").replace(/\s+/g, "_");
+      const v = it?.variant || "";
+      downloadJson(result, `result_${subject}_${cls}_${fio}_${v}.json`);
+      status("Скачано ✅");
+      return;
+    }
+
+    if (btn.dataset.check) {
+      status("Автопроверка…");
+      const g = await autocheck(subject, it || {}, result);
+      $("jsonViewer").value = JSON.stringify({ grade: g, result }, null, 2);
+      status(`Проверено ✅ ${g.ok}/${g.total} (${g.percent}%)`);
+      return;
+    }
+
+    if (btn.dataset.print) {
+      status("Печать…");
+      let g = null;
+      try { g = await autocheck(subject, it || {}, result); } catch { /* ok */ }
+      const variantJson = await loadVariantJson(subject, it?.variant || "");
+      const title = `${it?.fio || "Ученик"} • ${it?.cls || ""} • ${it?.variant || ""}`.trim();
+      openPrintWindow({ title, subject, variantJson, resultJson: result, grade: g });
+      status("Окно печати открыто ✅");
+      return;
+    }
+  } catch (err) {
+    status("Ошибка: " + err.message);
+  }
+});
+
+/* ========= Print selected ========= */
+async function printSelected() {
+  const checked = Array.from($("resultsTbody").querySelectorAll("input[type='checkbox'][data-key]:checked"))
+    .map(x => x.getAttribute("data-key")).filter(Boolean);
+  if (checked.length !== 1) { status("Выбери ровно 1 работу для печати."); return; }
+
+  const key = checked[0];
+  const it = (visibleList || []).find(x => x.key === key) || (lastList || []).find(x => x.key === key);
+  const subject = $("subjectSelect")?.value || "russian";
+
+  try {
+    status("Печать…");
+    const result = await getResultByKey(key);
+    let g = null;
+    try { g = await autocheck(subject, it || {}, result); } catch { /* ok */ }
+    const variantJson = await loadVariantJson(subject, it?.variant || "");
+    const title = `${it?.fio || "Ученик"} • ${it?.cls || ""} • ${it?.variant || ""}`.trim();
+    openPrintWindow({ title, subject, variantJson, resultJson: result, grade: g });
+    status("Окно печати открыто ✅");
+  } catch (e) {
+    status("Печать ошибка: " + e.message);
+  }
+}
+
+/* ========= Bind base buttons ========= */
+$("btnList")?.addEventListener("click", () => loadList());
+$("fioSearch")?.addEventListener("input", () => {
+  visibleList = applyClientFilters(lastList);
+  renderTable(visibleList);
+  status(`Фильтр: ${visibleList.length}`);
+});
+
+/* ========= Start ========= */
+(async () => {
+  try {
+    ensureExtras();
+    status("Готово. (teacher.js загружен)");
+  } catch (e) {
+    status("JS ошибка: " + e.message);
+    console.error(e);
+  }
+})();
