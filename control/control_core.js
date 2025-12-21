@@ -534,11 +534,23 @@
 
   // ========= reset consume (код сброса) =========
   async function consumeResetCode() {
-    const code = safeText($("resetCode")?.value);
-    if (!code) {
-      alert("Введите код сброса.");
-      return;
-    }
+  const raw = String($("resetCode")?.value ?? "");
+  const code = raw.trim().toLowerCase();
+
+  if (!code) {
+    alert("Введите код сброса.");
+    return;
+  }
+
+  // Код у тебя генерится как hex(6 bytes) => 12 символов
+  if (!/^[0-9a-f]{12}$/.test(code)) {
+    alert(
+      "Код сброса должен быть из 12 символов (0-9, a-f).\n" +
+      "Сейчас: " + code.length + " символов.\n\n" +
+      "Скопируйте код полностью из учительской панели."
+    );
+    return;
+  }
     if (!manifest?.teacher?.base_url || !manifest?.teacher?.token) {
       alert("В manifest.json не задан teacher.base_url / teacher.token.");
       return;
