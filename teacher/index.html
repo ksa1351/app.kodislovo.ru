@@ -1,1 +1,190 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Кодислово — Учительская панель</title>
+  <style>
+    :root{
+      --bg:#0b1020;--card:#121a33;--text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
+      --primary:#2b3a7a;--primary2:#1f2a57;--ok:#35d07f;--bad:#ff5b6e;--warn:#ffcc66;
+      --radius:18px;--max:1180px;
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb;--card:#ffffff;--text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
+      --primary:#3254ff;--primary2:#e9edff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:var(--max);margin:0 auto;padding:18px 14px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .brand b{font-size:16px}
+    .brand small{display:block;color:var(--muted)}
+    .row{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    @media(max-width:980px){.row{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+    h2{margin:0 0 10px;font-size:18px}
+    label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
+    input,select{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--primary);color:#fff;cursor:pointer}
+    .btn.secondary{background:var(--primary2);color:var(--text)}
+    .btn.danger{background:rgba(255,91,110,.2);color:var(--text)}
+    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .pill{padding:8px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+    th,td{border-bottom:1px solid var(--border);padding:10px 8px;vertical-align:top}
+    th{color:var(--muted);font-weight:600;text-align:left}
+    tr:hover{background:rgba(255,255,255,.03)}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .tag.ok{color:var(--ok)}
+    .tag.bad{color:var(--bad)}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal.open{display:flex}
+    .modal .box{max-width:880px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px}
+    .modal .box h3{margin:0 0 10px}
+    pre{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.25);border:1px solid var(--border);padding:10px;border-radius:14px;max-height:55vh;overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <b>Кодислово · Учительская панель</b>
+        <small>проверка работ · таймер · сброс попыток</small>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label style="display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin:0">
+          Тема
+          <select id="themeSel" style="width:auto;padding:8px 10px">
+            <option value="dark">Тёмная</option>
+            <option value="light">Светлая</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <div class="card">
+        <h2>Проверка работ</h2>
+
+        <label>Токен учителя (X-Teacher-Token)</label>
+        <input id="teacherToken" type="password" placeholder="Вставьте токен…" />
+
+        <div class="kpi">
+          <span class="pill">API: <span id="apiUrl" class="mono"></span></span>
+          <span class="pill">Статус: <span id="apiStatus">—</span></span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">
+          <div>
+            <label>Предмет</label>
+            <select id="fSubject">
+              <option value="russian">Русский</option>
+              <option value="literature">Литература</option>
+              <option value="informatics">Информатика</option>
+            </select>
+          </div>
+          <div>
+            <label>Вариант (id)</label>
+            <input id="fVariant" placeholder="например: variant_01" />
+          </div>
+          <div>
+            <label>Класс (фильтр)</label>
+            <input id="fClass" placeholder="например: 10А" />
+          </div>
+          <div>
+            <label>Показывать (шт.)</label>
+            <select id="fLimit">
+              <option>50</option><option>100</option><option>200</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="btn" id="btnList">Обновить список</button>
+          <button class="btn secondary" id="btnExportCsv">Экспорт CSV</button>
+          <button class="btn danger" id="btnVoidSelected">Аннулировать выбранные</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:28px"><input type="checkbox" id="chkAll"></th>
+              <th>Дата</th>
+              <th>Ученик</th>
+              <th>Класс</th>
+              <th>Предмет</th>
+              <th>Вариант</th>
+              <th>Результат</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Таймер и сброс попытки</h2>
+
+        <label>Предмет</label>
+        <select id="cfgSubject">
+          <option value="russian">Русский</option>
+          <option value="literature">Литература</option>
+          <option value="informatics">Информатика</option>
+        </select>
+
+        <label>Вариант (id)</label>
+        <input id="cfgVariant" placeholder="variant_01 (или пусто = для всех)" />
+
+        <label>Таймер (минуты, 0 = без лимита)</label>
+        <input id="cfgTimer" type="number" min="0" step="1" value="0" />
+
+        <div class="btns">
+          <button class="btn" id="btnCfgLoad">Загрузить</button>
+          <button class="btn secondary" id="btnCfgSave">Сохранить</button>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+
+        <h2 style="margin-top:0">Сброс ученику</h2>
+
+        <label>ФИО (как в работе)</label>
+        <input id="rFio" placeholder="Иванов Иван" />
+
+        <label>Класс</label>
+        <input id="rClass" placeholder="10А" />
+
+        <label>Вариант (id)</label>
+        <input id="rVariant" placeholder="variant_01" />
+
+        <div class="btns">
+          <button class="btn danger" id="btnReset">Сгенерировать код сброса</button>
+        </div>
+
+        <div id="resetOut" style="margin-top:10px"></div>
+        <div style="margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5">
+          Учитель даёт этот код ученику. Ученик вводит код на странице контрольной → прогресс очищается и создаётся новая попытка.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <h3 id="modalTitle">Работа</h3>
+        <button class="btn secondary" id="modalClose">Закрыть</button>
+      </div>
+      <div id="modalMeta" class="kpi"></div>
+      <pre id="modalPre"></pre>
+    </div>
+  </div>
+
+<script src="./teacher.js"></script>
+</body>
+</html>
 
