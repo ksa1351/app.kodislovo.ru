@@ -1,7 +1,7 @@
 {
   "subjectTitle": "Русский язык",
   "teacherEmail": "kovaleva-sa@yandex.ru",
-  "cloudSubmitUrl": "https://api.kodislovo.ru/submit",
+  "cloudSubmitUrl": "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net/submit",
   "submitToken": "e601ff0e8fdfba014efb518f11b71aba3f2e4fdfe11845146c5e5fd3ed18fc1a",
   "variants": [
     { "id": "variant_01", "title": "Вариант 1", "file": "variant_01.json" }
