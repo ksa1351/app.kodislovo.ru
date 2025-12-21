@@ -6,15 +6,13 @@
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
 
-  function setText(id, text) { const el = $(id); if (el) el.textContent = text; }
-  function setHTML(id, html) { const el = $(id); if (el) el.innerHTML = html; }
+  function setText(id, text) { const el = $(id); if (el) el.textContent = text ?? ""; }
+  function setHTML(id, html) { const el = $(id); if (el) el.innerHTML = html ?? ""; }
   function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
   function nowIso() { return new Date().toISOString(); }
   function safeText(s) { return (s ?? "").toString().trim(); }
-  function normalizeAnswer(s) { return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim(); }
-
-  function variantsBase(subject) {
-    return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+  function normalizeAnswer(s) {
+    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
 
   async function fetchJson(url) {
@@ -40,6 +38,11 @@
     window.location.href = href;
   }
 
+  function setStatus(msg) {
+    const el = $("statusLine");
+    if (el) el.textContent = msg || "";
+  }
+
   // ========= theme =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
@@ -47,6 +50,7 @@
     const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
     return prefersLight ? "light" : "dark";
   }
+
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
@@ -56,9 +60,24 @@
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
+  // ========= paths =========
+  // По архитектуре: /control/control.html?subject=russian
+  // Варианты лежат: /control/russian/variants/manifest.json
+  function variantsBase(subject) {
+    // основной путь (правильный для текущей архитектуры)
+    return new URL(`./${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+  }
+
+  // fallback на старый путь (если вдруг)
+  function variantsBaseLegacy(subject) {
+    return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+  }
+
   // ========= state =========
   let subject = getParam("subject") || "russian";
+
   let base = variantsBase(subject);
+  let baseLegacy = variantsBaseLegacy(subject);
 
   let manifest = null;
   let variantMeta = null;
@@ -109,10 +128,11 @@
 
   // ========= header =========
   function setHeader() {
-    setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
-    setText("uiSubtitle",
+    setText("workTitle", variantMeta?.title || "Контрольная работа");
+    setText(
+      "workSubtitle",
       variantMeta?.subtitle ||
-      "Заполните данные ученика, выполните задания, затем скачайте и отправьте результат."
+        "Заполните ФИО и класс. Выполняйте задания по одному, переходите кнопками «Предыдущее/Следующее»."
     );
   }
 
@@ -163,8 +183,6 @@
 
   function setTimerUI(text) {
     setText("uiTimer", text);
-    const mirror = $("uiTimerMirror");
-    if (mirror) mirror.value = text;
   }
 
   function startTimerIfNeeded() {
@@ -198,8 +216,8 @@
     if (btnDownload) btnDownload.disabled = !isFinished;
     if (btnEmail) btnEmail.disabled = !isFinished;
 
-    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#taskOne input");
-    inputs.forEach((el) => { el.disabled = isFinished; });
+    const lock = (sel) => document.querySelectorAll(sel).forEach(el => (el.disabled = isFinished));
+    lock("#studentName, #studentClass, #variantSelect, #taskAnswer");
   }
 
   function buildResultPayload() {
@@ -243,10 +261,9 @@
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Можно скачать и отправить результат.");
   }
 
-  // ========= sticky texts by range =========
-  let stickyCollapsed = false;
-
-  function getTextRangesFromMeta() {
+  // ========= TEXTS: показываем блок текста над заданием =========
+  // meta.texts: { t1:{title, html, range:[1,5]}, t2:{...} }
+  function getTextBlocksFromMeta() {
     const texts = variantMeta?.texts || {};
     const blocks = Object.values(texts)
       .map(t => {
@@ -261,105 +278,95 @@
     return blocks;
   }
 
-  function setStickyVisible(visible) {
-    const wrap = $("stickyTextWrap");
-    if (!wrap) return;
-    wrap.classList.toggle("kd-hidden", !visible);
-  }
-
-  function setStickyContent(block) {
-    const title = $("stickyTextTitle");
-    const range = $("stickyTextRange");
-    const body = $("stickyTextBody");
-    if (!title || !range || !body) return;
-
-    title.textContent = block.title;
-    range.textContent = `задания ${block.from}–${block.to}`;
-    body.innerHTML = block.html;
-
-    body.style.display = stickyCollapsed ? "none" : "";
-    const btn = $("stickyToggle");
-    if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-  }
-
-  function findBlockForTask(blocks, taskId) {
-    if (!taskId) return null;
+  function findTextForTask(blocks, taskId) {
     for (const b of blocks) if (taskId >= b.from && taskId <= b.to) return b;
     return null;
   }
 
-  // ========= render ONE task =========
-  let stickyBlocks = [];
-  function renderCurrentTask() {
-    const cont = $("taskOne");
-    if (!cont) return;
+  let textBlocks = [];
 
+  function setTextBoxVisible(visible) {
+    const box = $("textBox");
+    if (!box) return;
+    box.classList.toggle("kd-hidden", !visible);
+  }
+
+  // ========= render ONE task =========
+  function renderCurrentTask() {
     const tasks = variantData?.tasks || [];
     if (!tasks.length) {
-      cont.innerHTML = "<div class='kd-task'>Нет заданий в варианте.</div>";
-      setStickyVisible(false);
+      setText("taskTitle", "Нет заданий");
+      setHTML("taskText", "В этом варианте нет заданий.");
+      setTextBoxVisible(false);
       return;
     }
 
-    // clamp
     currentTaskIndex = Math.max(0, Math.min(currentTaskIndex, tasks.length - 1));
     const task = tasks[currentTaskIndex];
 
-    // sticky above task
-    const block = findBlockForTask(stickyBlocks, Number(task.id));
+    // текст над заданием (если есть)
+    const block = findTextForTask(textBlocks, Number(task.id));
     if (block) {
-      setStickyVisible(true);
-      setStickyContent(block);
+      setTextBoxVisible(true);
+      // можно красиво: заголовок + сам html
+      setHTML("textContent", `<div class="muted" style="margin-bottom:10px;"><b>${block.title}</b> (задания ${block.from}–${block.to})</div>${block.html}`);
     } else {
-      setStickyVisible(false);
+      setTextBoxVisible(false);
+      setHTML("textContent", "");
     }
 
-    cont.innerHTML = `
-      <section class="kd-task" data-task-id="${String(task.id)}">
-        <h3>Задание ${task.id}</h3>
-        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
-        <div class="q">${task.text || ""}</div>
+    // само задание
+    setText("taskTitle", `Задание ${task.id}`);
+    const hintEl = $("taskHint");
+    if (hintEl) {
+      if (task.hint) {
+        hintEl.classList.remove("kd-hidden");
+        hintEl.textContent = task.hint;
+      } else {
+        hintEl.classList.add("kd-hidden");
+        hintEl.textContent = "";
+      }
+    }
+    setHTML("taskText", task.text || "");
 
-        <input class="kd-answer" id="answerInput" type="text" placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
+    // ответ
+    const inp = $("taskAnswer");
+    if (inp) {
+      const saved = answersMap[String(task.id)];
+      inp.value = (typeof saved === "string") ? saved : "";
+      inp.disabled = isFinished;
 
-        <div class="kd-nav">
-          <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
-          <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
-        </div>
-      </section>
-    `;
+      inp.oninput = () => {
+        if (isFinished) return;
+        answersMap[String(task.id)] = inp.value;
+        saveProgress();
+      };
+    }
 
-    const inp = $("answerInput");
-    const saved = answersMap[String(task.id)];
-    if (inp && typeof saved === "string") inp.value = saved;
+    // nav
+    const btnPrev = $("btnPrev");
+    const btnNext = $("btnNext");
 
-    inp?.addEventListener("input", () => {
-      if (isFinished) return;
-      answersMap[String(task.id)] = inp.value;
-      saveProgress();
-    });
-
-    $("btnPrev")?.addEventListener("click", () => {
-      if (currentTaskIndex > 0) {
+    if (btnPrev) {
+      btnPrev.disabled = (currentTaskIndex <= 0);
+      btnPrev.onclick = () => {
+        if (currentTaskIndex <= 0) return;
         currentTaskIndex--;
         saveProgress();
         renderCurrentTask();
         window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    });
+      };
+    }
 
-    $("btnNext")?.addEventListener("click", () => {
-      if (currentTaskIndex < tasks.length - 1) {
+    if (btnNext) {
+      btnNext.disabled = (currentTaskIndex >= tasks.length - 1);
+      btnNext.onclick = () => {
+        if (currentTaskIndex >= tasks.length - 1) return;
         currentTaskIndex++;
         saveProgress();
         renderCurrentTask();
         window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    });
-
-    // disable nav when finished? (inputs already disabled)
-    if (isFinished) {
-      inp && (inp.disabled = true);
+      };
     }
   }
 
@@ -368,8 +375,22 @@
     return v.meta || {};
   }
 
+  async function loadManifestFrom(baseUrl) {
+    return await fetchJson(baseUrl + "manifest.json");
+  }
+
+  async function loadVariantFrom(baseUrl, file) {
+    return await fetchJson(baseUrl + file);
+  }
+
   async function loadManifest() {
-    manifest = await fetchJson(base + "manifest.json");
+    // пробуем основной путь, если нет — legacy
+    try {
+      manifest = await loadManifestFrom(base);
+    } catch (e1) {
+      manifest = await loadManifestFrom(baseLegacy);
+      base = baseLegacy; // переключаемся на рабочий базовый
+    }
 
     const sel = $("variantSelect");
     if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
@@ -387,12 +408,10 @@
       }
     });
 
-    if (sel.options.length) {
-      sel.value = currentVariantId;
-      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
-    } else {
-      throw new Error("manifest.json: список variants пустой");
-    }
+    if (!sel.options.length) throw new Error("manifest.json: список variants пустой");
+
+    sel.value = currentVariantId;
+    currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -403,12 +422,14 @@
   }
 
   async function loadVariant(file) {
-    variantData = await fetchJson(base + file);
+    variantData = await loadVariantFrom(base, file);
     variantMeta = extractVariantMeta(variantData);
 
+    // таймер
     const tlm = Number(variantMeta.time_limit_minutes || 0);
     timeLimitSec = tlm > 0 ? tlm * 60 : null;
 
+    // прогресс
     const progress = loadProgress();
     startedAt = progress?.startedAt || nowIso();
     finishedAt = progress?.finishedAt || null;
@@ -422,16 +443,8 @@
 
     setHeader();
 
-    stickyBlocks = getTextRangesFromMeta();
-
-    // sticky collapse btn
-    $("stickyToggle")?.addEventListener("click", () => {
-      stickyCollapsed = !stickyCollapsed;
-      const body = $("stickyTextBody");
-      if (body) body.style.display = stickyCollapsed ? "none" : "";
-      const btn = $("stickyToggle");
-      if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-    });
+    // тексты
+    textBlocks = getTextBlocksFromMeta();
 
     renderCurrentTask();
     applyFinishedState();
@@ -439,6 +452,8 @@
 
     $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
     $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+
+    setStatus("Готово");
   }
 
   // ========= init =========
@@ -489,7 +504,7 @@
       `Ожидаем manifest:\n${base}manifest.json\n` +
       `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
       `Проверь:\n` +
-      `1) путь /controls/<subject>/variants/manifest.json\n` +
+      `1) путь /control/<subject>/variants/manifest.json\n` +
       `2) что control.html лежит в /control/control.html\n` +
       `3) что подключён CSS: /assets/css/control-ui.css\n`;
 
