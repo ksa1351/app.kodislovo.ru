@@ -2,189 +2,225 @@
 <html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Кодислово — Учительская панель</title>
   <style>
     :root{
-      --bg:#0b1020;--card:#121a33;--text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
-      --primary:#2b3a7a;--primary2:#1f2a57;--ok:#35d07f;--bad:#ff5b6e;--warn:#ffcc66;
-      --radius:18px;--max:1180px;
+      --bg:#0b1020;--bg2:#070a14;--card:#121a33;
+      --text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
+      --primary:#2b3a7a;--primary2:#1f2a57;--bad:#ff5b6e;--ok:#35d07f;
+      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:1200px;
     }
     [data-theme="light"]{
-      --bg:#f6f7fb;--card:#ffffff;--text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
+      --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;
+      --text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
       --primary:#3254ff;--primary2:#e9edff;
+      --shadow:0 14px 40px rgba(15,24,60,.1);
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:var(--max);margin:0 auto;padding:18px 14px}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .brand b{font-size:16px}
-    .brand small{display:block;color:var(--muted)}
-    .row{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-    @media(max-width:980px){.row{grid-template-columns:1fr}}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-    h2{margin:0 0 10px;font-size:18px}
-    label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
-    input,select{width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text)}
-    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .btn{padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--primary);color:#fff;cursor:pointer}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
+    }
+    a{color:inherit}
+    .topbar{position:sticky;top:0;z-index:10;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+    .topbar-inner{max-width:var(--max);margin:0 auto;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primary),rgba(255,255,255,.1))}
+    .brand b{font-size:14px}
+    .brand span{font-size:12px;color:var(--muted)}
+    .toggle{display:flex;align-items:center;gap:8px}
+    .toggle input{display:none}
+    .toggle small{color:var(--muted);font-size:12px}
+    .switch{width:44px;height:26px;border-radius:999px;background:var(--card);border:1px solid var(--border);position:relative}
+    .knob{width:20px;height:20px;border-radius:50%;background:var(--text);position:absolute;top:2px;left:2px;transition:.2s}
+    input:checked+.switch .knob{left:22px}
+
+    .container{max-width:var(--max);margin:0 auto;padding:16px 14px}
+    h1{margin:14px 0 6px;font-size:clamp(22px,3vw,30px)}
+    p.lead{margin:0 0 14px;color:var(--muted);line-height:1.5}
+
+    .grid{display:grid;grid-template-columns:1fr;gap:14px}
+    @media(min-width:960px){.grid{grid-template-columns:420px 1fr}}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:560px){.row.cols2{grid-template-columns:1fr 1fr}}
+    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
+    label{font-size:12px;color:var(--muted)}
+    input,select,textarea{
+      width:100%;padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);background:transparent;color:var(--text)
+    }
+    textarea{min-height:90px;resize:vertical}
+    .btnbar{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+    @media(min-width:560px){.btnbar{grid-template-columns:repeat(3,1fr)}}
+    .btn{
+      width:100%;padding:11px 12px;border-radius:14px;
+      background:var(--primary);color:#fff;border:1px solid var(--border);
+      cursor:pointer;text-align:center;transition:filter .15s, transform .08s
+    }
+    .btn:hover{filter:brightness(1.06)}
+    .btn:active{transform:translateY(1px)}
     .btn.secondary{background:var(--primary2);color:var(--text)}
-    .btn.danger{background:rgba(255,91,110,.2);color:var(--text)}
-    .kpi{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .pill{padding:8px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px}
-    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
-    th,td{border-bottom:1px solid var(--border);padding:10px 8px;vertical-align:top}
-    th{color:var(--muted);font-weight:600;text-align:left}
-    tr:hover{background:rgba(255,255,255,.03)}
-    .tag{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
-    .tag.ok{color:var(--ok)}
-    .tag.bad{color:var(--bad)}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
-    .modal.open{display:flex}
-    .modal .box{max-width:880px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px}
-    .modal .box h3{margin:0 0 10px}
-    pre{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.25);border:1px solid var(--border);padding:10px;border-radius:14px;max-height:55vh;overflow:auto}
+    .btn.danger{background:transparent;color:var(--bad);border:1px solid rgba(255,91,110,.5)}
+    .hint{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted);font-size:12px}
+    .status{margin-top:10px;font-size:13px;color:var(--muted);white-space:pre-wrap}
+    .status.ok{color:var(--ok)}
+    .status.bad{color:var(--bad)}
+
+    table{width:100%;border-collapse:separate;border-spacing:0 10px}
+    th{font-size:12px;color:var(--muted);text-align:left;padding:0 10px}
+    td{padding:12px 10px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    [data-theme="light"] td{background:rgba(10,16,40,.03)}
+    tr td:first-child{border-radius:14px 0 0 14px}
+    tr td:last-child{border-radius:0 14px 14px 0}
+    .k{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;font-size:12px;color:var(--muted);word-break:break-all}
+    .small{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .aBtn{padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
+    .aBtn:hover{filter:brightness(1.06)}
+    .aBtn.danger{border-color:rgba(255,91,110,.5);color:var(--bad)}
+    .chk{transform:scale(1.2)}
+    footer{margin:18px 0 6px;text-align:center;color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
+  <div class="topbar">
+    <div class="topbar-inner">
       <div class="brand">
-        <b>Кодислово · Учительская панель</b>
-        <small>проверка работ · таймер · сброс попыток</small>
+        <div class="logo"></div>
+        <div>
+          <b>Кодислово · Учитель</b><br>
+          <span>проверка · таймер · сброс</span>
+        </div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <label style="display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin:0">
-          Тема
-          <select id="themeSel" style="width:auto;padding:8px 10px">
-            <option value="dark">Тёмная</option>
-            <option value="light">Светлая</option>
-          </select>
+
+      <div class="toggle">
+        <small>Тема</small>
+        <label>
+          <input id="themeToggle" type="checkbox">
+          <span class="switch"><span class="knob"></span></span>
         </label>
       </div>
     </div>
+  </div>
 
-    <div class="row">
+  <div class="container">
+    <h1>Учительская панель</h1>
+    <p class="lead">Просмотр работ из Yandex Object Storage, настройка таймера и выдача кода для повторной сдачи (reset).</p>
 
+    <div class="grid">
+      <!-- LEFT -->
       <div class="card">
-        <h2>Проверка работ</h2>
+        <h3 style="margin:0 0 10px">Настройки и сброс</h3>
 
-        <label>Токен учителя (X-Teacher-Token)</label>
-        <input id="teacherToken" type="password" placeholder="Вставьте токен…" />
-
-        <div class="kpi">
-          <span class="pill">API: <span id="apiUrl" class="mono"></span></span>
-          <span class="pill">Статус: <span id="apiStatus">—</span></span>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">
+        <div class="row cols2">
           <div>
             <label>Предмет</label>
-            <select id="fSubject">
+            <select id="subject">
               <option value="russian">Русский</option>
               <option value="literature">Литература</option>
               <option value="informatics">Информатика</option>
             </select>
           </div>
           <div>
-            <label>Вариант (id)</label>
-            <input id="fVariant" placeholder="например: variant_01" />
+            <label>Вариант (например: v1, variant_01)</label>
+            <input id="variant" placeholder="например: variant_01" />
           </div>
+        </div>
+
+        <div class="row cols2" style="margin-top:10px">
+          <div>
+            <label>Таймер (минуты)</label>
+            <input id="timerMinutes" type="number" min="0" step="1" placeholder="0 = без лимита" />
+          </div>
+          <div>
+            <label>Класс (для reset-кода)</label>
+            <input id="cls" placeholder="например: 9А" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>ФИО (для reset-кода)</label>
+            <input id="fio" placeholder="например: Иванов Иван" />
+          </div>
+        </div>
+
+        <div class="btnbar">
+          <button class="btn secondary" id="btnCfgLoad">Загрузить таймер</button>
+          <button class="btn" id="btnCfgSave">Сохранить таймер</button>
+          <button class="btn danger" id="btnResetCreate">Сделать reset-код</button>
+        </div>
+
+        <div class="hint">
+          <span class="pill">Reset</span>
+          Код сброса нужен, если ребёнок сдавал без интернета/ошибся браузером.
+          Выдаёшь код → ребёнок вводит его в контрольной (мы добавим поле позже, или ты вставишь в URL).
+        </div>
+
+        <div id="leftStatus" class="status"></div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <h3 style="margin:0 0 6px">Проверка работ</h3>
+            <div class="small">Фильтры влияют на list. Можно массово выделять и аннулировать.</div>
+          </div>
+          <div class="actions">
+            <button class="aBtn" id="btnRefresh">Обновить</button>
+            <button class="aBtn danger" id="btnVoidSelected">Аннулировать выбранные</button>
+          </div>
+        </div>
+
+        <div class="row cols3" style="margin-top:12px">
           <div>
             <label>Класс (фильтр)</label>
-            <input id="fClass" placeholder="например: 10А" />
+            <input id="filterClass" placeholder="например: 9А" />
           </div>
           <div>
-            <label>Показывать (шт.)</label>
-            <select id="fLimit">
-              <option>50</option><option>100</option><option>200</option>
-            </select>
+            <label>Вариант (фильтр)</label>
+            <input id="filterVariant" placeholder="например: variant_01" />
+          </div>
+          <div>
+            <label>Поиск ФИО</label>
+            <input id="filterFio" placeholder="часть ФИО" />
           </div>
         </div>
 
-        <div class="btns">
-          <button class="btn" id="btnList">Обновить список</button>
-          <button class="btn secondary" id="btnExportCsv">Экспорт CSV</button>
-          <button class="btn danger" id="btnVoidSelected">Аннулировать выбранные</button>
+        <div id="tableWrap" style="margin-top:12px;overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:42px"></th>
+                <th>ФИО / Класс</th>
+                <th>Вариант</th>
+                <th>Дата</th>
+                <th>Ключ (S3)</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th style="width:28px"><input type="checkbox" id="chkAll"></th>
-              <th>Дата</th>
-              <th>Ученик</th>
-              <th>Класс</th>
-              <th>Предмет</th>
-              <th>Вариант</th>
-              <th>Результат</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
+        <div id="rightStatus" class="status"></div>
 
-      <div class="card">
-        <h2>Таймер и сброс попытки</h2>
-
-        <label>Предмет</label>
-        <select id="cfgSubject">
-          <option value="russian">Русский</option>
-          <option value="literature">Литература</option>
-          <option value="informatics">Информатика</option>
-        </select>
-
-        <label>Вариант (id)</label>
-        <input id="cfgVariant" placeholder="variant_01 (или пусто = для всех)" />
-
-        <label>Таймер (минуты, 0 = без лимита)</label>
-        <input id="cfgTimer" type="number" min="0" step="1" value="0" />
-
-        <div class="btns">
-          <button class="btn" id="btnCfgLoad">Загрузить</button>
-          <button class="btn secondary" id="btnCfgSave">Сохранить</button>
-        </div>
-
-        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
-
-        <h2 style="margin-top:0">Сброс ученику</h2>
-
-        <label>ФИО (как в работе)</label>
-        <input id="rFio" placeholder="Иванов Иван" />
-
-        <label>Класс</label>
-        <input id="rClass" placeholder="10А" />
-
-        <label>Вариант (id)</label>
-        <input id="rVariant" placeholder="variant_01" />
-
-        <div class="btns">
-          <button class="btn danger" id="btnReset">Сгенерировать код сброса</button>
-        </div>
-
-        <div id="resetOut" style="margin-top:10px"></div>
-        <div style="margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5">
-          Учитель даёт этот код ученику. Ученик вводит код на странице контрольной → прогресс очищается и создаётся новая попытка.
+        <div style="margin-top:12px">
+          <label>Просмотр JSON</label>
+          <textarea id="jsonView" placeholder="Здесь откроется результат (get)"></textarea>
         </div>
       </div>
-
     </div>
+
+    <footer>© Кодислово · teacher panel</footer>
   </div>
 
-  <div class="modal" id="modal">
-    <div class="box">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-        <h3 id="modalTitle">Работа</h3>
-        <button class="btn secondary" id="modalClose">Закрыть</button>
-      </div>
-      <div id="modalMeta" class="kpi"></div>
-      <pre id="modalPre"></pre>
-    </div>
-  </div>
-
-<script src="./teacher.js"></script>
+  <script src="./teacher.js"></script>
 </body>
 </html>
-
