@@ -1,6 +1,7 @@
 (function () {
   "use strict";
 
+  // ========= helpers =========
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
@@ -11,16 +12,25 @@
   function safeText(s) { return (s ?? "").toString().trim(); }
   function normalizeAnswer(s) { return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim(); }
 
-  // ✅ железобетонная база относительно control.html
+  // IMPORTANT: папка /controls/ в корне сайта, а control.html в /control/
   function variantsBase(subject) {
-    // control/control.html -> control/controls/<subject>/variants/
-    return new URL(`./controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+    return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`Не удалось загрузить: ${url} (HTTP ${r.status})`);
     return await r.json();
+  }
+
+  function downloadJson(filename, obj) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
   }
 
   // ========= theme =========
@@ -33,10 +43,12 @@
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
-    const t = $("themeToggle");
     const lab = $("themeLabel");
-    if (t) t.checked = theme === "light";
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute("data-theme") || "dark";
+    setTheme(cur === "light" ? "dark" : "light");
   }
 
   // ========= state =========
@@ -93,14 +105,13 @@
   // ========= header =========
   function setHeader() {
     setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
-    setText(
-      "uiSubtitle",
+    setText("uiSubtitle",
       variantMeta?.subtitle ||
       "Заполните данные, выполните задания, нажмите «Завершить», затем «Сохранить»."
     );
   }
 
-  // ========= scoring =========
+  // ========= scoring (для результата) =========
   function checkOne(task, studentAnswerRaw) {
     const acceptable = (task.answers || []).map(normalizeAnswer);
     const a = normalizeAnswer(studentAnswerRaw);
@@ -170,15 +181,21 @@
   // ========= finish =========
   function applyFinishedState() {
     const btnFinish = $("btnFinish");
-    const btnSave = $("btnSave");
+    const btnSaveCloud = $("btnSaveCloud");
+    const btnReset = $("btnReset");
+    const resetCode = $("resetCode");
 
     if (btnFinish) {
       btnFinish.textContent = isFinished ? "Завершено" : "Завершить";
       btnFinish.disabled = isFinished;
     }
-    if (btnSave) btnSave.disabled = !isFinished;
+    if (btnSaveCloud) btnSaveCloud.disabled = !isFinished;
 
-    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#answerInput");
+    // reset доступен всегда (по коду)
+    if (btnReset) btnReset.disabled = false;
+    if (resetCode) resetCode.disabled = false;
+
+    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#taskOne input");
     inputs.forEach((el) => { el.disabled = isFinished; });
   }
 
@@ -223,7 +240,7 @@
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Теперь нажмите «Сохранить».");
   }
 
-  // ========= sticky text =========
+  // ========= sticky texts by range =========
   let stickyCollapsed = false;
 
   function getTextRangesFromMeta() {
@@ -268,9 +285,8 @@
     return null;
   }
 
-  // ========= render one task =========
+  // ========= render ONE task =========
   let stickyBlocks = [];
-
   function renderCurrentTask() {
     const cont = $("taskOne");
     if (!cont) return;
@@ -286,22 +302,27 @@
     const task = tasks[currentTaskIndex];
 
     const block = findBlockForTask(stickyBlocks, Number(task.id));
-    if (block) { setStickyVisible(true); setStickyContent(block); }
-    else { setStickyVisible(false); }
+    if (block) {
+      setStickyVisible(true);
+      setStickyContent(block);
+    } else {
+      setStickyVisible(false);
+    }
 
     cont.innerHTML = `
-      <section class="kd-task" data-task-id="${String(task.id)}">
-        <h3>Задание ${task.id}</h3>
-        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
-        <div class="q">${task.text || ""}</div>
+      <section class="kd-stage">
+        <section class="kd-task" data-task-id="${String(task.id)}">
+          <h3>Задание ${task.id}</h3>
+          ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
+          <div class="q">${task.text || ""}</div>
 
-        <input class="kd-answer" id="answerInput" type="text"
-          placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
+          <input class="kd-answer" id="answerInput" type="text" placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
 
-        <div class="kd-nav">
-          <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
-          <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
-        </div>
+          <div class="kd-nav">
+            <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
+            <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
+          </div>
+        </section>
       </section>
     `;
 
@@ -333,126 +354,100 @@
       }
     });
 
-    if (isFinished && inp) inp.disabled = true;
+    if (isFinished) {
+      inp && (inp.disabled = true);
+    }
   }
 
   // ========= cloud submit =========
-  async function submitResultToCloud() {
-    const submitUrl = String(manifest?.submit?.url || "").trim();
-    const submitToken = String(manifest?.submit?.token || "").trim();
+  async function submitToCloud(payload) {
+    const url = manifest?.submit?.url;
+    const token = manifest?.submit?.token;
+    if (!url || !token) throw new Error("В manifest.json не задан submit.url или submit.token");
 
-    if (!submitUrl) { alert("В manifest.json не задан submit.url."); return; }
-    if (!submitToken) { alert("В manifest.json не задан submit.token."); return; }
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Submit-Token": token
+      },
+      body: JSON.stringify(payload)
+    });
 
-    const payload = buildResultPayload();
-    if (!safeText(payload.student.name) || !safeText(payload.student.class) || !safeText(payload.variant.id)) {
-      alert("Заполните ФИО, класс и выберите вариант.");
-      return;
+    const text = await r.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch { /* ignore */ }
+
+    if (!r.ok) {
+      throw new Error(data?.message || data?.error || `HTTP ${r.status}: ${text}`);
     }
-
-    const btn = $("btnSave");
-    if (btn) btn.disabled = true;
-
-    try {
-      const r = await fetch(submitUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Submit-Token": submitToken },
-        body: JSON.stringify(payload)
-      });
-      const text = await r.text();
-      let data = null; try { data = JSON.parse(text); } catch {}
-
-      if (!r.ok) throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
-      alert("Работа сохранена ✅\nОтправлено в облако ✅");
-    } catch (e) {
-      console.error(e);
-      alert("Работа сохранена ✅\nНо в облако не отправилась ❗\n" + (e?.message || e));
-    } finally {
-      if (btn) btn.disabled = !isFinished;
-    }
+    return data || { ok: true };
   }
 
-  // ========= reset consume =========
-  async function applyResetCode(codeRaw) {
-    const teacherBase = String(manifest?.teacher?.base_url || "").replace(/\/+$/, "");
-    const teacherToken = String(manifest?.teacher?.token || "").trim();
-    const code = safeText(codeRaw);
+  // ========= reset by code =========
+  async function consumeResetCode({ subject, variant, cls, fio, code }) {
+    const baseUrl = manifest?.teacher?.base_url;
+    const token = manifest?.teacher?.token;
+    if (!baseUrl || !token) throw new Error("В manifest.json не задан teacher.base_url или teacher.token");
 
-    if (!teacherBase) { alert("В manifest.json не задан teacher.base_url."); return; }
-    if (!teacherToken) { alert("В manifest.json не задан teacher.token."); return; }
+    const url = baseUrl.replace(/\/+$/, "") + "/teacher/reset/consume";
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Teacher-Token": token
+      },
+      body: JSON.stringify({ subject, variant, cls, fio, code })
+    });
 
-    const fio = safeText($("studentName")?.value);
-    const cls = safeText($("studentClass")?.value);
-    const variant = safeText(currentVariantId);
+    const txt = await r.text();
+    let obj = null;
+    try { obj = JSON.parse(txt); } catch { /* ignore */ }
 
-    if (!fio || !cls || !variant) {
-      alert("Заполните ФИО, класс и выберите вариант, затем введите код сброса.");
-      return;
-    }
+    if (!r.ok) throw new Error(obj?.message || obj?.error || `HTTP ${r.status}: ${txt}`);
+    if (!obj?.ok) throw new Error(obj?.error || "Сброс не выполнен");
+    return obj;
+  }
 
-    const url = `${teacherBase}/teacher/reset/consume`;
-    const btn = $("btnResetApply");
-    if (btn) btn.disabled = true;
-
-    try {
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Teacher-Token": teacherToken },
-        body: JSON.stringify({ subject, fio, cls, variant, code })
-      });
-
-      const text = await r.text();
-      let data = null; try { data = JSON.parse(text); } catch {}
-      if (!r.ok || !data?.ok) throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
-
-      localStorage.removeItem(lsKey());
-      answersMap = {};
-      currentTaskIndex = 0;
-      isFinished = false;
-      finishedAt = null;
-      startedAt = nowIso();
-
-      saveProgress();
-      applyFinishedState();
-      renderCurrentTask();
-      startTimerIfNeeded();
-
-      if ($("resetCode")) $("resetCode").value = "";
-      alert("Сброс выполнен ✅\nМожно начинать заново.");
-    } catch (e) {
-      console.error(e);
-      alert("Сброс не выполнен ❗\n" + (e?.message || e));
-    } finally {
-      if (btn) btn.disabled = false;
-    }
+  function clearLocalAttempt() {
+    localStorage.removeItem(lsKey());
+    answersMap = {};
+    currentTaskIndex = 0;
+    startedAt = nowIso();
+    finishedAt = null;
+    isFinished = false;
   }
 
   // ========= load =========
-  function extractVariantMeta(v) { return v.meta || {}; }
+  function extractVariantMeta(v) {
+    return v.meta || {};
+  }
 
   async function loadManifest() {
-    // если subject кривой — сразу видно базу
     manifest = await fetchJson(base + "manifest.json");
 
     const sel = $("variantSelect");
     if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
 
     sel.innerHTML = "";
-    const vars = Array.isArray(manifest.variants) ? manifest.variants : [];
-
-    if (!vars.length) throw new Error("manifest.json: список variants пустой");
-
-    vars.forEach((v, idx) => {
+    (manifest.variants || []).forEach((v, idx) => {
       const opt = document.createElement("option");
       opt.value = v.id;
       opt.textContent = v.title || v.id;
       opt.dataset.file = v.file;
       sel.appendChild(opt);
-      if (idx === 0) { currentVariantId = v.id; currentVariantFile = v.file; }
+      if (idx === 0) {
+        currentVariantId = v.id;
+        currentVariantFile = v.file;
+      }
     });
 
-    sel.value = currentVariantId;
-    currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+    if (sel.options.length) {
+      sel.value = currentVariantId;
+      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+    } else {
+      throw new Error("manifest.json: список variants пустой");
+    }
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -481,6 +476,7 @@
     currentTaskIndex = Number.isFinite(progress?.currentTaskIndex) ? progress.currentTaskIndex : 0;
 
     setHeader();
+
     stickyBlocks = getTextRangesFromMeta();
 
     $("stickyToggle")?.addEventListener("click", () => {
@@ -499,20 +495,73 @@
     $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
+  // ========= init =========
   async function init() {
     setTheme(getPreferredTheme());
-    $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
+
+    // theme by click (no checkbox)
+    $("themeBtn")?.addEventListener("click", () => toggleTheme());
 
     $("btnFinish")?.addEventListener("click", () => finishNow(false));
-    $("btnSave")?.addEventListener("click", async () => {
-      if (!isFinished) { alert("Сначала нажмите «Завершить»."); return; }
-      await submitResultToCloud();
+
+    $("btnSaveCloud")?.addEventListener("click", async () => {
+      if (!isFinished) return;
+      const btn = $("btnSaveCloud");
+      if (btn) { btn.disabled = true; btn.textContent = "Сохранение…"; }
+
+      try {
+        const payload = buildResultPayload();
+
+        // локально тоже сохраним файл (на всякий)
+        const n = safeText(payload.student.name).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
+        const c = safeText(payload.student.class).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
+        const fn = `result_${subject}_${currentVariantId}_${c || "class"}_${n || "student"}.json`;
+        downloadJson(fn, payload);
+
+        // и в облако
+        const res = await submitToCloud(payload);
+        alert("Работа сохранена ✅\n" + (res?.key ? `Ключ: ${res.key}` : ""));
+      } catch (e) {
+        console.error(e);
+        alert("Сохранение в облако не удалось ❗\n" + e.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Сохранить"; }
+      }
     });
 
-    $("btnResetApply")?.addEventListener("click", async () => {
+    $("btnReset")?.addEventListener("click", async () => {
       const code = safeText($("resetCode")?.value);
       if (!code) { alert("Введите код сброса."); return; }
-      await applyResetCode(code);
+
+      const fio = safeText($("studentName")?.value);
+      const cls = safeText($("studentClass")?.value);
+      if (!fio || !cls) { alert("Для сброса заполните ФИО и класс."); return; }
+      if (!currentVariantId) { alert("Не выбран вариант."); return; }
+
+      const yes = confirm("Сбросить попытку на этом устройстве?\nВсе введённые ответы будут удалены.");
+      if (!yes) return;
+
+      try {
+        await consumeResetCode({
+          subject,
+          variant: currentVariantId,
+          cls,
+          fio,
+          code
+        });
+
+        clearLocalAttempt();
+        saveProgress();
+        applyFinishedState();
+        renderCurrentTask();
+        startTimerIfNeeded();
+
+        $("resetCode").value = "";
+        alert("Сброс выполнен ✅ Можно проходить заново.");
+      } catch (e) {
+        console.error(e);
+        alert("Сброс не выполнен ❗\n" + e.message);
+      }
     });
 
     await loadManifest();
@@ -521,12 +570,16 @@
 
   init().catch((err) => {
     console.error(err);
-    alert(
-      "Ошибка загрузки контрольной: " + err.message + "\n\n" +
-      "Проверь пути:\n" +
-      `manifest: ${base}manifest.json\n` +
-      `variant:   ${base}(variant_XX.json)\n` +
-      "И что control.html лежит в /control/control.html"
-    );
+
+    const hint =
+      `Subject: ${subject}\n` +
+      `Ожидаем manifest:\n${base}manifest.json\n` +
+      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
+      `Проверь:\n` +
+      `1) что manifest.json лежит в /controls/${subject}/variants/manifest.json\n` +
+      `2) что control.html лежит в /control/control.html\n` +
+      `3) что подключён CSS: /assets/css/control-ui.css\n`;
+
+    alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
