@@ -55,11 +55,21 @@
         </div>
       </div>
 
-      <!-- действия (в один ряд, одинаковая ширина) -->
-      <div class="kd-actions">
+      <!-- действия: 2 кнопки в один ряд, одинаковая ширина -->
+      <div class="kd-actions" style="grid-template-columns: 1fr 1fr;">
         <button id="btnFinish" class="kd-btn" type="button">Завершить</button>
-        <button id="btnDownload" class="kd-btn secondary" type="button" disabled>Сохранить работу</button>
-        <button id="btnEmail" class="kd-btn secondary" type="button" disabled>Отправить</button>
+        <button id="btnSave" class="kd-btn secondary" type="button" disabled>Сохранить</button>
+      </div>
+
+      <!-- окно ввода кода сброса (вместо email) -->
+      <div class="kd-grid" style="margin-top:14px">
+        <div class="kd-field" style="grid-column:1 / -1">
+          <label for="resetCode">Код сброса (выдаёт учитель)</label>
+          <input id="resetCode" class="kd-input" type="text" placeholder="например: 550a937fdc6c" autocomplete="off" />
+        </div>
+        <div class="kd-field" style="grid-column:1 / -1">
+          <button id="btnResetApply" class="kd-btn secondary" type="button">Применить код и сбросить работу</button>
+        </div>
       </div>
     </section>
 
