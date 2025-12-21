@@ -24,8 +24,6 @@
         <div class="kd-theme">
           <span>Таймер:</span>
           <strong id="uiTimer">без лимита</strong>
-          <!-- опционально (если хочешь показывать в инпуте) -->
-          <input id="uiTimerMirror" class="kd-input kd-hidden" type="text" readonly />
         </div>
       </div>
     </div>
@@ -51,25 +49,18 @@
           <input id="studentClass" class="kd-input" type="text" placeholder="Например: 10А" autocomplete="off" />
         </div>
 
-        <div class="kd-field">
+        <div class="kd-field kd-span2">
           <label for="variantSelect">Вариант</label>
           <select id="variantSelect" class="kd-select"></select>
-        </div>
-
-        <div class="kd-field">
-          <label>Режим</label>
-          <input class="kd-input" type="text" value="Текст + одно задание" readonly />
         </div>
       </div>
 
       <!-- ОДНА СТРОКА: Завершить | Сохранить | Код | Сбросить -->
       <div class="kd-actions kd-actions-4">
         <button id="btnFinish" class="kd-btn" type="button">Завершить</button>
-
         <button id="btnSave" class="kd-btn secondary" type="button" disabled>Сохранить</button>
 
         <input id="resetCode" class="kd-input kd-reset" type="text" placeholder="Код сброса" autocomplete="off" />
-
         <button id="btnResetApply" class="kd-btn secondary" type="button">Сбросить</button>
       </div>
     </section>
