@@ -6,21 +6,19 @@
   <title>Контрольная — Кодислово</title>
 
   <!-- ЕДИНЫЙ CSS -->
-  <link rel="stylesheet" href="../assets/css/control-ui.css" />
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=1" />
 </head>
 
 <body>
+  <!-- topbar -->
   <div class="kd-topbar">
     <div class="kd-wrap">
       <div class="kd-row">
         <div class="kd-theme">
-          <span id="themeLabel">Тёмная</span>
-          <label class="kd-switch" title="Тема">
-            <input id="themeToggle" type="checkbox" />
-            <span>Тема</span>
-          </label>
+          <button class="kd-switch" id="themeBtn" type="button" aria-label="Переключить тему">
+            <span id="themeLabel">Тёмная</span>
+          </button>
         </div>
-
         <div class="kd-theme">
           <span>Таймер:</span>
           <strong id="uiTimer">без лимита</strong>
@@ -30,61 +28,66 @@
   </div>
 
   <div class="kd-wrap">
+
+    <!-- header -->
     <header class="kd-header">
-      <h1 id="uiMainTitle" class="kd-title">Контрольная работа</h1>
-      <p id="uiSubtitle" class="kd-subtitle">
+      <h1 class="kd-title" id="uiMainTitle">Контрольная работа</h1>
+      <p class="kd-subtitle" id="uiSubtitle">
         Заполните данные, выполните задания, нажмите «Завершить», затем «Сохранить».
       </p>
     </header>
 
-    <section class="kd-panel">
+    <!-- panel: student + actions -->
+    <section class="kd-panel" aria-label="Панель ученика">
       <div class="kd-grid">
         <div class="kd-field">
           <label for="studentName">ФИО</label>
-          <input id="studentName" class="kd-input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
+          <input class="kd-input" id="studentName" type="text" placeholder="Например: Иванов Иван" autocomplete="name">
         </div>
 
         <div class="kd-field">
           <label for="studentClass">Класс</label>
-          <input id="studentClass" class="kd-input" type="text" placeholder="Например: 10А" autocomplete="off" />
+          <input class="kd-input" id="studentClass" type="text" placeholder="Например: 10А" autocomplete="off">
         </div>
 
-        <div class="kd-field kd-span2">
+        <div class="kd-field" style="grid-column:1/-1">
           <label for="variantSelect">Вариант</label>
-          <select id="variantSelect" class="kd-select"></select>
+          <select class="kd-select" id="variantSelect"></select>
         </div>
       </div>
 
-      <!-- ОДНА СТРОКА: Завершить | Сохранить | Код | Сбросить -->
-      <div class="kd-actions kd-actions-4">
-        <button id="btnFinish" class="kd-btn" type="button">Завершить</button>
-        <button id="btnSave" class="kd-btn secondary" type="button" disabled>Сохранить</button>
+      <!-- ONE ROW: finish + save + reset code + reset -->
+      <div class="kd-actions kd-actions-row" style="margin-top:14px">
+        <button class="kd-btn" id="btnFinish" type="button">Завершить</button>
+        <button class="kd-btn secondary" id="btnSaveCloud" type="button" disabled>Сохранить</button>
 
-        <input id="resetCode" class="kd-input kd-reset" type="text" placeholder="Код сброса" autocomplete="off" />
-        <button id="btnResetApply" class="kd-btn secondary" type="button">Сбросить</button>
+        <input class="kd-input" id="resetCode" type="text" placeholder="Код сброса" autocomplete="off" spellcheck="false">
+
+        <button class="kd-btn secondary" id="btnReset" type="button">Сбросить</button>
+      </div>
+
+      <div class="kd-subtitle" style="margin-top:10px">
+        Сброс нужен, если ребёнок сдавал без интернета/ошибся браузер. Учитель выдаёт код → вы вводите здесь → «Сбросить».
       </div>
     </section>
 
-    <section class="kd-stage">
-      <!-- ТЕКСТ НАД ЗАДАНИЕМ -->
-      <div id="stickyTextWrap" class="kd-textbox kd-hidden">
-        <div class="kd-row" style="margin-bottom:10px;">
-          <div>
-            <strong id="stickyTextTitle">Текст</strong>
-            <span class="muted" id="stickyTextRange" style="margin-left:10px;"></span>
-          </div>
-          <button id="stickyToggle" class="kd-btn secondary" type="button" style="width:auto;padding:0 14px;height:40px;">
-            Скрыть
-          </button>
+    <!-- sticky text -->
+    <section class="kd-stage kd-hidden" id="stickyTextWrap">
+      <div class="kd-row" style="margin-bottom:10px">
+        <div>
+          <div style="font-weight:800; font-size:18px" id="stickyTextTitle">Текст</div>
+          <div class="kd-subtitle" id="stickyTextRange">задания 1–5</div>
         </div>
-        <div id="stickyTextBody"></div>
+        <button class="kd-btn secondary" id="stickyToggle" type="button">Скрыть</button>
       </div>
-
-      <!-- ОДНО ЗАДАНИЕ -->
-      <div id="taskOne"></div>
+      <div class="kd-textbox" id="stickyTextBody"></div>
     </section>
+
+    <!-- ONE TASK -->
+    <main id="taskOne"></main>
+
   </div>
 
-  <script src="control_core.js"></script>
+  <script src="./control_core.js?v=7"></script>
 </body>
 </html>
