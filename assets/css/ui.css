@@ -1,1 +1,138 @@
+/* kodislovo-ui.css — единый UI для kodislovo.ru / app.kodislovo.ru */
+/* Версия: 2025-12-21 */
 
+:root{
+  --bg:#0b1020;
+  --bg2:#070a14;
+  --card:#121a33;
+  --text:#e9ecff;
+  --muted:#b8c0ff;
+
+  --primary:#2b3a7a;
+  --primary2:#1f2a57;
+
+  --border:rgba(255,255,255,.10);
+  --shadow:0 12px 40px rgba(0,0,0,.35);
+
+  --radius:18px;
+  --radius-btn:14px;
+
+  --maxw:900px;
+  --pad:24px;
+}
+
+html,body{height:100%}
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:linear-gradient(180deg,var(--bg2),var(--bg) 35%,var(--bg2));
+  color:var(--text);
+}
+
+a{color:inherit}
+img{max-width:100%;height:auto}
+h1,h2,h3{line-height:1.15}
+p{color:var(--muted);line-height:1.6}
+
+/* ===== Layout ===== */
+.container{
+  max-width:var(--maxw);
+  margin:0 auto;
+  padding:var(--pad);
+}
+
+.card{
+  background:rgba(18,26,51,.92);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+
+.spacer{height:18px}
+
+/* ===== Buttons ===== */
+.btns{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:20px;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+
+  padding:12px 18px;
+  border-radius:var(--radius-btn);
+
+  background:var(--primary);
+  color:#fff;
+  text-decoration:none;
+
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 10px 28px rgba(0,0,0,.25);
+
+  transition:transform .06s ease, filter .12s ease, opacity .12s ease;
+  user-select:none;
+}
+
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{background:var(--primary2); color:var(--text)}
+.btn.ghost{background:transparent; border:1px solid var(--border); color:var(--text)}
+.btn.full{width:100%}
+
+/* ===== Lists ===== */
+ul{color:var(--muted);line-height:1.6;margin:10px 0 0}
+li{margin:6px 0}
+
+/* ===== Forms (на будущее, чтобы инпуты не "наезжали") ===== */
+.field{display:flex;flex-direction:column;gap:6px}
+.label{font-size:14px;color:var(--muted)}
+.input, input[type="text"], input[type="number"], select, textarea{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  outline:none;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+}
+.input::placeholder, input::placeholder, textarea::placeholder{color:rgba(184,192,255,.65)}
+input:focus, select:focus, textarea:focus{
+  border-color:rgba(120,150,255,.35);
+  box-shadow:0 0 0 3px rgba(120,150,255,.12);
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  align-items:start;
+}
+@media (max-width: 820px){
+  :root{ --pad:16px; }
+  .grid2{grid-template-columns:1fr}
+}
+
+/* ===== Theme hooks (если захочешь светлую тему позже) ===== */
+:root[data-theme="light"]{
+  --bg:#f5f7ff;
+  --bg2:#ffffff;
+  --card:#ffffff;
+  --text:#0b1020;
+  --muted:#45508a;
+
+  --border:rgba(12,18,40,.12);
+  --shadow:0 12px 34px rgba(12,18,40,.10);
+
+  --primary:#2b3a7a;
+  --primary2:#5567c9;
+}
