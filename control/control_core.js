@@ -545,17 +545,14 @@
     // Код генерируется как hex(6 bytes) => 12 символов
     if (!/^[0-9a-f]{12}$/.test(code)) {
       alert(
-        "Код сброса должен быть из 12 символов (0-9, a-f).
-" +
-        "Сейчас: " + code.length + " символов.
-
-" +
+        "Код сброса должен быть из 12 символов (0-9, a-f).\n" +
+        "Сейчас: " + code.length + " символов.\n\n" +
         "Скопируйте код полностью из учительской панели."
       );
       return;
     }
 
-    if (!manifest?.teacher?.base_url || !manifest?.teacher?.token) { || !manifest?.teacher?.token) {
+    if (!manifest?.teacher?.base_url || !manifest?.teacher?.token) {
       alert("В manifest.json не задан teacher.base_url / teacher.token.");
       return;
     }
