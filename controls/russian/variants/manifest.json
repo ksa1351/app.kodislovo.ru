@@ -3,7 +3,7 @@
   "subject": "russian",
   "subjectTitle": "Русский язык",
 
-  "submit_url": "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net",
+  "submit_url": "https://d5d0f59tbhjp00vl8vt4.8wihnuyr.apigw.yandexcloud.net/submit",
   "submit_token": "e601ff0e8fdfba014efb518f11b71aba3f2e4fdfe11845146c5e5fd3ed18fc1a",
 
   "reset_consume_url": "",
