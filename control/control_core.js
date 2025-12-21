@@ -28,8 +28,14 @@
   }
 
   // Варианты лежат в /controls/<subject>/variants/ (controls в корне сайта)
+  function projectRoot() {
+  // GitHub Pages: первый сегмент пути — это папка проекта (например "app.kodislovo.ru")
+  const seg = (location.pathname.split("/").filter(Boolean)[0] || "");
+  return seg ? `/${seg}/` : "/";
+  }
+
   function variantsBase(subject) {
-    return new URL(`/controls/${encodeURIComponent(subject)}/variants/`, window.location.origin).toString();
+  return `${location.origin}${projectRoot()}controls/${encodeURIComponent(subject)}/variants/`;
   }
 
   async function fetchJson(url) {
