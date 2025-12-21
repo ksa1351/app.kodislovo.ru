@@ -24,6 +24,8 @@ async function loadManifest(subject) {
 
   async function fetchJson(url) {
     const r = await fetch(url, { cache: "no-store" });
+    status(`Reset-код: ${r.code} (скопирован)\nПуть: ${r.key}`);
+    try { await navigator.clipboard.writeText(r.code); } catch {}
     if (!r.ok) throw new Error(`manifest.json ${r.status}`);
     return r.json();
   }
