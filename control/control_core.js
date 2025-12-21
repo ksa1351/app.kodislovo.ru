@@ -6,15 +6,30 @@
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
 
-  function setText(id, text) { const el = $(id); if (el) el.textContent = text; }
-  function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
-  function nowIso() { return new Date().toISOString(); }
-  function safeText(s) { return (s ?? "").toString().trim(); }
-  function normalizeAnswer(s) { return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim(); }
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text;
+  }
+  function setHTML(id, html) {
+    const el = $(id);
+    if (el) el.innerHTML = html;
+  }
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
+  function nowIso() {
+    return new Date().toISOString();
+  }
+  function safeText(s) {
+    return (s ?? "").toString().trim();
+  }
+  function normalizeAnswer(s) {
+    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+  }
 
-  // IMPORTANT: папка /controls/ в корне сайта, а control.html в /control/
+  // Варианты лежат в /controls/<subject>/variants/ (controls в корне сайта)
   function variantsBase(subject) {
-    return new URL(`../controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+    return new URL(`/controls/${encodeURIComponent(subject)}/variants/`, window.location.origin).toString();
   }
 
   async function fetchJson(url) {
@@ -23,29 +38,44 @@
     return await r.json();
   }
 
-  function downloadJson(filename, obj) {
-    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  async function postJson(url, body, headers = {}) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(body),
+    });
+    const text = await r.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+    if (!r.ok) {
+      const msg = (json && (json.message || json.error)) ? (json.message || json.error) : text || `HTTP ${r.status}`;
+      const e = new Error(msg);
+      e.status = r.status;
+      e.body = json || text;
+      throw e;
+    }
+    return json ?? { ok: true };
   }
 
-  // ========= theme =========
+  // ========= theme (переключение кликом, без checkbox) =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
     const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
     return prefersLight ? "light" : "dark";
   }
+
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
     const lab = $("themeLabel");
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
+
+    // если вдруг остался checkbox — не ломаем, просто синхронизируем
+    const t = $("themeToggle");
+    if (t && "checked" in t) t.checked = theme === "light";
   }
+
   function toggleTheme() {
     const cur = document.documentElement.getAttribute("data-theme") || "dark";
     setTheme(cur === "light" ? "dark" : "light");
@@ -93,7 +123,11 @@
       currentTaskIndex,
       savedAt: nowIso(),
     };
-    localStorage.setItem(lsKey(), JSON.stringify(payload));
+    try {
+      localStorage.setItem(lsKey(), JSON.stringify(payload));
+    } catch (e) {
+      console.warn("localStorage write failed", e);
+    }
   }
 
   function loadProgress() {
@@ -102,12 +136,21 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  function clearLocalProgress() {
+    try {
+      localStorage.removeItem(lsKey());
+    } catch (e) {
+      console.warn("localStorage remove failed", e);
+    }
+  }
+
   // ========= header =========
   function setHeader() {
     setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
-    setText("uiSubtitle",
+    setText(
+      "uiSubtitle",
       variantMeta?.subtitle ||
-      "Заполните данные, выполните задания, нажмите «Завершить», затем «Сохранить»."
+        "Заполните данные ученика, выполните задания, завершите и отправьте результат."
     );
   }
 
@@ -158,6 +201,8 @@
 
   function setTimerUI(text) {
     setText("uiTimer", text);
+    const mirror = $("uiTimerMirror");
+    if (mirror) mirror.value = text;
   }
 
   function startTimerIfNeeded() {
@@ -181,19 +226,15 @@
   // ========= finish =========
   function applyFinishedState() {
     const btnFinish = $("btnFinish");
-    const btnSaveCloud = $("btnSaveCloud");
+    const btnSubmit = $("btnSubmit");
     const btnReset = $("btnReset");
-    const resetCode = $("resetCode");
 
     if (btnFinish) {
       btnFinish.textContent = isFinished ? "Завершено" : "Завершить";
       btnFinish.disabled = isFinished;
     }
-    if (btnSaveCloud) btnSaveCloud.disabled = !isFinished;
-
-    // reset доступен всегда (по коду)
+    if (btnSubmit) btnSubmit.disabled = !isFinished;
     if (btnReset) btnReset.disabled = false;
-    if (resetCode) resetCode.disabled = false;
 
     const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#taskOne input");
     inputs.forEach((el) => { el.disabled = isFinished; });
@@ -213,21 +254,21 @@
         id: currentVariantId,
         file: currentVariantFile,
         title: variantMeta?.title || "",
-        subtitle: variantMeta?.subtitle || ""
+        subtitle: variantMeta?.subtitle || "",
       },
       grading: {
         maxPoints: score.max,
         earnedPoints: score.earned,
-        percent: score.percent
+        percent: score.percent,
       },
       student: {
         name: safeText($("studentName")?.value),
-        class: safeText($("studentClass")?.value)
+        class: safeText($("studentClass")?.value),
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
       perTask: score.perTask,
       meta: JSON.parse(JSON.stringify(variantMeta || {})),
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
     };
   }
 
@@ -237,22 +278,22 @@
     finishedAt = nowIso();
     saveProgress();
     applyFinishedState();
-    alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Теперь нажмите «Сохранить».");
+    alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Нажмите «Отправить».");
   }
 
-  // ========= sticky texts by range =========
+  // ========= texts by range =========
   let stickyCollapsed = false;
 
   function getTextRangesFromMeta() {
     const texts = variantMeta?.texts || {};
     const blocks = Object.values(texts)
-      .map(t => {
+      .map((t) => {
         const r = Array.isArray(t.range) ? t.range : null;
         const from = r ? Number(r[0]) : NaN;
         const to = r ? Number(r[1]) : NaN;
         return { title: t.title || "Текст", from, to, html: t.html || "" };
       })
-      .filter(b => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
+      .filter((b) => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
 
     blocks.sort((a, b) => a.from - b.from);
     return blocks;
@@ -287,6 +328,7 @@
 
   // ========= render ONE task =========
   let stickyBlocks = [];
+
   function renderCurrentTask() {
     const cont = $("taskOne");
     if (!cont) return;
@@ -310,19 +352,18 @@
     }
 
     cont.innerHTML = `
-      <section class="kd-stage">
-        <section class="kd-task" data-task-id="${String(task.id)}">
-          <h3>Задание ${task.id}</h3>
-          ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
-          <div class="q">${task.text || ""}</div>
+      <section class="kd-task" data-task-id="${String(task.id)}">
+        <h3>Задание ${task.id}</h3>
+        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
+        <div class="q">${task.text || ""}</div>
 
-          <input class="kd-answer" id="answerInput" type="text" placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
+        <input class="kd-answer" id="answerInput" type="text"
+          placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
 
-          <div class="kd-nav">
-            <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
-            <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
-          </div>
-        </section>
+        <div class="kd-nav">
+          <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
+          <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
+        </div>
       </section>
     `;
 
@@ -354,68 +395,7 @@
       }
     });
 
-    if (isFinished) {
-      inp && (inp.disabled = true);
-    }
-  }
-
-  // ========= cloud submit =========
-  async function submitToCloud(payload) {
-    const url = manifest?.submit?.url;
-    const token = manifest?.submit?.token;
-    if (!url || !token) throw new Error("В manifest.json не задан submit.url или submit.token");
-
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Submit-Token": token
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await r.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch { /* ignore */ }
-
-    if (!r.ok) {
-      throw new Error(data?.message || data?.error || `HTTP ${r.status}: ${text}`);
-    }
-    return data || { ok: true };
-  }
-
-  // ========= reset by code =========
-  async function consumeResetCode({ subject, variant, cls, fio, code }) {
-    const baseUrl = manifest?.teacher?.base_url;
-    const token = manifest?.teacher?.token;
-    if (!baseUrl || !token) throw new Error("В manifest.json не задан teacher.base_url или teacher.token");
-
-    const url = baseUrl.replace(/\/+$/, "") + "/teacher/reset/consume";
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Teacher-Token": token
-      },
-      body: JSON.stringify({ subject, variant, cls, fio, code })
-    });
-
-    const txt = await r.text();
-    let obj = null;
-    try { obj = JSON.parse(txt); } catch { /* ignore */ }
-
-    if (!r.ok) throw new Error(obj?.message || obj?.error || `HTTP ${r.status}: ${txt}`);
-    if (!obj?.ok) throw new Error(obj?.error || "Сброс не выполнен");
-    return obj;
-  }
-
-  function clearLocalAttempt() {
-    localStorage.removeItem(lsKey());
-    answersMap = {};
-    currentTaskIndex = 0;
-    startedAt = nowIso();
-    finishedAt = null;
-    isFinished = false;
+    if (isFinished && inp) inp.disabled = true;
   }
 
   // ========= load =========
@@ -461,8 +441,9 @@
     variantData = await fetchJson(base + file);
     variantMeta = extractVariantMeta(variantData);
 
-    const tlm = Number(variantMeta.time_limit_minutes || 0);
-    timeLimitSec = tlm > 0 ? tlm * 60 : null;
+    // time limit from variant meta (если задано в варианте)
+    const tlmLocal = Number(variantMeta.time_limit_minutes || 0);
+    timeLimitSec = tlmLocal > 0 ? tlmLocal * 60 : null;
 
     const progress = loadProgress();
     startedAt = progress?.startedAt || nowIso();
@@ -479,90 +460,179 @@
 
     stickyBlocks = getTextRangesFromMeta();
 
-    $("stickyToggle")?.addEventListener("click", () => {
-      stickyCollapsed = !stickyCollapsed;
-      const body = $("stickyTextBody");
-      if (body) body.style.display = stickyCollapsed ? "none" : "";
-      const btn = $("stickyToggle");
-      if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
-    });
+    // sticky collapse btn
+    const stBtn = $("stickyToggle");
+    if (stBtn && !stBtn._kdBound) {
+      stBtn._kdBound = true;
+      stBtn.addEventListener("click", () => {
+        stickyCollapsed = !stickyCollapsed;
+        const body = $("stickyTextBody");
+        if (body) body.style.display = stickyCollapsed ? "none" : "";
+        stBtn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+      });
+    }
 
     renderCurrentTask();
     applyFinishedState();
     startTimerIfNeeded();
 
-    $("studentName")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
-    $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    const sn = $("studentName");
+    const sc = $("studentClass");
+    if (sn && !sn._kdBound) {
+      sn._kdBound = true;
+      sn.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    }
+    if (sc && !sc._kdBound) {
+      sc._kdBound = true;
+      sc.addEventListener("input", () => { if (!isFinished) saveProgress(); });
+    }
+  }
+
+  // ========= submit to Yandex Cloud =========
+  async function submitResultToCloud() {
+    if (!manifest?.submit?.url || !manifest?.submit?.token) {
+      alert("В manifest.json не задан submit.url / submit.token.");
+      return;
+    }
+    if (!isFinished) {
+      alert("Сначала нажмите «Завершить».");
+      return;
+    }
+
+    const btn = $("btnSubmit");
+    const prevText = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Отправляется…"; }
+
+    try {
+      const payload = buildResultPayload();
+
+      await postJson(manifest.submit.url, payload, {
+        "X-Submit-Token": manifest.submit.token,
+      });
+
+      // ✅ после успешной отправки — удаляем временное автосохранение
+      clearLocalProgress();
+
+      // оставляем экран в состоянии "завершено" (в памяти)
+      applyFinishedState();
+
+      alert("Работа успешно отправлена.");
+    } catch (err) {
+      console.error(err);
+      alert("Не удалось отправить работу. Проверьте интернет и попробуйте ещё раз.\n\n" + String(err.message || err));
+      if (btn) { btn.disabled = false; }
+    } finally {
+      if (btn) btn.textContent = prevText || "Отправить";
+    }
+  }
+
+  // ========= reset consume (код сброса) =========
+  async function consumeResetCode() {
+    const code = safeText($("resetCode")?.value);
+    if (!code) {
+      alert("Введите код сброса.");
+      return;
+    }
+    if (!manifest?.teacher?.base_url || !manifest?.teacher?.token) {
+      alert("В manifest.json не задан teacher.base_url / teacher.token.");
+      return;
+    }
+
+    const fio = safeText($("studentName")?.value);
+    const cls = safeText($("studentClass")?.value);
+    if (!fio || !cls) {
+      alert("Заполните ФИО и класс, чтобы применить код сброса.");
+      return;
+    }
+
+    const url = String(manifest.teacher.base_url).replace(/\/+$/, "") + "/teacher/reset/consume";
+
+    const btn = $("btnReset");
+    const prevText = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Проверка…"; }
+
+    try {
+      await postJson(url, {
+        subject,
+        fio,
+        cls,
+        variant: currentVariantId,
+        code,
+      }, {
+        "X-Teacher-Token": manifest.teacher.token,
+      });
+
+      // ✅ сброс: очищаем локальный прогресс и стартуем заново
+      clearLocalProgress();
+
+      // сбрасываем состояние в памяти
+      answersMap = {};
+      currentTaskIndex = 0;
+      isFinished = false;
+      finishedAt = null;
+      startedAt = nowIso();
+
+      // очистка поля кода
+      if ($("resetCode")) $("resetCode").value = "";
+
+      saveProgress();
+      renderCurrentTask();
+      applyFinishedState();
+      startTimerIfNeeded();
+
+      alert("Сброс применён. Можно выполнять работу заново.");
+    } catch (err) {
+      console.error(err);
+      alert("Код сброса не принят.\n\n" + String(err.message || err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevText || "Сброс"; }
+    }
   }
 
   // ========= init =========
   async function init() {
+    // theme init + toggle by click
     setTheme(getPreferredTheme());
+    const themeBtn = $("themeToggle") || $("themeWrap") || $("themeSwitch") || null;
+    if (themeBtn && !themeBtn._kdBound) {
+      themeBtn._kdBound = true;
+      themeBtn.addEventListener("click", (e) => {
+        // чтобы не срабатывало на клике по input внутри, если он вдруг есть
+        e.preventDefault();
+        toggleTheme();
+      });
+    }
 
-    // theme by click (no checkbox)
-    $("themeBtn")?.addEventListener("click", () => toggleTheme());
+    // finish / submit / reset
+    const bf = $("btnFinish");
+    if (bf && !bf._kdBound) {
+      bf._kdBound = true;
+      bf.addEventListener("click", () => finishNow(false));
+    }
 
-    $("btnFinish")?.addEventListener("click", () => finishNow(false));
+    const bs = $("btnSubmit");
+    if (bs && !bs._kdBound) {
+      bs._kdBound = true;
+      bs.addEventListener("click", submitResultToCloud);
+    }
 
-    $("btnSaveCloud")?.addEventListener("click", async () => {
-      if (!isFinished) return;
-      const btn = $("btnSaveCloud");
-      if (btn) { btn.disabled = true; btn.textContent = "Сохранение…"; }
+    const br = $("btnReset");
+    if (br && !br._kdBound) {
+      br._kdBound = true;
+      br.addEventListener("click", consumeResetCode);
+    }
 
-      try {
-        const payload = buildResultPayload();
-
-        // локально тоже сохраним файл (на всякий)
-        const n = safeText(payload.student.name).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
-        const c = safeText(payload.student.class).replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
-        const fn = `result_${subject}_${currentVariantId}_${c || "class"}_${n || "student"}.json`;
-        downloadJson(fn, payload);
-
-        // и в облако
-        const res = await submitToCloud(payload);
-        alert("Работа сохранена ✅\n" + (res?.key ? `Ключ: ${res.key}` : ""));
-      } catch (e) {
-        console.error(e);
-        alert("Сохранение в облако не удалось ❗\n" + e.message);
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "Сохранить"; }
-      }
-    });
-
-    $("btnReset")?.addEventListener("click", async () => {
-      const code = safeText($("resetCode")?.value);
-      if (!code) { alert("Введите код сброса."); return; }
-
-      const fio = safeText($("studentName")?.value);
-      const cls = safeText($("studentClass")?.value);
-      if (!fio || !cls) { alert("Для сброса заполните ФИО и класс."); return; }
-      if (!currentVariantId) { alert("Не выбран вариант."); return; }
-
-      const yes = confirm("Сбросить попытку на этом устройстве?\nВсе введённые ответы будут удалены.");
-      if (!yes) return;
-
-      try {
-        await consumeResetCode({
-          subject,
-          variant: currentVariantId,
-          cls,
-          fio,
-          code
-        });
-
-        clearLocalAttempt();
-        saveProgress();
-        applyFinishedState();
-        renderCurrentTask();
-        startTimerIfNeeded();
-
-        $("resetCode").value = "";
-        alert("Сброс выполнен ✅ Можно проходить заново.");
-      } catch (e) {
-        console.error(e);
-        alert("Сброс не выполнен ❗\n" + e.message);
-      }
-    });
+    // Enter in resetCode triggers reset
+    const rc = $("resetCode");
+    if (rc && !rc._kdBound) {
+      rc._kdBound = true;
+      rc.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          consumeResetCode();
+        }
+      });
+    }
 
     await loadManifest();
     await loadVariant(currentVariantFile);
@@ -570,16 +640,14 @@
 
   init().catch((err) => {
     console.error(err);
-
     const hint =
       `Subject: ${subject}\n` +
       `Ожидаем manifest:\n${base}manifest.json\n` +
       `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
       `Проверь:\n` +
-      `1) что manifest.json лежит в /controls/${subject}/variants/manifest.json\n` +
+      `1) /controls/<subject>/variants/manifest.json (controls в корне)\n` +
       `2) что control.html лежит в /control/control.html\n` +
       `3) что подключён CSS: /assets/css/control-ui.css\n`;
-
     alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
   });
 })();
