@@ -22,7 +22,7 @@ async function api(path, body) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Teacher-Token": TEACHER_TOKEN
+      "X-Teacher-Token": 42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f
     },
     body: JSON.stringify(body || {})
   });
