@@ -1,50 +1,130 @@
-// teacher/teacher.js
-// Kodislovo — Учительская панель (GitHub Pages)
-// Функции: список работ, просмотр JSON, скачивание, удаление с бакета, выгрузка CSV,
-// PDF-отчёт по выбранной работе, автопроверка по ключу (файл локально или из бакета).
-//
-// ВАЖНО: механизм общения с Yandex Cloud не меняем — используем manifest.teacher.base_url и manifest.teacher.token.
-// Ожидается структура:
-// - /controls/russian/variants/manifest.json (и варианты рядом)
-// - результаты в бакете (как уже настроено у вас)
-// - teacher/index.html подключает общий стиль /assets/css/control-ui.css и этот скрипт.
+/* teacher/teacher.js
+   Kodislovo — Teacher Panel (front-end)
+   Работает с Teacher API (Yandex API Gateway + Cloud Function) и общими стилями /assets/css/control-ui.css
+
+   ✅ Список работ (list)
+   ✅ Просмотр JSON (get)
+   ✅ Скачать JSON (download)
+   ✅ “Удалить”:
+      - если в API есть /teacher/delete → удалит физически
+      - иначе fallback: /teacher/void (скрыть/пометить как удалённое)
+   ✅ CSV выгрузка
+   ✅ PDF (вариант + ответы ученика) через печать (window.print)
+   ✅ Автопроверка ключом:
+      - ключ загрузить с компьютера (JSON)
+      - или ключ лежит в бакете (через teacher/get по ключу бакета)
+*/
 
 (function () {
   "use strict";
 
+  // ===== CONFIG (можно переопределить до подключения скрипта через window.KODISLOVO_TEACHER = {...}) =====
+  const DEFAULTS = {
+    base_url: "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net",
+    token: "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1f",
+    // controls лежит в корне сайта, teacher/ рядом → берём относительный путь
+    controls_root: "../controls", // ../controls/<subject>/variants/<file>
+  };
+
+  const CFG = Object.assign({}, DEFAULTS, window.KODISLOVO_TEACHER || {});
+
+  // ===== helpers =====
+  const THEME_KEY = "kodislovo_theme";
   const $ = (id) => document.getElementById(id);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  // ---------- helpers ----------
+  function getHeaderCaseInsensitive(headers, name) {
+    if (!headers) return "";
+    const lower = name.toLowerCase();
+    for (const k of Object.keys(headers)) {
+      if (String(k).toLowerCase() === lower) return headers[k];
+    }
+    return "";
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   function safeText(s) {
-    return (s ?? "").toString().trim();
+    return String(s ?? "").trim();
   }
 
-  function norm(s) {
-    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+  function normalizeAnswer(s) {
+    return safeText(s)
+      .toLowerCase()
+      .replace(/ё/g, "е")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
-  function fmtDate(iso) {
-    const t = safeText(iso);
-    if (!t) return "";
-    const d = new Date(t);
-    if (isNaN(d.getTime())) return t;
+  function formatDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
     return d.toLocaleString("ru-RU");
   }
 
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+  function setTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+
+    const label = $("themeLabel");
+    if (label) label.textContent = theme === "light" ? "Светлая" : "Тёмная";
   }
 
-  function toCsvCell(v) {
-    const s = String(v ?? "");
-    if (/[",\n;]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
-    return s;
+  function getPreferredTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved;
+    const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    return prefersLight ? "light" : "dark";
+  }
+
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute("data-theme") || "dark";
+    setTheme(cur === "light" ? "dark" : "light");
+  }
+
+  function controlsVariantUrl(subject, file) {
+    // teacher/index.html → ../controls/<subject>/variants/<file>
+    return new URL(`${CFG.controls_root}/${encodeURIComponent(subject)}/variants/${file}`, window.location.href).toString();
+  }
+
+  async function fetchJson(url, opts = {}) {
+    const r = await fetch(url, Object.assign({ cache: "no-store" }, opts));
+    const txt = await r.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch { data = { raw: txt }; }
+    if (!r.ok) {
+      const msg = data?.message || data?.error || txt || `HTTP ${r.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function api(path, payload) {
+    const url = CFG.base_url.replace(/\/+$/, "") + path;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Teacher-Token": CFG.token,
+      },
+      body: JSON.stringify(payload || {}),
+    });
+
+    const text = await r.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+
+    if (!r.ok) {
+      const msg = data?.message || data?.error || (text || `HTTP ${r.status}`);
+      throw new Error(msg);
+    }
+    return data;
   }
 
   function downloadBlob(filename, blob) {
@@ -59,698 +139,546 @@
     }, 0);
   }
 
-  function downloadJson(filename, obj) {
-    downloadBlob(filename, new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" }));
-  }
-
-  // ---------- manifest / config ----------
-  let subject = "russian";
-  let manifest = null;
-
-  let TEACHER_BASE = "";
-  let TEACHER_TOKEN = "";
-
-  // key for autocheck (answers)
-  // формат ключа (пример):
-  // {
-  //   "variant_01": {
-  //      "1": ["вследствие"],
-  //      "2": ["..."]
-  //   }
-  // }
-  // или { "answers": { "variant_01": { "1":[...]} } }
-  let answerKey = null;
-
-  // ---------- state ----------
-  let items = []; // list results (rows)
-  let selectedKey = null; // S3 key
-  let selectedJson = null; // loaded JSON of result
-
-  // ---------- API ----------
-  async function api(path, bodyObj) {
-    if (!TEACHER_BASE) throw new Error("teacher.base_url не задан в manifest.json");
-    const url = TEACHER_BASE.replace(/\/+$/, "") + path;
-
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Teacher-Token": TEACHER_TOKEN,
-      },
-      body: JSON.stringify(bodyObj || {}),
-    });
-
-    const text = await r.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = { raw: text };
-    }
-
-    if (!r.ok) {
-      const msg = data?.message || data?.error || text || `HTTP ${r.status}`;
-      throw new Error(msg);
-    }
-    return data;
-  }
-
-  // ---------- UI ----------
-  function setStatus(msg, ok = true) {
-    const el = $("uiStatus");
-    if (!el) return;
-    el.textContent = msg || "";
-    el.style.color = ok ? "" : "var(--bad)";
-  }
-
-  function setBusy(isBusy) {
-    const btns = $$("button");
-    btns.forEach((b) => (b.disabled = isBusy));
-    const sp = $("uiSpinner");
-    if (sp) sp.classList.toggle("kd-hidden", !isBusy);
-  }
-
-  function getFilter() {
-    return {
-      variant: safeText($("filterVariant")?.value),
-      cls: safeText($("filterClass")?.value),
-      limit: Number($("filterLimit")?.value || 50),
+  function toCsv(rows) {
+    const esc = (v) => {
+      const s = String(v ?? "");
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
     };
+    const lines = rows.map((r) => r.map(esc).join(","));
+    return lines.join("\n");
   }
 
-  function setPreviewJson(obj) {
-    const pre = $("previewJson");
-    if (!pre) return;
-    pre.value = obj ? JSON.stringify(obj, null, 2) : "";
+  // ===== state =====
+  let currentSubject = "russian";
+  let currentVariant = "variant_01";
+  let currentItems = [];  // list items from API
+  let openedJson = null;  // currently viewed result JSON
+  let keyJson = null;     // answer key JSON (for auto-check)
+  let manifestCache = new Map(); // subject -> manifest
+
+  // ===== UI refs =====
+  const ui = {
+    subject: $("tSubject"),
+    variant: $("tVariant"),
+    cls: $("tClass"),
+    fio: $("tFio"),
+    timeMin: $("tTimeMin"),
+    btnLoadTimer: $("btnLoadTimer"),
+    btnSaveTimer: $("btnSaveTimer"),
+    btnResetCode: $("btnMakeReset"),
+    resetOut: $("resetOut"),
+
+    btnList: $("btnList"),
+    status: $("tStatus"),
+
+    tableBody: $("tBody"),
+    count: $("tCount"),
+
+    jsonBox: $("jsonBox"),
+    btnDownloadJson: $("btnDownloadJson"),
+    btnVoid: $("btnVoid"),
+    btnDelete: $("btnDelete"),
+
+    btnCsv: $("btnCsv"),
+    btnPdf: $("btnPdf"),
+
+    keyFile: $("keyFile"),
+    keyS3Key: $("keyS3Key"),
+    btnLoadKeyFromS3: $("btnLoadKeyFromS3"),
+    btnClearKey: $("btnClearKey"),
+    keyStatus: $("keyStatus"),
+    btnAutoCheck: $("btnAutoCheck"),
+  };
+
+  function setStatus(msg, isBad = false) {
+    if (!ui.status) return;
+    ui.status.textContent = msg;
+    ui.status.style.color = isBad ? "var(--bad)" : "var(--muted)";
   }
 
-  function setPreviewHtml(html) {
-    const box = $("previewBox");
-    if (!box) return;
-    box.innerHTML = html || "";
+  // ===== teacher actions =====
+  async function loadTimer() {
+    const subject = safeText(ui.subject?.value) || currentSubject;
+    const variant = safeText(ui.variant?.value) || currentVariant;
+    const data = await api("/teacher/config/get", { subject, variant });
+    const min = Number(data?.time_limit_minutes || 0);
+    if (ui.timeMin) ui.timeMin.value = String(min || 0);
+    setStatus(min > 0 ? `Таймер загружен: ${min} мин.` : "Таймер загружен: без лимита");
   }
 
-  function rowHtml(it) {
-    const fio = escapeHtml(it.fio || "");
-    const cls = escapeHtml(it.cls || "");
-    const variant = escapeHtml(it.variant || "");
-    const dt = escapeHtml(fmtDate(it.createdAt || ""));
-    const key = escapeHtml(it.key || "");
-    const voided = !!it.voided;
-
-    return `
-      <tr data-key="${escapeHtml(it.key)}" class="${voided ? "is-voided" : ""}">
-        <td class="td-main">
-          <div class="td-title">${fio || "<span class='muted'>—</span>"}</div>
-          <div class="td-sub">${cls || "<span class='muted'>—</span>"}</div>
-        </td>
-        <td>${variant || "<span class='muted'>—</span>"}</td>
-        <td>${dt || "<span class='muted'>—</span>"}</td>
-        <td class="td-key"><code>${key}</code></td>
-        <td class="td-actions">
-          <button class="kd-btn secondary btn-small" data-act="open">Открыть</button>
-          <button class="kd-btn secondary btn-small" data-act="download">Скачать</button>
-          <button class="kd-btn secondary btn-small" data-act="pdf">PDF</button>
-          <button class="kd-btn secondary btn-small" data-act="delete">Удалить</button>
-        </td>
-      </tr>
-    `;
+  async function saveTimer() {
+    const subject = safeText(ui.subject?.value) || currentSubject;
+    const variant = safeText(ui.variant?.value) || currentVariant;
+    const time_limit_minutes = Math.max(0, Number(ui.timeMin?.value || 0));
+    await api("/teacher/config/set", { subject, variant, time_limit_minutes });
+    setStatus(time_limit_minutes > 0 ? `Таймер сохранён: ${time_limit_minutes} мин.` : "Таймер сохранён: без лимита");
   }
 
-  function renderTable(list) {
-    const tbody = $("tblBody");
-    if (!tbody) return;
+  async function makeReset() {
+    const subject = safeText(ui.subject?.value) || currentSubject;
+    const variant = safeText(ui.variant?.value) || currentVariant;
+    const cls = safeText(ui.cls?.value);
+    const fio = safeText(ui.fio?.value);
 
-    tbody.innerHTML = list.map(rowHtml).join("");
-
-    // row actions
-    tbody.onclick = async (e) => {
-      const btn = e.target?.closest("button[data-act]");
-      if (!btn) return;
-
-      const tr = btn.closest("tr[data-key]");
-      const key = tr?.dataset?.key;
-      if (!key) return;
-
-      const act = btn.dataset.act;
-
-      if (act === "open") return openOne(key);
-      if (act === "download") return downloadOne(key);
-      if (act === "delete") return deleteOne(key);
-      if (act === "pdf") return pdfOne(key);
-    };
-  }
-
-  function pickSelectedCheckboxes() {
-    return $$("input[name='rowPick']:checked").map((x) => x.value);
-  }
-
-  // ---------- load list ----------
-  async function loadList() {
-    setStatus("");
-    setBusy(true);
-    try {
-      const f = getFilter();
-      const data = await api("/teacher/list", {
-        variant: f.variant || "",
-        cls: f.cls || "",
-        limit: f.limit || 50,
-      });
-
-      items = Array.isArray(data?.items) ? data.items : [];
-      // render with checkboxes (mass operations)
-      const tbody = $("tblBody");
-      if (!tbody) return;
-
-      tbody.innerHTML = items
-        .map((it) => {
-          const fio = escapeHtml(it.fio || "");
-          const cls = escapeHtml(it.cls || "");
-          const variant = escapeHtml(it.variant || "");
-          const dt = escapeHtml(fmtDate(it.createdAt || ""));
-          const key = escapeHtml(it.key || "");
-          const voided = !!it.voided;
-
-          return `
-            <tr data-key="${escapeHtml(it.key)}" class="${voided ? "is-voided" : ""}">
-              <td class="td-pick">
-                <input type="checkbox" name="rowPick" value="${escapeHtml(it.key)}" />
-              </td>
-              <td class="td-main">
-                <div class="td-title">${fio || "<span class='muted'>—</span>"}</div>
-                <div class="td-sub">${cls || "<span class='muted'>—</span>"}</div>
-              </td>
-              <td>${variant || "<span class='muted'>—</span>"}</td>
-              <td>${dt || "<span class='muted'>—</span>"}</td>
-              <td class="td-key"><code>${key}</code></td>
-              <td class="td-actions">
-                <button class="kd-btn secondary btn-small" data-act="open">Открыть</button>
-                <button class="kd-btn secondary btn-small" data-act="download">Скачать</button>
-                <button class="kd-btn secondary btn-small" data-act="pdf">PDF</button>
-                <button class="kd-btn secondary btn-small" data-act="delete">Удалить</button>
-              </td>
-            </tr>
-          `;
-        })
-        .join("");
-
-      tbody.onclick = async (e) => {
-        const btn = e.target?.closest("button[data-act]");
-        if (!btn) return;
-
-        const tr = btn.closest("tr[data-key]");
-        const key = tr?.dataset?.key;
-        if (!key) return;
-
-        const act = btn.dataset.act;
-        if (act === "open") return openOne(key);
-        if (act === "download") return downloadOne(key);
-        if (act === "delete") return deleteOne(key);
-        if (act === "pdf") return pdfOne(key);
-      };
-
-      setStatus(`Загружено: ${items.length}`);
-    } catch (err) {
-      console.error(err);
-      setStatus("teacher api failed: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------- open/get ----------
-  async function openOne(key) {
-    setStatus("");
-    setBusy(true);
-    try {
-      const data = await api("/teacher/get", { key });
-      selectedKey = key;
-      selectedJson = data;
-      setPreviewJson(data);
-
-      const fio = escapeHtml(data?.student?.name || data?.identity?.fio || "");
-      const cls = escapeHtml(data?.student?.class || data?.identity?.cls || "");
-      const varTitle = escapeHtml(data?.variant?.title || data?.variant?.id || data?.variantId || "");
-      const percent = data?.grading?.percent ?? data?.grading?.scorePercent ?? null;
-
-      setPreviewHtml(`
-        <div class="kd-task">
-          <h3>Просмотр работы</h3>
-          <div class="q">
-            <b>ФИО:</b> ${fio || "—"}<br>
-            <b>Класс:</b> ${cls || "—"}<br>
-            <b>Вариант:</b> ${varTitle || "—"}<br>
-            <b>Процент:</b> ${percent ?? "—"}<br>
-            <b>Ключ:</b> <code>${escapeHtml(key)}</code>
-          </div>
-        </div>
-      `);
-
-      // render answers quick view
-      const answers = data?.answers || {};
-      const tasks = data?.perTask || null;
-      if (tasks && Array.isArray(tasks)) {
-        const lines = tasks
-          .map((t) => {
-            const ok = t.ok ? "✅" : "❌";
-            return `${ok} №${t.id}: ${escapeHtml(String(t.student ?? ""))}`;
-          })
-          .join("<br>");
-        setPreviewHtml(
-          $("previewBox").innerHTML +
-            `<div class="kd-task"><h3>Ответы</h3><div class="q">${lines || "<span class='muted'>нет</span>"}</div></div>`
-        );
-      } else if (answers && typeof answers === "object") {
-        const lines = Object.keys(answers)
-          .sort((a, b) => Number(a) - Number(b))
-          .map((id) => `№${escapeHtml(id)}: ${escapeHtml(String(answers[id] ?? ""))}`)
-          .join("<br>");
-        setPreviewHtml(
-          $("previewBox").innerHTML +
-            `<div class="kd-task"><h3>Ответы</h3><div class="q">${lines || "<span class='muted'>нет</span>"}</div></div>`
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("teacher api failed: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------- download ----------
-  async function downloadOne(key) {
-    setStatus("");
-    setBusy(true);
-    try {
-      const data = await api("/teacher/get", { key });
-      const fio = safeText(data?.student?.name || "student").replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
-      const cls = safeText(data?.student?.class || "class").replace(/[^\p{L}\p{N}\s._-]+/gu, "").replace(/\s+/g, "_");
-      const vid = safeText(data?.variant?.id || data?.variantId || "variant");
-      const fn = `result_${vid}_${cls}_${fio}.json`;
-      downloadJson(fn, data);
-      setStatus("Файл скачан: " + fn);
-    } catch (err) {
-      console.error(err);
-      setStatus("teacher api failed: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------- delete (from bucket) ----------
-  async function deleteOne(key) {
-    if (!confirm("Удалить файл из бакета?\n\n" + key)) return;
-
-    setStatus("");
-    setBusy(true);
-    try {
-      await api("/teacher/delete", { key });
-      setStatus("Удалено: " + key);
-      // refresh list
-      await loadList();
-      // clear preview if it was the same
-      if (selectedKey === key) {
-        selectedKey = null;
-        selectedJson = null;
-        setPreviewJson(null);
-        setPreviewHtml("");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("teacher api failed: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------- CSV export ----------
-  function exportCsvSelected() {
-    const keys = pickSelectedCheckboxes();
-    if (!keys.length) {
-      alert("Выберите работы галочками.");
+    if (!cls || !fio) {
+      alert("Для reset-кода заполните Класс и ФИО.");
       return;
     }
 
-    const map = new Map(items.map((it) => [it.key, it]));
-    const rows = keys
-      .map((k) => map.get(k))
-      .filter(Boolean)
-      .map((it) => ({
-        fio: it.fio || "",
-        cls: it.cls || "",
-        variant: it.variant || "",
-        createdAt: it.createdAt || "",
-        key: it.key || "",
-        percent: it.percent ?? "",
-        mark: it.mark ?? "",
-      }));
-
-    const header = ["fio", "cls", "variant", "createdAt", "percent", "mark", "key"];
-    const csv =
-      header.join(";") +
-      "\n" +
-      rows
-        .map((r) => header.map((h) => toCsvCell(r[h])).join(";"))
-        .join("\n");
-
-    downloadBlob(`results_${subject}_${new Date().toISOString().slice(0, 10)}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const data = await api("/teacher/reset", { subject, variant, cls, fio });
+    const code = data?.code || "";
+    const exp = data?.expiresAt ? formatDate(data.expiresAt) : "";
+    if (ui.resetOut) ui.resetOut.value = code ? `${code}${exp ? ` (до ${exp})` : ""}` : "";
+    setStatus(code ? "Reset-код создан." : "Reset-код не создан.", !code);
   }
 
-  // ---------- PDF (print-to-pdf via browser) ----------
-  async function pdfOne(key) {
-    setStatus("");
-    setBusy(true);
-    try {
-      const data = await api("/teacher/get", { key });
+  async function listResults() {
+    const subject = safeText(ui.subject?.value) || currentSubject;
+    const variant = safeText(ui.variant?.value) || currentVariant;
+    const cls = safeText(ui.cls?.value);
 
-      // build printable HTML
-      const fio = escapeHtml(data?.student?.name || "");
-      const cls = escapeHtml(data?.student?.class || "");
-      const title = escapeHtml(data?.variant?.title || data?.variant?.id || "");
-      const started = escapeHtml(fmtDate(data?.startedAt || ""));
-      const finished = escapeHtml(fmtDate(data?.finishedAt || ""));
-      const percent = data?.grading?.percent ?? null;
-      const pts = data?.grading ? `${data.grading.earnedPoints ?? ""}/${data.grading.maxPoints ?? ""}` : "";
+    currentSubject = subject;
+    currentVariant = variant;
 
-      const perTask = Array.isArray(data?.perTask) ? data.perTask : null;
-      const answers = data?.answers && typeof data.answers === "object" ? data.answers : null;
+    setStatus("Загружаю список…");
+    const data = await api("/teacher/list", {
+      variant,
+      cls: cls || "",
+      limit: 200,
+    });
 
-      let lines = "";
-      if (perTask) {
-        lines = perTask
-          .map((t) => {
-            const ok = t.ok ? "✔" : "✘";
-            const st = escapeHtml(String(t.student ?? ""));
-            const acc = Array.isArray(t.accepted) ? escapeHtml(t.accepted.join(" / ")) : "";
-            return `<tr>
-              <td>${escapeHtml(String(t.id))}</td>
-              <td>${ok}</td>
-              <td>${st}</td>
-              <td>${acc}</td>
-              <td>${escapeHtml(String(t.earned ?? ""))}/${escapeHtml(String(t.max ?? ""))}</td>
-            </tr>`;
-          })
-          .join("");
-      } else if (answers) {
-        lines = Object.keys(answers)
-          .sort((a, b) => Number(a) - Number(b))
-          .map((id) => `<tr><td>${escapeHtml(id)}</td><td></td><td>${escapeHtml(String(answers[id] ?? ""))}</td><td></td><td></td></tr>`)
-          .join("");
+    currentItems = Array.isArray(data?.items) ? data.items : [];
+    renderTable();
+    setStatus(`Загружено: ${currentItems.length}`);
+  }
+
+  function renderTable() {
+    if (!ui.tableBody) return;
+    ui.tableBody.innerHTML = "";
+
+    if (ui.count) ui.count.textContent = String(currentItems.length);
+
+    currentItems.forEach((it, idx) => {
+      const tr = document.createElement("tr");
+      tr.className = "kd-tr";
+
+      const fio = escapeHtml(it.fio || "");
+      const cls = escapeHtml(it.cls || "");
+      const variant = escapeHtml(it.variant || "");
+      const date = escapeHtml(formatDate(it.createdAt || ""));
+      const key = escapeHtml(it.key || "");
+      const voided = !!it.voided;
+
+      tr.innerHTML = `
+        <td>${fio}${cls ? `<div class="muted">${cls}</div>` : ""}</td>
+        <td>${variant}</td>
+        <td>${date}</td>
+        <td class="muted" style="word-break:break-all">${key}</td>
+        <td>
+          <div class="kd-row" style="gap:8px; justify-content:flex-end;">
+            <button class="kd-btn secondary" data-act="open" data-idx="${idx}" type="button">Открыть</button>
+            <button class="kd-btn secondary" data-act="download" data-idx="${idx}" type="button">Скачать</button>
+            <button class="kd-btn secondary" data-act="void" data-idx="${idx}" type="button">${voided ? "Скрыто" : "Скрыть"}</button>
+            <button class="kd-btn secondary" data-act="delete" data-idx="${idx}" type="button">Удалить</button>
+          </div>
+        </td>
+      `;
+
+      if (voided) {
+        tr.style.opacity = "0.55";
       }
 
-      const html = `
-<!doctype html>
+      ui.tableBody.appendChild(tr);
+    });
+
+    ui.tableBody.querySelectorAll("button[data-act]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const act = btn.getAttribute("data-act");
+        const idx = Number(btn.getAttribute("data-idx") || "0");
+        const item = currentItems[idx];
+        if (!item) return;
+
+        try {
+          if (act === "open") await openItem(item);
+          if (act === "download") await downloadItem(item);
+          if (act === "void") await voidItem(item);
+          if (act === "delete") await deleteItem(item);
+        } catch (e) {
+          console.error(e);
+          alert(String(e.message || e));
+        }
+      });
+    });
+  }
+
+  async function openItem(item) {
+    setStatus("Загружаю JSON…");
+    const data = await api("/teacher/get", { key: item.key });
+    openedJson = data;
+
+    if (ui.jsonBox) {
+      ui.jsonBox.value = JSON.stringify(data, null, 2);
+    }
+
+    // enable buttons
+    if (ui.btnDownloadJson) ui.btnDownloadJson.disabled = false;
+    if (ui.btnPdf) ui.btnPdf.disabled = false;
+    if (ui.btnAutoCheck) ui.btnAutoCheck.disabled = !keyJson;
+
+    setStatus("JSON загружен.");
+  }
+
+  async function downloadItem(item) {
+    // сначала попробуем получить json (чтобы имя было норм)
+    let data = null;
+    try { data = await api("/teacher/get", { key: item.key }); } catch {}
+    const cls = safeText(data?.student?.class || item.cls || "class").replace(/\s+/g, "_");
+    const fio = safeText(data?.student?.name || item.fio || "student").replace(/\s+/g, "_");
+    const vid = safeText(data?.variant?.id || item.variant || "variant");
+    const fn = `result_${currentSubject}_${vid}_${cls}_${fio}.json`;
+
+    const blob = new Blob([JSON.stringify(data || { key: item.key }, null, 2)], { type: "application/json;charset=utf-8" });
+    downloadBlob(fn, blob);
+  }
+
+  async function voidItem(item) {
+    if (item.voided) return;
+    if (!confirm("Скрыть работу (пометить как void)? Она не удалится физически, но исчезнет из проверки.")) return;
+    await api("/teacher/void", { keys: [item.key] });
+    setStatus("Работа помечена как скрытая.");
+    await listResults();
+  }
+
+  async function deleteItem(item) {
+    // Попытка “жёсткого” удаления, если в функции добавлен endpoint /teacher/delete.
+    // Если нет — fallback: void.
+    if (!confirm("Удалить работу? Если endpoint /teacher/delete не настроен, будет выполнено скрытие (void).")) return;
+
+    try {
+      await api("/teacher/delete", { keys: [item.key] }); // может отсутствовать
+      setStatus("Работа удалена.");
+    } catch (e) {
+      // fallback
+      console.warn("Hard delete failed, fallback to void:", e);
+      await api("/teacher/void", { keys: [item.key] });
+      setStatus("Удаление недоступно — выполнено скрытие (void).");
+    }
+
+    await listResults();
+  }
+
+  // ===== CSV =====
+  function exportCsv() {
+    const rows = [];
+    rows.push(["fio", "class", "subject", "variant", "createdAt", "percent", "mark", "key", "voided"]);
+    for (const it of currentItems) {
+      rows.push([
+        it.fio || "",
+        it.cls || "",
+        it.subject || currentSubject,
+        it.variant || "",
+        it.createdAt || "",
+        it.percent ?? "",
+        it.mark ?? "",
+        it.key || "",
+        it.voided ? "1" : "0",
+      ]);
+    }
+    const csv = toCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    downloadBlob(`kodislovo_${currentSubject}_${currentVariant}_results.csv`, blob);
+  }
+
+  // ===== PDF (печать) =====
+  async function getManifest(subject) {
+    if (manifestCache.has(subject)) return manifestCache.get(subject);
+    const url = new URL(`${CFG.controls_root}/${encodeURIComponent(subject)}/variants/manifest.json`, window.location.href).toString();
+    const mf = await fetchJson(url);
+    manifestCache.set(subject, mf);
+    return mf;
+  }
+
+  async function getVariantJson(subject, variantId) {
+    const mf = await getManifest(subject);
+    const v = (mf.variants || []).find(x => x.id === variantId) || (mf.variants || [])[0];
+    if (!v) throw new Error("В manifest.json нет variants");
+    const url = controlsVariantUrl(subject, v.file);
+    return await fetchJson(url);
+  }
+
+  function buildPrintableHtml(resultJson, variantJson, gradeInfo = null) {
+    const studentName = escapeHtml(resultJson?.student?.name || "");
+    const studentClass = escapeHtml(resultJson?.student?.class || "");
+    const title = escapeHtml(resultJson?.variant?.title || variantJson?.meta?.title || "Контрольная");
+    const subtitle = escapeHtml(resultJson?.variant?.subtitle || variantJson?.meta?.subtitle || "");
+    const createdAt = escapeHtml(formatDate(resultJson?.finishedAt || resultJson?.createdAt || ""));
+
+    const answers = resultJson?.answers || {};
+    const tasks = variantJson?.tasks || [];
+
+    const taskHtml = tasks.map((t) => {
+      const id = String(t.id);
+      const q = t.text || "";
+      const hint = t.hint || "";
+      const student = answers[id] ?? "";
+
+      let checkLine = "";
+      if (gradeInfo && gradeInfo.perTask) {
+        const pt = gradeInfo.perTask.find(x => String(x.id) === id);
+        if (pt) {
+          checkLine = `
+            <div style="margin-top:6px; font-size:13px;">
+              <b>${pt.ok ? "✅ Верно" : "❌ Неверно"}</b>
+              <span style="color:#666;">(${pt.earned}/${pt.max})</span>
+              ${pt.ok ? "" : `<div style="color:#666;margin-top:2px;">Ключ: ${escapeHtml((pt.accepted || []).join(" | "))}</div>`}
+            </div>
+          `;
+        }
+      }
+
+      return `
+        <div style="border:1px solid #ddd; border-radius:12px; padding:12px; margin:10px 0;">
+          <div style="font-weight:700;">Задание ${escapeHtml(id)}</div>
+          ${hint ? `<div style="color:#666;font-size:13px;margin-top:4px;">${escapeHtml(hint)}</div>` : ""}
+          <div style="margin-top:8px; white-space:pre-wrap;">${q}</div>
+          <div style="margin-top:10px;"><b>Ответ ученика:</b> ${escapeHtml(student)}</div>
+          ${checkLine}
+        </div>
+      `;
+    }).join("\n");
+
+    const gradeBlock = gradeInfo
+      ? `<div style="margin:10px 0; padding:10px; border-radius:10px; background:#f6f7ff; border:1px solid #dde;">
+          <b>Автопроверка:</b> ${gradeInfo.earned}/${gradeInfo.max} (${gradeInfo.percent}%)
+        </div>`
+      : "";
+
+    return `<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>Отчёт</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Печать — ${title}</title>
 <style>
-  body{ font-family: system-ui,Segoe UI,Arial,sans-serif; padding: 20px; }
-  h1{ margin:0 0 8px 0; font-size: 20px; }
-  .meta{ margin:0 0 14px 0; color:#333; line-height:1.5; }
-  .meta code{ font-size: 12px; }
-  table{ width:100%; border-collapse:collapse; }
-  th,td{ border:1px solid #ddd; padding:8px; font-size:13px; vertical-align:top; }
-  th{ background:#f3f3f3; text-align:left; }
-  .muted{ color:#666; }
+  body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:24px;color:#111}
+  h1{margin:0 0 6px 0}
+  .muted{color:#666}
+  .row{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0}
+  .pill{border:1px solid #ddd;border-radius:999px;padding:6px 10px;font-size:13px}
+  @media print{ body{margin:0} }
 </style>
 </head>
 <body>
-  <h1>${title || "Контрольная работа"}</h1>
-  <p class="meta">
-    <b>ФИО:</b> ${fio || "<span class='muted'>—</span>"}<br>
-    <b>Класс:</b> ${cls || "<span class='muted'>—</span>"}<br>
-    <b>Начало:</b> ${started || "<span class='muted'>—</span>"}<br>
-    <b>Окончание:</b> ${finished || "<span class='muted'>—</span>"}<br>
-    <b>Баллы:</b> ${escapeHtml(pts)}<br>
-    <b>Процент:</b> ${percent ?? "—"}<br>
-    <b>Ключ (S3):</b> <code>${escapeHtml(key)}</code>
-  </p>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:70px">№</th>
-        <th style="width:70px">OK</th>
-        <th>Ответ ученика</th>
-        <th>Ключ (если есть)</th>
-        <th style="width:120px">Баллы</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${lines || `<tr><td colspan="5" class="muted">Нет данных для отображения.</td></tr>`}
-    </tbody>
-  </table>
+  <h1>${title}</h1>
+  ${subtitle ? `<div class="muted">${subtitle}</div>` : ""}
+  <div class="row">
+    <div class="pill"><b>ФИО:</b> ${studentName}</div>
+    <div class="pill"><b>Класс:</b> ${studentClass}</div>
+    <div class="pill"><b>Дата:</b> ${createdAt}</div>
+    <div class="pill"><b>Вариант:</b> ${escapeHtml(resultJson?.variant?.id || "")}</div>
+  </div>
+  ${gradeBlock}
+  <hr>
+  ${taskHtml}
 </body>
 </html>`;
+  }
 
-      const w = window.open("", "_blank");
-      if (!w) {
-        alert("Браузер заблокировал окно. Разрешите всплывающие окна для сайта.");
-        return;
-      }
-      w.document.open();
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      // пользователю: Файл → Печать → Сохранить как PDF
-      setStatus("Открылся отчёт. Печать → Сохранить как PDF.");
-    } catch (err) {
-      console.error(err);
-      setStatus("teacher api failed: " + err.message, false);
-    } finally {
-      setBusy(false);
+  async function exportPdf() {
+    if (!openedJson) {
+      alert("Сначала откройте работу (кнопка «Открыть»).");
+      return;
     }
+    const subject = safeText(openedJson?.subject || currentSubject) || currentSubject;
+    const variantId = safeText(openedJson?.variant?.id || openedJson?.variantId || currentVariant) || currentVariant;
+
+    const variantJson = await getVariantJson(subject, variantId);
+
+    // если есть keyJson — добавим автопроверку в PDF
+    const gradeInfo = keyJson ? autoGrade(openedJson, keyJson) : null;
+
+    const html = buildPrintableHtml(openedJson, variantJson, gradeInfo);
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Браузер заблокировал всплывающее окно. Разрешите pop-up для печати PDF.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+
+    setTimeout(() => {
+      try { w.print(); } catch {}
+    }, 300);
   }
 
-  // ---------- AutoCheck (client-side using loaded key) ----------
-  function parseKeyJson(obj) {
-    if (!obj) return null;
-    if (obj.answers && typeof obj.answers === "object") return obj.answers;
-    return obj;
+  // ===== Autograde =====
+  function buildKeyIndex(key) {
+    // Ожидаем формат ключа:
+    // { subject:"russian", variantId:"variant_01", answers: { "1":["в"], "2":["поэтому"] ... } }
+    // или: { answers: { "1": ["..."] } }
+    const ans = key?.answers || key?.key || key?.accepted || null;
+    if (!ans || typeof ans !== "object") return null;
+    return ans;
   }
 
-  function applyAutoCheckToResult(resultJson, keyMap) {
-    // expects: keyMap[variantId][taskId] = [answers...]
-    const variantId = safeText(resultJson?.variant?.id || resultJson?.variantId || "");
-    if (!variantId) throw new Error("Не удалось определить variantId в работе");
+  function autoGrade(resultJson, key) {
+    const idx = buildKeyIndex(key);
+    if (!idx) throw new Error("Ключ не распознан (нет объекта answers).");
 
-    const variantKey = keyMap?.[variantId] || keyMap?.[variantId.replace(/^variant_/, "variant_")] || null;
-    if (!variantKey) throw new Error(`В ключе нет варианта: ${variantId}`);
+    const answers = resultJson?.answers || {};
+    let earned = 0;
+    let max = 0;
+    const perTask = [];
 
-    const tasks = Array.isArray(resultJson?.perTask) ? resultJson.perTask : null;
-    const answers = resultJson?.answers && typeof resultJson.answers === "object" ? resultJson.answers : {};
+    // если есть variant JSON с points — можно расширить, но здесь 1 балл по умолчанию
+    const ids = Object.keys(idx);
 
-    // если perTask нет — создадим минимум
-    const taskIds = tasks ? tasks.map((t) => String(t.id)) : Object.keys(answers);
+    for (const id of ids) {
+      const accepted = Array.isArray(idx[id]) ? idx[id] : [idx[id]];
+      const pts = 1;
+      max += pts;
 
-    const perTaskNew = taskIds
-      .sort((a, b) => Number(a) - Number(b))
-      .map((id) => {
-        const student = safeText(answers[id] ?? (tasks ? tasks.find((t) => String(t.id) === id)?.student : "") ?? "");
-        const acceptedRaw = variantKey[id] ?? variantKey[String(Number(id))] ?? [];
-        const accepted = Array.isArray(acceptedRaw) ? acceptedRaw : [acceptedRaw];
-        const ok = accepted.map(norm).includes(norm(student)) && norm(student) !== "";
-        const pts = Number(tasks?.find((t) => String(t.id) === id)?.max ?? 1);
-        return {
-          id: Number(id),
-          ok,
-          student,
-          accepted,
-          earned: ok ? pts : 0,
-          max: pts,
-        };
+      const studentRaw = answers[id] ?? "";
+      const a = normalizeAnswer(studentRaw);
+      const ok = accepted.map(normalizeAnswer).includes(a) && a.length > 0;
+      earned += ok ? pts : 0;
+
+      perTask.push({
+        id,
+        ok,
+        earned: ok ? pts : 0,
+        max: pts,
+        student: safeText(studentRaw),
+        accepted: accepted.slice(0),
       });
+    }
 
-    const max = perTaskNew.reduce((s, t) => s + Number(t.max || 0), 0);
-    const earned = perTaskNew.reduce((s, t) => s + Number(t.earned || 0), 0);
-    const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
+    const percent = max ? Math.round((earned / max) * 100) : 0;
+    return { earned, max, percent, perTask };
+  }
 
-    resultJson.perTask = perTaskNew;
-    resultJson.grading = {
-      ...(resultJson.grading || {}),
-      maxPoints: max,
-      earnedPoints: earned,
-      percent,
-      checkedBy: "teacher-panel-autocheck",
+  function setKeyStatus(msg, bad = false) {
+    if (!ui.keyStatus) return;
+    ui.keyStatus.textContent = msg;
+    ui.keyStatus.style.color = bad ? "var(--bad)" : "var(--muted)";
+  }
+
+  async function loadKeyFromLocal(file) {
+    const text = await file.text();
+    const json = JSON.parse(text);
+    keyJson = json;
+    setKeyStatus("Ключ загружен (локально).");
+    if (ui.btnAutoCheck) ui.btnAutoCheck.disabled = !openedJson;
+  }
+
+  async function loadKeyFromS3() {
+    const s3key = safeText(ui.keyS3Key?.value);
+    if (!s3key) {
+      alert("Укажите S3 key (например: keys/russian/variant_01.json)");
+      return;
+    }
+    const json = await api("/teacher/get", { key: s3key });
+    keyJson = json;
+    setKeyStatus("Ключ загружен (из бакета).");
+    if (ui.btnAutoCheck) ui.btnAutoCheck.disabled = !openedJson;
+  }
+
+  function clearKey() {
+    keyJson = null;
+    setKeyStatus("Ключ не загружен.");
+    if (ui.btnAutoCheck) ui.btnAutoCheck.disabled = true;
+  }
+
+  function runAutoCheck() {
+    if (!openedJson) {
+      alert("Сначала откройте работу.");
+      return;
+    }
+    if (!keyJson) {
+      alert("Сначала загрузите ключ.");
+      return;
+    }
+    const g = autoGrade(openedJson, keyJson);
+
+    // подсветим в jsonBox (добавим блок grading)
+    const cloned = JSON.parse(JSON.stringify(openedJson));
+    cloned.autograding = {
+      earned: g.earned,
+      max: g.max,
+      percent: g.percent,
+      perTask: g.perTask,
       checkedAt: new Date().toISOString(),
     };
+    if (ui.jsonBox) ui.jsonBox.value = JSON.stringify(cloned, null, 2);
 
-    return resultJson;
+    alert(`Автопроверка: ${g.earned}/${g.max} (${g.percent}%).`);
   }
 
-  async function loadKeyFromFile(file) {
-    const text = await file.text();
-    const obj = JSON.parse(text);
-    return parseKeyJson(obj);
+  // ===== open JSON buttons =====
+  function downloadOpenedJson() {
+    if (!openedJson) return;
+    const cls = safeText(openedJson?.student?.class || "class").replace(/\s+/g, "_");
+    const fio = safeText(openedJson?.student?.name || "student").replace(/\s+/g, "_");
+    const vid = safeText(openedJson?.variant?.id || openedJson?.variantId || currentVariant);
+    const fn = `result_${currentSubject}_${vid}_${cls}_${fio}.json`;
+    const blob = new Blob([JSON.stringify(openedJson, null, 2)], { type: "application/json;charset=utf-8" });
+    downloadBlob(fn, blob);
   }
 
-  async function loadKeyFromBucketKey(s3Key) {
-    // предполагаем: ключ хранится как JSON в бакете результатов, доступ через teacher/get
-    // если вы храните ключ в другом бакете/пути — просто укажите key в поле.
-    const data = await api("/teacher/get", { key: s3Key });
-    return parseKeyJson(data);
-  }
-
-  async function autoCheckSelected() {
-    const keys = pickSelectedCheckboxes();
-    if (!keys.length) {
-      alert("Выберите работы галочками.");
-      return;
-    }
-    if (!answerKey) {
-      alert("Сначала загрузите ключ (локальный файл или ключ из бакета).");
-      return;
+  // ===== init =====
+  function bind() {
+    // theme: одним нажатием (не чекбокс)
+    setTheme(getPreferredTheme());
+    const themeBtn = $("themeBtn"); // если есть
+    const themeWrap = $("themeWrap"); // если есть
+    if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
+    else if (themeWrap) themeWrap.addEventListener("click", toggleTheme);
+    else {
+      // fallback: кликаем по label если есть
+      $("themeLabel")?.addEventListener("click", toggleTheme);
     }
 
-    setStatus("");
-    setBusy(true);
-    try {
-      const results = [];
-      for (const k of keys) {
-        const data = await api("/teacher/get", { key: k });
-        const updated = applyAutoCheckToResult(data, answerKey);
-        // сохраняем обратно как новый JSON? (это отдельный процесс — мы НЕ перезаписываем ученический файл здесь)
-        // поэтому: скачиваем обновлённый вариант для учителя
-        results.push({ key: k, updated });
-      }
+    ui.btnLoadTimer?.addEventListener("click", () => loadTimer().catch(errHandler));
+    ui.btnSaveTimer?.addEventListener("click", () => saveTimer().catch(errHandler));
+    ui.btnResetCode?.addEventListener("click", () => makeReset().catch(errHandler));
 
-      // один zip мы не делаем — скачиваем одним JSON-архивом
-      const pack = {
-        schema: "kodislovo.teacher.autocheck.pack.v1",
-        createdAt: new Date().toISOString(),
-        count: results.length,
-        items: results.map((x) => ({ key: x.key, result: x.updated })),
-      };
+    ui.btnList?.addEventListener("click", () => listResults().catch(errHandler));
 
-      downloadJson(`autocheck_${subject}_${new Date().toISOString().slice(0, 10)}.json`, pack);
-      setStatus(`Автопроверка выполнена: ${results.length} (скачан файл)`);
-    } catch (err) {
-      console.error(err);
-      setStatus("Автопроверка: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
+    ui.btnDownloadJson?.addEventListener("click", downloadOpenedJson);
 
-  // ---------- bulk delete ----------
-  async function deleteSelected() {
-    const keys = pickSelectedCheckboxes();
-    if (!keys.length) {
-      alert("Выберите работы галочками.");
-      return;
-    }
-    if (!confirm(`Удалить из бакета ${keys.length} файл(ов)?`)) return;
+    ui.btnCsv?.addEventListener("click", exportCsv);
+    ui.btnPdf?.addEventListener("click", () => exportPdf().catch(errHandler));
 
-    setStatus("");
-    setBusy(true);
-    try {
-      for (const k of keys) {
-        await api("/teacher/delete", { key: k });
-      }
-      setStatus(`Удалено: ${keys.length}`);
-      await loadList();
-    } catch (err) {
-      console.error(err);
-      setStatus("Удаление: " + err.message, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // ---------- init ----------
-  async function loadManifest() {
-    // teacher panel is in /teacher/, controls in root /controls/
-    const url = new URL("../controls/" + encodeURIComponent(subject) + "/variants/manifest.json", window.location.href).toString();
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`Не удалось загрузить manifest.json: ${url} (HTTP ${r.status})`);
-    manifest = await r.json();
-
-    TEACHER_BASE = safeText(manifest?.teacher?.base_url || "");
-    TEACHER_TOKEN = safeText(manifest?.teacher?.token || "");
-
-    if (!TEACHER_BASE || !TEACHER_TOKEN) {
-      throw new Error("В manifest.json не заданы teacher.base_url или teacher.token");
-    }
-
-    // fill variant selector (optional)
-    const sel = $("filterVariant");
-    if (sel) {
-      sel.innerHTML = `<option value="">Все варианты</option>` + (manifest.variants || [])
-        .map((v) => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.title || v.id)}</option>`)
-        .join("");
-    }
-
-    // header text
-    $("uiSubject") && ($("uiSubject").textContent = manifest.subjectTitle || subject);
-  }
-
-  function wireUi() {
-    $("btnReload")?.addEventListener("click", loadList);
-
-    $("btnCsv")?.addEventListener("click", exportCsvSelected);
-    $("btnDeleteSelected")?.addEventListener("click", deleteSelected);
-    $("btnAutoCheck")?.addEventListener("click", autoCheckSelected);
-
-    $("chkAll")?.addEventListener("change", (e) => {
-      const v = !!e.target.checked;
-      $$("input[name='rowPick']").forEach((x) => (x.checked = v));
-    });
-
-    // key load: local
-    $("keyFile")?.addEventListener("change", async (e) => {
-      const f = e.target.files?.[0];
+    // ключ
+    ui.keyFile?.addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0];
       if (!f) return;
-      try {
-        answerKey = await loadKeyFromFile(f);
-        setStatus("Ключ загружен (локальный файл)");
-      } catch (err) {
-        console.error(err);
-        setStatus("Ключ: " + err.message, false);
-      }
+      try { await loadKeyFromLocal(f); } catch (e2) { errHandler(e2); }
+      e.target.value = "";
     });
+    ui.btnLoadKeyFromS3?.addEventListener("click", () => loadKeyFromS3().catch(errHandler));
+    ui.btnClearKey?.addEventListener("click", clearKey);
+    ui.btnAutoCheck?.addEventListener("click", () => { try { runAutoCheck(); } catch (e) { errHandler(e); } });
 
-    // key load: from bucket key
-    $("btnKeyFromBucket")?.addEventListener("click", async () => {
-      const k = safeText($("keyBucketKey")?.value);
-      if (!k) {
-        alert("Введите S3 key файла ключа (например: keys/russian/variant_01.json)");
-        return;
-      }
-      setBusy(true);
-      try {
-        answerKey = await loadKeyFromBucketKey(k);
-        setStatus("Ключ загружен (из бакета)");
-      } catch (err) {
-        console.error(err);
-        setStatus("Ключ: " + err.message, false);
-      } finally {
-        setBusy(false);
-      }
-    });
+    // defaults
+    if (ui.subject && !ui.subject.value) ui.subject.value = currentSubject;
+    if (ui.variant && !ui.variant.value) ui.variant.value = currentVariant;
+
+    if (ui.btnDownloadJson) ui.btnDownloadJson.disabled = true;
+    if (ui.btnPdf) ui.btnPdf.disabled = true;
+    if (ui.btnAutoCheck) ui.btnAutoCheck.disabled = true;
+    clearKey();
   }
 
-  // ---------- run ----------
-  async function init() {
-    // subject from query ?subject=russian
-    const p = new URLSearchParams(location.search);
-    subject = p.get("subject") || "russian";
-
-    await loadManifest();
-    wireUi();
-    await loadList();
+  function errHandler(e) {
+    console.error(e);
+    setStatus(String(e.message || e), true);
+    alert(String(e.message || e));
   }
 
-  init().catch((err) => {
-    console.error(err);
-    setStatus("Ошибка запуска панели: " + err.message, false);
-    alert(
-      "Ошибка запуска учительской панели:\n" +
-        err.message +
-        "\n\nПроверь:\n" +
-        "1) /controls/<subject>/variants/manifest.json доступен\n" +
-        "2) в manifest.json есть teacher.base_url и teacher.token\n"
-    );
-  });
+  bind();
 })();
