@@ -232,7 +232,7 @@
   // ========= finish =========
   function applyFinishedState() {
     const btnFinish = $("btnFinish");
-    const btnSubmit = $("btnSubmit");
+    const btnSubmit = $("btnSubmit") || $("btnSaveCloud");
     const btnReset = $("btnReset");
 
     if (btnFinish) {
@@ -595,11 +595,17 @@
     }
   }
 
-  // ========= init =========
+  
+  // Совместимость: если в HTML осталась кнопка "Сохранить", переименуем в "Отправить"
+  try {
+    const b = $("btnSubmit") || $("btnSaveCloud");
+    if (b && /сохран/i.test(b.textContent || "")) b.textContent = "Отправить";
+  } catch {}
+// ========= init =========
   async function init() {
     // theme init + toggle by click
     setTheme(getPreferredTheme());
-    const themeBtn = $("themeToggle") || $("themeWrap") || $("themeSwitch") || null;
+    const themeBtn = $("themeToggle") || $("themeWrap") || $("themeSwitch") || $("themeBtn") || null;
     if (themeBtn && !themeBtn._kdBound) {
       themeBtn._kdBound = true;
       themeBtn.addEventListener("click", (e) => {
@@ -616,7 +622,7 @@
       bf.addEventListener("click", () => finishNow(false));
     }
 
-    const bs = $("btnSubmit");
+    const bs = $("btnSubmit") || $("btnSaveCloud");
     if (bs && !bs._kdBound) {
       bs._kdBound = true;
       bs.addEventListener("click", submitResultToCloud);
