@@ -1,7 +1,6 @@
 (function () {
   "use strict";
 
-  // ========= helpers =========
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
@@ -12,9 +11,10 @@
   function safeText(s) { return (s ?? "").toString().trim(); }
   function normalizeAnswer(s) { return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim(); }
 
+  // ✅ железобетонная база относительно control.html
   function variantsBase(subject) {
     // control/control.html -> control/controls/<subject>/variants/
-    return new URL(`controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
+    return new URL(`./controls/${encodeURIComponent(subject)}/variants/`, window.location.href).toString();
   }
 
   async function fetchJson(url) {
@@ -96,7 +96,7 @@
     setText(
       "uiSubtitle",
       variantMeta?.subtitle ||
-        "Заполните данные ученика, выполните задания, затем нажмите «Завершить» и «Сохранить»."
+      "Заполните данные, выполните задания, нажмите «Завершить», затем «Сохранить»."
     );
   }
 
@@ -147,8 +147,6 @@
 
   function setTimerUI(text) {
     setText("uiTimer", text);
-    const mirror = $("uiTimerMirror");
-    if (mirror) mirror.value = text;
   }
 
   function startTimerIfNeeded() {
@@ -180,7 +178,6 @@
     }
     if (btnSave) btnSave.disabled = !isFinished;
 
-    // блокируем вводы после завершения
     const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#answerInput");
     inputs.forEach((el) => { el.disabled = isFinished; });
   }
@@ -226,7 +223,7 @@
     alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Теперь нажмите «Сохранить».");
   }
 
-  // ========= sticky text blocks =========
+  // ========= sticky text =========
   let stickyCollapsed = false;
 
   function getTextRangesFromMeta() {
@@ -271,7 +268,7 @@
     return null;
   }
 
-  // ========= render ONE task =========
+  // ========= render one task =========
   let stickyBlocks = [];
 
   function renderCurrentTask() {
@@ -289,12 +286,8 @@
     const task = tasks[currentTaskIndex];
 
     const block = findBlockForTask(stickyBlocks, Number(task.id));
-    if (block) {
-      setStickyVisible(true);
-      setStickyContent(block);
-    } else {
-      setStickyVisible(false);
-    }
+    if (block) { setStickyVisible(true); setStickyContent(block); }
+    else { setStickyVisible(false); }
 
     cont.innerHTML = `
       <section class="kd-task" data-task-id="${String(task.id)}">
@@ -343,23 +336,15 @@
     if (isFinished && inp) inp.disabled = true;
   }
 
-  // ========= cloud submit (/submit) =========
+  // ========= cloud submit =========
   async function submitResultToCloud() {
     const submitUrl = String(manifest?.submit?.url || "").trim();
     const submitToken = String(manifest?.submit?.token || "").trim();
 
-    if (!submitUrl) {
-      alert("В manifest.json не задан submit.url (адрес /submit шлюза).");
-      return;
-    }
-    if (!submitToken) {
-      alert("В manifest.json не задан submit.token (X-Submit-Token).");
-      return;
-    }
+    if (!submitUrl) { alert("В manifest.json не задан submit.url."); return; }
+    if (!submitToken) { alert("В manifest.json не задан submit.token."); return; }
 
     const payload = buildResultPayload();
-
-    // защитимся от пустых полей (как у submit-функции)
     if (!safeText(payload.student.name) || !safeText(payload.student.class) || !safeText(payload.variant.id)) {
       alert("Заполните ФИО, класс и выберите вариант.");
       return;
@@ -371,44 +356,30 @@
     try {
       const r = await fetch(submitUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Submit-Token": submitToken
-        },
+        headers: { "Content-Type": "application/json", "X-Submit-Token": submitToken },
         body: JSON.stringify(payload)
       });
-
       const text = await r.text();
-      let data = null;
-      try { data = JSON.parse(text); } catch { /* ignore */ }
+      let data = null; try { data = JSON.parse(text); } catch {}
 
-      if (!r.ok) {
-        throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
-      }
-
+      if (!r.ok) throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
       alert("Работа сохранена ✅\nОтправлено в облако ✅");
     } catch (e) {
       console.error(e);
       alert("Работа сохранена ✅\nНо в облако не отправилась ❗\n" + (e?.message || e));
     } finally {
-      if (btn) btn.disabled = !isFinished; // если не завершено — снова выключим
+      if (btn) btn.disabled = !isFinished;
     }
   }
 
-  // ========= reset consume (/teacher/reset/consume) =========
+  // ========= reset consume =========
   async function applyResetCode(codeRaw) {
     const teacherBase = String(manifest?.teacher?.base_url || "").replace(/\/+$/, "");
     const teacherToken = String(manifest?.teacher?.token || "").trim();
     const code = safeText(codeRaw);
 
-    if (!teacherBase) {
-      alert("В manifest.json не задан teacher.base_url.");
-      return;
-    }
-    if (!teacherToken) {
-      alert("В manifest.json не задан teacher.token (X-Teacher-Token).");
-      return;
-    }
+    if (!teacherBase) { alert("В manifest.json не задан teacher.base_url."); return; }
+    if (!teacherToken) { alert("В manifest.json не задан teacher.token."); return; }
 
     const fio = safeText($("studentName")?.value);
     const cls = safeText($("studentClass")?.value);
@@ -420,35 +391,20 @@
     }
 
     const url = `${teacherBase}/teacher/reset/consume`;
-
     const btn = $("btnResetApply");
     if (btn) btn.disabled = true;
 
     try {
       const r = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Teacher-Token": teacherToken
-        },
-        body: JSON.stringify({
-          subject,
-          fio,
-          cls,
-          variant,
-          code
-        })
+        headers: { "Content-Type": "application/json", "X-Teacher-Token": teacherToken },
+        body: JSON.stringify({ subject, fio, cls, variant, code })
       });
 
       const text = await r.text();
-      let data = null;
-      try { data = JSON.parse(text); } catch { /* ignore */ }
+      let data = null; try { data = JSON.parse(text); } catch {}
+      if (!r.ok || !data?.ok) throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
 
-      if (!r.ok || !data?.ok) {
-        throw new Error((data && (data.message || data.error)) ? `${data.error || "error"}: ${data.message || ""}` : text);
-      }
-
-      // СБРОС ЛОКАЛЬНОЙ РАБОТЫ
       localStorage.removeItem(lsKey());
       answersMap = {};
       currentTaskIndex = 0;
@@ -461,8 +417,7 @@
       renderCurrentTask();
       startTimerIfNeeded();
 
-      $("resetCode") && ($("resetCode").value = "");
-
+      if ($("resetCode")) $("resetCode").value = "";
       alert("Сброс выполнен ✅\nМожно начинать заново.");
     } catch (e) {
       console.error(e);
@@ -473,35 +428,31 @@
   }
 
   // ========= load =========
-  function extractVariantMeta(v) {
-    return v.meta || {};
-  }
+  function extractVariantMeta(v) { return v.meta || {}; }
 
   async function loadManifest() {
+    // если subject кривой — сразу видно базу
     manifest = await fetchJson(base + "manifest.json");
 
     const sel = $("variantSelect");
     if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
 
     sel.innerHTML = "";
-    (manifest.variants || []).forEach((v, idx) => {
+    const vars = Array.isArray(manifest.variants) ? manifest.variants : [];
+
+    if (!vars.length) throw new Error("manifest.json: список variants пустой");
+
+    vars.forEach((v, idx) => {
       const opt = document.createElement("option");
       opt.value = v.id;
       opt.textContent = v.title || v.id;
       opt.dataset.file = v.file;
       sel.appendChild(opt);
-      if (idx === 0) {
-        currentVariantId = v.id;
-        currentVariantFile = v.file;
-      }
+      if (idx === 0) { currentVariantId = v.id; currentVariantFile = v.file; }
     });
 
-    if (sel.options.length) {
-      sel.value = currentVariantId;
-      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
-    } else {
-      throw new Error("manifest.json: список variants пустой");
-    }
+    sel.value = currentVariantId;
+    currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -530,7 +481,6 @@
     currentTaskIndex = Number.isFinite(progress?.currentTaskIndex) ? progress.currentTaskIndex : 0;
 
     setHeader();
-
     stickyBlocks = getTextRangesFromMeta();
 
     $("stickyToggle")?.addEventListener("click", () => {
@@ -549,26 +499,19 @@
     $("studentClass")?.addEventListener("input", () => { if (!isFinished) saveProgress(); });
   }
 
-  // ========= init =========
   async function init() {
     setTheme(getPreferredTheme());
     $("themeToggle")?.addEventListener("change", (e) => setTheme(e.target.checked ? "light" : "dark"));
 
     $("btnFinish")?.addEventListener("click", () => finishNow(false));
     $("btnSave")?.addEventListener("click", async () => {
-      if (!isFinished) {
-        alert("Сначала нажмите «Завершить».");
-        return;
-      }
+      if (!isFinished) { alert("Сначала нажмите «Завершить»."); return; }
       await submitResultToCloud();
     });
 
     $("btnResetApply")?.addEventListener("click", async () => {
       const code = safeText($("resetCode")?.value);
-      if (!code) {
-        alert("Введите код сброса.");
-        return;
-      }
+      if (!code) { alert("Введите код сброса."); return; }
       await applyResetCode(code);
     });
 
@@ -578,16 +521,12 @@
 
   init().catch((err) => {
     console.error(err);
-
-    const hint =
-      `Subject: ${subject}\n` +
-      `Ожидаем manifest:\n${base}manifest.json\n` +
-      `Ожидаем variant:\n${base}${currentVariantFile || "variant_01.json"}\n\n` +
-      `Проверь:\n` +
-      `1) /control/controls/<subject>/variants/manifest.json\n` +
-      `2) control.html лежит в /control/control.html\n` +
-      `3) подключён CSS: /assets/css/control-ui.css\n`;
-
-    alert("Ошибка загрузки контрольной: " + err.message + "\n\n" + hint);
+    alert(
+      "Ошибка загрузки контрольной: " + err.message + "\n\n" +
+      "Проверь пути:\n" +
+      `manifest: ${base}manifest.json\n` +
+      `variant:   ${base}(variant_XX.json)\n` +
+      "И что control.html лежит в /control/control.html"
+    );
   });
 })();
