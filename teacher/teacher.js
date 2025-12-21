@@ -355,3 +355,650 @@
     let data = null;
     try {
       data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (!res.ok) {
+      const msg = (data && (data.error || data.message)) || (typeof data === "string" ? data : "") || `${res.status} ${res.statusText}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+    return data;
+  }
+
+  // ---------- UI: containers ----------
+  function ensureResultsContainer() {
+    const el = pickEl([
+      "#results",
+      "#resultsList",
+      "#list",
+      "#items",
+      "#tableBody",
+      "tbody#rows",
+      "[data-role='results']",
+      "[data-role='list']",
+    ]);
+    if (el) return el;
+
+    const wrap = document.createElement("div");
+    wrap.id = "results";
+    wrap.style.padding = "12px";
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+
+  function ensureSearchInput() {
+    return pickEl([
+      "#search",
+      "#q",
+      "#filter",
+      "#filterText",
+      "input[name='search']",
+      "[data-role='search']",
+    ]);
+  }
+
+  function ensureLoadingFlag() {
+    const el = pickEl([
+      "#loading",
+      "[data-role='loading']",
+      ".loading",
+    ]);
+    return el;
+  }
+
+  function setLoading(isLoading) {
+    const el = ensureLoadingFlag();
+    if (el) {
+      el.style.display = isLoading ? "" : "none";
+    }
+    document.documentElement.classList.toggle("is-loading", !!isLoading);
+  }
+
+  // ---------- Render ----------
+  function normalizeItem(x) {
+    // Try to unify common fields without depending on backend exact schema
+    const key =
+      x?.key ||
+      x?.id ||
+      x?.resultKey ||
+      x?.objectKey ||
+      x?.storageKey ||
+      x?.name ||
+      "";
+
+    const created =
+      x?.createdAt ||
+      x?.created_at ||
+      x?.ts ||
+      x?.timestamp ||
+      x?.submittedAt ||
+      x?.submitted_at ||
+      x?.time ||
+      "";
+
+    const student =
+      x?.student ||
+      x?.studentName ||
+      x?.name ||
+      x?.fio ||
+      x?.user ||
+      x?.who ||
+      "";
+
+    const klass =
+      x?.class ||
+      x?.klass ||
+      x?.grade ||
+      x?.group ||
+      "";
+
+    const variant =
+      x?.variant ||
+      x?.variantId ||
+      x?.variant_id ||
+      x?.variantTitle ||
+      x?.variant_title ||
+      "";
+
+    const voided = !!(x?.voided || x?.isVoided || x?.deleted || x?.archived);
+
+    return {
+      ...x,
+      __key: key,
+      __created: created,
+      __student: student,
+      __class: klass,
+      __variant: variant,
+      __voided: voided,
+    };
+  }
+
+  function applyFilter() {
+    const q = (ensureSearchInput()?.value || "").trim().toLowerCase();
+    const items = state.items || [];
+    if (!q) {
+      state.filtered = items.slice();
+      return;
+    }
+    state.filtered = items.filter((it) => {
+      const hay = [
+        it.__key,
+        it.__student,
+        it.__class,
+        it.__variant,
+        it.__created,
+        it.subject,
+      ]
+        .map((v) => safeText(v).toLowerCase())
+        .join(" | ");
+      return hay.includes(q);
+    });
+  }
+
+  function renderList() {
+    const root = ensureResultsContainer();
+    applyFilter();
+
+    // If root is a <tbody>, render rows. Otherwise render cards.
+    const isTbody = root.tagName === "TBODY";
+
+    const items = state.filtered || [];
+    if (!items.length) {
+      if (isTbody) {
+        root.innerHTML = `<tr><td colspan="8" style="padding:12px;opacity:.8">Нет результатов</td></tr>`;
+      } else {
+        root.innerHTML = `<div style="padding:12px;opacity:.8">Нет результатов</div>`;
+      }
+      return;
+    }
+
+    if (isTbody) {
+      root.innerHTML = "";
+      for (const it of items) {
+        const tr = document.createElement("tr");
+        tr.dataset.key = it.__key || "";
+        tr.innerHTML = `
+          <td>${escapeHtml(it.__key)}</td>
+          <td>${escapeHtml(it.__student)}</td>
+          <td>${escapeHtml(it.__class)}</td>
+          <td>${escapeHtml(it.__variant)}</td>
+          <td>${escapeHtml(isoToLocal(it.__created))}</td>
+          <td>${it.__voided ? "void" : ""}</td>
+          <td style="white-space:nowrap">
+            <button class="btn" data-action="download-json">JSON</button>
+            <button class="btn" data-action="print">PDF</button>
+            <button class="btn" data-action="void">${it.__voided ? "Unvoid?" : "Void"}</button>
+          </td>
+        `;
+        tr.addEventListener("click", (e) => {
+          const btn = e.target?.closest?.("button[data-action]");
+          if (btn) return; // handled by delegation
+          state.selected = it;
+        });
+        root.appendChild(tr);
+      }
+    } else {
+      root.innerHTML = "";
+      for (const it of items) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.key = it.__key || "";
+        card.style.padding = "12px";
+        card.style.marginBottom = "10px";
+        card.style.border = "1px solid rgba(255,255,255,.12)";
+        card.style.borderRadius = "14px";
+        card.style.background = "rgba(255,255,255,.04)";
+
+        const title = `${it.__student || "Без имени"} ${it.__class ? "• " + it.__class : ""}`;
+        const meta = [
+          it.__variant ? `Вариант: ${it.__variant}` : "",
+          it.__created ? `Сдано: ${isoToLocal(it.__created)}` : "",
+          it.__key ? `Key: ${it.__key}` : "",
+          it.__voided ? `Статус: void` : "",
+        ].filter(Boolean).join(" • ");
+
+        card.innerHTML = `
+          <div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">
+            <div style="min-width:240px;flex:1">
+              <div style="font-weight:700;font-size:16px;margin-bottom:4px">${escapeHtml(title)}</div>
+              <div style="opacity:.85;font-size:13px;line-height:1.35">${escapeHtml(meta)}</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button class="btn" data-action="download-json">Скачать JSON</button>
+              <button class="btn" data-action="print">PDF (печать)</button>
+              <button class="btn" data-action="void">Удалить / void</button>
+            </div>
+          </div>
+          <details style="margin-top:10px">
+            <summary style="cursor:pointer;opacity:.9">Детали</summary>
+            <pre style="white-space:pre-wrap;word-break:break-word;opacity:.9;margin:10px 0 0">${escapeHtml(JSON.stringify(it, null, 2))}</pre>
+          </details>
+        `;
+
+        root.appendChild(card);
+      }
+    }
+
+    // Delegated actions
+    root.onclick = async (e) => {
+      const btn = e.target?.closest?.("button[data-action]");
+      if (!btn) return;
+
+      const host = e.target?.closest?.("[data-key]");
+      const key = host?.dataset?.key || "";
+      const it = (state.filtered || []).find((x) => x.__key === key) || (state.items || []).find((x) => x.__key === key);
+      if (!it) return;
+
+      const action = btn.dataset.action;
+      if (action === "download-json") {
+        await actionDownloadJson(it);
+      } else if (action === "print") {
+        await actionPrint(it);
+      } else if (action === "void") {
+        await actionVoid(it);
+      }
+    };
+  }
+
+  function escapeHtml(s) {
+    return safeText(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // ---------- Actions ----------
+  async function loadList() {
+    setLoading(true);
+    try {
+      // Many backends accept subject filter; harmless if ignored
+      const data = await apiCall("/teacher/list", { params: { subject: state.subject } });
+
+      // allow formats:
+      // 1) {items:[...]}
+      // 2) [...]
+      // 3) {results:[...]}
+      const arr = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.results) ? data.results : [];
+      state.items = arr.map(normalizeItem);
+
+      // sort newest first if possible
+      state.items.sort((a, b) => {
+        const ta = new Date(a.__created || 0).getTime();
+        const tb = new Date(b.__created || 0).getTime();
+        return (tb || 0) - (ta || 0);
+      });
+
+      renderList();
+      showStatus(`Загружено: ${state.items.length}`, "ok", 2200);
+    } catch (e) {
+      console.error(e);
+      showStatus(`Ошибка списка: ${e.message}`, "error", 6000);
+      // keep previous list if any
+      renderList();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function getResultJson(it) {
+    // Try multiple patterns to match your function without breaking it
+    const key = it.__key;
+    if (!key) throw new Error("Не найден ключ результата");
+
+    const trySeq = [
+      () => apiCall("/teacher/get", { params: { key } }),
+      () => apiCall("/teacher/get", { params: { id: key } }),
+      () => apiCall(`/teacher/get/${encodeURIComponent(key)}`),
+    ];
+
+    let lastErr = null;
+    for (const fn of trySeq) {
+      try {
+        const data = await fn();
+        return data;
+      } catch (e) {
+        lastErr = e;
+        // only continue on 400/404-ish; otherwise stop
+        if (e.status && ![400, 404].includes(e.status)) break;
+      }
+    }
+    throw lastErr || new Error("Не удалось получить результат");
+  }
+
+  async function actionDownloadJson(it) {
+    try {
+      showStatus("Получаю JSON…", "info", 0);
+      const data = await getResultJson(it);
+      const fname = `result_${state.subject}_${(it.__student || "student").replace(/\s+/g, "_")}_${(it.__variant || "variant").replace(/\s+/g, "_")}_${(it.__key || "key").slice(0, 16)}.json`;
+      downloadJson(data, fname);
+      showStatus("Скачано ✅", "ok", 1800);
+    } catch (e) {
+      console.error(e);
+      showStatus(`Ошибка JSON: ${e.message}`, "error", 6000);
+    }
+  }
+
+  async function actionVoid(it) {
+    const key = it.__key;
+    if (!key) return;
+
+    try {
+      showStatus("Удаляю (void)…", "info", 0);
+
+      // If you later add hard delete, we can call it here.
+      // For now: try /teacher/void in different shapes.
+      const trySeq = [
+        () => apiCall("/teacher/void", { method: "POST", body: { key, subject: state.subject } }),
+        () => apiCall("/teacher/void", { method: "POST", body: { id: key, subject: state.subject } }),
+        () => apiCall("/teacher/void", { params: { key } }),
+      ];
+
+      let ok = false;
+      let lastErr = null;
+      for (const fn of trySeq) {
+        try {
+          await fn();
+          ok = true;
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (e.status && ![400, 404].includes(e.status)) break;
+        }
+      }
+      if (!ok) throw lastErr || new Error("Void не выполнен");
+
+      showStatus("Готово ✅", "ok", 2000);
+      // refresh list
+      await loadList();
+    } catch (e) {
+      console.error(e);
+      showStatus(`Ошибка void: ${e.message}`, "error", 6000);
+    }
+  }
+
+  async function actionPrint(it) {
+    try {
+      showStatus("Готовлю печать…", "info", 0);
+      const result = await getResultJson(it);
+
+      // Try to also load variant JSON if it has a reference
+      let variant = null;
+      const variantId =
+        result?.variantId ||
+        result?.variant_id ||
+        result?.variant ||
+        it.__variant ||
+        "";
+
+      if (variantId && state.manifest?.variants?.length) {
+        const found = state.manifest.variants.find((v) => v.id === variantId || v.title === variantId);
+        const file = found?.file;
+        if (file) {
+          const base = state.manifestUrl.replace(/manifest\.json$/i, "");
+          const url = base + file;
+          try {
+            variant = await fetchJson(url);
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      openPrintWindow({ result, variant, it });
+      showStatus("Открыто окно печати ✅", "ok", 1800);
+    } catch (e) {
+      console.error(e);
+      showStatus(`Ошибка печати: ${e.message}`, "error", 6000);
+    }
+  }
+
+  function openPrintWindow({ result, variant, it }) {
+    const w = window.open("", "_blank");
+    if (!w) {
+      showStatus("Браузер заблокировал popup. Разрешите всплывающие окна.", "error", 7000);
+      return;
+    }
+
+    const title = `Кодислово — ${it.__student || "ученик"} — ${it.__variant || ""}`.trim();
+
+    const cssLink = (() => {
+      // keep using shared control styles
+      const prefix = repoPrefixGuess();
+      const href1 = `${prefix}/assets/css/control-ui.css`;
+      const href2 = `/assets/css/control-ui.css`;
+      // we will include both; whichever works will load
+      return `
+        <link rel="stylesheet" href="${href1}">
+        <link rel="stylesheet" href="${href2}">
+      `;
+    })();
+
+    const htmlTheme = document.documentElement.getAttribute("data-theme") || "dark";
+
+    const variantBlock = variant
+      ? `<h2>Вариант</h2><pre>${escapeHtml(JSON.stringify(variant, null, 2))}</pre>`
+      : `<h2>Вариант</h2><p style="opacity:.8">Вариант не подгрузился (это нормально, печать всё равно доступна).</p>`;
+
+    const resultBlock = `<h2>Ответы ученика</h2><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
+
+    w.document.open();
+    w.document.write(`
+      <!doctype html>
+      <html lang="ru" data-theme="${escapeHtml(htmlTheme)}">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>${escapeHtml(title)}</title>
+        ${cssLink}
+        <style>
+          body{padding:16px}
+          h1{margin:0 0 12px}
+          h2{margin:18px 0 8px}
+          pre{white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}
+          .meta{opacity:.85;margin:0 0 10px}
+          .toolbar{position:sticky;top:0;background:rgba(0,0,0,.25);backdrop-filter:blur(8px);padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:14px;margin-bottom:12px}
+          .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+          @media print {.toolbar{display:none} body{padding:0}}
+        </style>
+      </head>
+      <body>
+        <div class="toolbar">
+          <button class="btn" onclick="window.print()">Печать / Сохранить в PDF</button>
+        </div>
+        <h1>${escapeHtml(title)}</h1>
+        <p class="meta">${escapeHtml([
+          it.__class ? `Класс: ${it.__class}` : "",
+          it.__created ? `Сдано: ${isoToLocal(it.__created)}` : "",
+          it.__key ? `Key: ${it.__key}` : "",
+        ].filter(Boolean).join(" • "))}</p>
+        ${variantBlock}
+        ${resultBlock}
+      </body>
+      </html>
+    `);
+    w.document.close();
+  }
+
+  // ---------- CSV export ----------
+  function bindCsvButton() {
+    const btn = pickEl([
+      "#btnCsv",
+      "#csvBtn",
+      "[data-action='export-csv']",
+      "[data-role='export-csv']",
+    ]);
+    if (!btn) return;
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      try {
+        applyFilter();
+        const rows = (state.filtered || []).map((it) => {
+          // flatten with safe subset
+          return {
+            key: it.__key,
+            student: it.__student,
+            class: it.__class,
+            variant: it.__variant,
+            submittedAt: it.__created,
+            voided: it.__voided ? 1 : 0,
+            subject: state.subject,
+          };
+        });
+        const csv = toCsv(rows);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        downloadBlob(blob, `results_${state.subject}_${new Date().toISOString().slice(0, 10)}.csv`);
+        showStatus("CSV скачан ✅", "ok", 2000);
+      } catch (err) {
+        console.error(err);
+        showStatus(`CSV ошибка: ${err.message}`, "error", 6000);
+      }
+    });
+  }
+
+  // ---------- Key file (autocheck scaffold) ----------
+  function bindKeyFileInput() {
+    const inp = pickEl([
+      "#keyFile",
+      "input[type='file'][name='key']",
+      "[data-role='key-file']",
+    ]);
+    if (!inp) return;
+
+    inp.addEventListener("change", async () => {
+      const file = inp.files?.[0];
+      if (!file) return;
+      try {
+        const txt = await file.text();
+        const json = JSON.parse(txt);
+        state.keyMap = json;
+        showStatus("Ключ загружен ✅ (автопроверка — можно подключать дальше)", "ok", 3500);
+      } catch (e) {
+        showStatus("Не удалось прочитать ключ (ожидается JSON).", "error", 6000);
+      }
+    });
+  }
+
+  // ---------- Refresh/search bindings ----------
+  function bindRefreshButton() {
+    const btn = pickEl([
+      "#btnRefresh",
+      "#refreshBtn",
+      "#reloadBtn",
+      "[data-action='refresh']",
+      "[data-role='refresh']",
+    ]);
+    if (!btn) return;
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await loadList();
+    });
+  }
+
+  function bindSearchInput() {
+    const inp = ensureSearchInput();
+    if (!inp) return;
+    inp.addEventListener("input", () => renderList());
+  }
+
+  // ---------- Boot sequence ----------
+  async function loadManifest() {
+    const subj = state.subject;
+    const { withPrefix, noPrefix } = manifestUrlFor(subj);
+
+    // Try withPrefix first, then fallback
+    const attempts = [withPrefix, noPrefix].filter(Boolean);
+
+    let lastErr = null;
+    for (const url of attempts) {
+      try {
+        const m = await fetchJson(url);
+        state.manifest = m;
+        state.manifestUrl = url;
+        return m;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error("Не удалось загрузить manifest.json");
+  }
+
+  async function boot() {
+    state.subject = inferSubject();
+    bindSubjectSelector();
+
+    // Theme
+    applyTheme(getTheme());
+    bindThemeToggle();
+
+    setLoading(true);
+    try {
+      showStatus("Загружаю manifest…", "info", 0);
+      const manifest = await loadManifest();
+
+      // Fill defaults from manifest
+      const baseUrl = manifest?.teacher?.base_url || manifest?.teacher?.baseUrl || "";
+      const token = manifest?.teacher?.token || "";
+
+      state.teacherBaseUrl = baseUrl;
+      state.teacherToken = token;
+
+      // If UI inputs exist, seed them (do not overwrite user typed values)
+      if (baseUrl) writeTeacherBaseUrlToUI(baseUrl);
+      if (token) writeTeacherTokenToUI(token);
+
+      showStatus("Manifest загружен ✅", "ok", 1600);
+
+      // Bind buttons/inputs
+      bindRefreshButton();
+      bindSearchInput();
+      bindCsvButton();
+      bindKeyFileInput();
+
+      // Initial list load
+      await loadList();
+    } catch (e) {
+      console.error(e);
+      showStatus(`Ошибка запуска: ${e.message}`, "error", 7000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---------- Global data-action (optional) ----------
+  // If your HTML uses data-action on top-level controls, we support them too.
+  function bindGlobalActions() {
+    document.addEventListener("click", (e) => {
+      const el = e.target?.closest?.("[data-action]");
+      if (!el) return;
+
+      const act = el.dataset.action;
+      if (act === "toggle-theme" || act === "theme") {
+        e.preventDefault();
+        toggleTheme();
+      }
+      if (act === "refresh") {
+        e.preventDefault();
+        loadList();
+      }
+      if (act === "export-csv") {
+        // handled by bindCsvButton if button exists; otherwise do it here
+        // (no-op if already bound)
+      }
+    });
+  }
+
+  // ---------- Init ----------
+  bindGlobalActions();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
