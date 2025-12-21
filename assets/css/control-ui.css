@@ -1,0 +1,291 @@
+/* assets/css/control-ui.css */
+/* Kodislovo Control UI — единый стиль для control.html + teacher panel (потом) */
+
+:root{
+  --bg0:#070a14;
+  --bg1:#0b1020;
+  --card:#121a33;
+  --card2:#0f1733;
+  --text:#e9ecff;
+  --muted:#b8c0ff;
+  --muted2:#9aa4d6;
+  --line:rgba(255,255,255,.10);
+
+  --btn:#2b3a7a;
+  --btn2:#1f2a57;
+  --btnText:#ffffff;
+
+  --accent:#5f7cff;
+  --ok:#35d07f;
+  --bad:#ff5b6e;
+
+  --radius:18px;
+  --radius2:14px;
+
+  --shadow: 0 18px 50px rgba(0,0,0,.45);
+  --shadow2: 0 10px 26px rgba(0,0,0,.35);
+
+  --pad:24px;
+  --max:980px;
+
+  --focus: 0 0 0 3px rgba(95,124,255,.35);
+}
+
+:root[data-theme="light"]{
+  --bg0:#f4f6ff;
+  --bg1:#ffffff;
+  --card:#ffffff;
+  --card2:#f6f7ff;
+  --text:#101428;
+  --muted:#49528a;
+  --muted2:#6d76aa;
+  --line:rgba(16,20,40,.10);
+
+  --btn:#2b3a7a;
+  --btn2:#e9edff;
+  --btnText:#ffffff;
+
+  --shadow: 0 18px 45px rgba(20,30,80,.12);
+  --shadow2: 0 10px 26px rgba(20,30,80,.10);
+
+  --focus: 0 0 0 3px rgba(43,58,122,.18);
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(900px 600px at 20% 0%, rgba(95,124,255,.18), transparent 60%),
+    radial-gradient(700px 500px at 90% 10%, rgba(53,208,127,.10), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg1) 35%, var(--bg0));
+}
+
+a{ color:inherit; }
+.kd-wrap{
+  max-width:var(--max);
+  margin:0 auto;
+  padding:var(--pad);
+}
+
+.kd-topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:12px 0;
+  background: linear-gradient(180deg, rgba(7,10,20,.92), rgba(7,10,20,.55));
+  backdrop-filter: blur(8px);
+}
+:root[data-theme="light"] .kd-topbar{
+  background: linear-gradient(180deg, rgba(244,246,255,.92), rgba(244,246,255,.55));
+}
+
+.kd-header{
+  border-radius:22px;
+  padding:22px;
+  background: linear-gradient(180deg, rgba(18,26,51,.92), rgba(18,26,51,.72));
+  border:1px solid var(--line);
+  box-shadow: var(--shadow2);
+}
+:root[data-theme="light"] .kd-header{
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,247,255,.92));
+}
+
+.kd-title{
+  margin:0 0 8px 0;
+  font-size:clamp(22px, 3vw, 34px);
+  letter-spacing:.2px;
+}
+.kd-subtitle{
+  margin:0;
+  color:var(--muted);
+  line-height:1.55;
+}
+
+.kd-panel{
+  margin-top:18px;
+  padding:18px;
+  border-radius:22px;
+  background: linear-gradient(180deg, rgba(18,26,51,.92), rgba(18,26,51,.72));
+  border:1px solid var(--line);
+  box-shadow: var(--shadow2);
+}
+:root[data-theme="light"] .kd-panel{
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,247,255,.92));
+}
+
+.kd-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:14px;
+}
+@media (max-width: 760px){
+  .kd-wrap{ padding:16px; }
+  .kd-grid{ grid-template-columns: 1fr; }
+  .kd-topbar{ padding:10px 0; }
+}
+
+.kd-field label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin:0 0 8px 2px;
+}
+.kd-input, .kd-select{
+  width:100%;
+  height:46px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color:var(--text);
+  padding:0 14px;
+  outline:none;
+}
+:root[data-theme="light"] .kd-input,
+:root[data-theme="light"] .kd-select{
+  background: rgba(16,20,40,.04);
+}
+.kd-input:focus, .kd-select:focus{ box-shadow: var(--focus); }
+
+.kd-actions{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:12px;
+}
+@media (max-width: 900px){
+  .kd-actions{ grid-template-columns: 1fr; }
+}
+
+.kd-btn{
+  height:46px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background: var(--btn);
+  color:var(--btnText);
+  font-weight:700;
+  letter-spacing:.2px;
+  cursor:pointer;
+  box-shadow: 0 10px 22px rgba(0,0,0,.25);
+}
+.kd-btn.secondary{
+  background: var(--btn2);
+  color: var(--text);
+}
+:root[data-theme="light"] .kd-btn.secondary{
+  background: var(--btn2);
+  border:1px solid rgba(16,20,40,.10);
+}
+.kd-btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+.kd-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.kd-theme{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--muted);
+  font-size:13px;
+}
+.kd-switch{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background: rgba(255,255,255,.05);
+}
+.kd-switch input{ width:18px; height:18px; }
+
+.kd-stage{
+  margin-top:18px;
+  border-radius:22px;
+  padding:18px;
+  background: linear-gradient(180deg, rgba(18,26,51,.92), rgba(18,26,51,.72));
+  border:1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+:root[data-theme="light"] .kd-stage{
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,247,255,.92));
+}
+
+.kd-textbox{
+  border-radius:18px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  padding:18px;
+  line-height:1.6;
+  color:var(--text);
+}
+:root[data-theme="light"] .kd-textbox{
+  background: rgba(16,20,40,.03);
+}
+.kd-textbox .muted{ color:var(--muted); }
+
+.kd-task{
+  margin-top:14px;
+  border-radius:18px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  padding:18px;
+}
+:root[data-theme="light"] .kd-task{
+  background: rgba(16,20,40,.03);
+}
+.kd-task h3{
+  margin:0 0 10px 0;
+  font-size:20px;
+}
+.kd-task .hint{
+  margin:10px 0 0 0;
+  color:var(--muted);
+  font-size:13px;
+}
+.kd-task .q{
+  margin-top:10px;
+  line-height:1.6;
+  color:var(--text);
+}
+
+.kd-answer{
+  width:100%;
+  height:52px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color:var(--text);
+  padding:0 14px;
+  margin-top:14px;
+  outline:none;
+  font-size:16px;
+}
+:root[data-theme="light"] .kd-answer{
+  background: rgba(16,20,40,.04);
+}
+.kd-answer:focus{ box-shadow: var(--focus); }
+
+.kd-nav{
+  margin-top:12px;
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.kd-nav .kd-btn{
+  width:min(260px, 48%);
+}
+@media (max-width: 520px){
+  .kd-nav .kd-btn{ width:100%; }
+}
+
+/* скрываем служебное, если нужно */
+.kd-hidden{ display:none !important; }
