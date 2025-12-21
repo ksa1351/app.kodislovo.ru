@@ -63,7 +63,15 @@
         <button class="kd-btn" id="btnFinish" type="button">Завершить</button>
         <button class="kd-btn secondary" id="btnSubmit" type="button" disabled>Отправить</button>
 
-        <input class="kd-input" id="resetCode" type="text" placeholder="Код сброса" autocomplete="off" spellcheck="false">
+        <input class="kd-input" id="resetCode"
+          type="text"
+          placeholder="Код сброса"
+          autocomplete="off"
+          spellcheck="false"
+          inputmode="latin"
+          maxlength="12"
+          pattern="[0-9a-fA-F]{12}"
+        >
 
         <button class="kd-btn secondary" id="btnReset" type="button">Сбросить</button>
       </div>
