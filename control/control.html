@@ -1,248 +1,94 @@
 <!doctype html>
-<html lang="ru" data-theme="dark">
+<html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Контрольная — Кодислово</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Контрольная</title>
 
+  <!-- если у тебя уже подключён общий ui.css — оставь его -->
+  <link rel="stylesheet" href="../assets/css/ui.css">
+
+  <!-- мини-добавка только для навигации (не ломает остальное) -->
   <style>
-    :root{
-      --bg:#0b1020;--bg2:#070a14;--card:#121a33;
-      --text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);
-      --primary:#2b3a7a;--primary2:#1f2a57;
-      --radius:18px;--shadow:0 14px 40px rgba(0,0,0,.28);--max:980px;
-    }
-    [data-theme="light"]{
-      --bg:#f6f7fb;--bg2:#ffffff;--card:#ffffff;
-      --text:#0e1326;--muted:#3a436a;--border:rgba(14,19,38,.12);
-      --primary:#3254ff;--primary2:#e9edff;
-      --shadow:0 14px 40px rgba(15,24,60,.1);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
-      background:linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));
-    }
-    a{color:inherit;text-decoration:none}
+    /* чтобы кнопки "Предыдущее/Следующее" были такими же, как остальные */
+    .navRow{display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06);
+      color:inherit; border-radius:14px; padding:10px 14px; font-weight:600; cursor:pointer}
+    .btn.primary{background:rgba(70,110,255,.9); border-color:transparent; color:#fff}
+    .btn.ghost{background:rgba(255,255,255,.04)}
+    .btn:disabled{opacity:.45; cursor:not-allowed}
 
-    .topbar{
-      position:sticky;top:0;z-index:20;
-      background:rgba(0,0,0,.35);backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--border)
-    }
-    .topbar-inner{
-      max-width:var(--max);margin:0 auto;padding:10px 16px;
-      display:flex;align-items:center;justify-content:space-between;gap:10px
-    }
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{
-      width:36px;height:36px;border-radius:12px;
-      background:linear-gradient(135deg,var(--primary),rgba(255,255,255,.12))
-    }
-    .brand b{font-size:14px}
-    .brand span{font-size:12px;color:var(--muted)}
-    .toggle{display:flex;align-items:center;gap:8px}
-    .toggle input{display:none}
-    .toggle small{color:var(--muted);font-size:12px}
-    .switch{
-      width:44px;height:26px;border-radius:999px;
-      background:var(--card);border:1px solid var(--border);position:relative
-    }
-    .knob{
-      width:20px;height:20px;border-radius:50%;background:var(--text);
-      position:absolute;top:2px;left:2px;transition:.2s
-    }
-    input:checked+.switch .knob{left:22px}
+    /* один экран: текст + одно задание */
+    #textBlock{margin-bottom:16px}
+    #taskSingle{margin-top:0}
+    .task{border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); border-radius:18px; padding:18px}
+    .task h3{margin:0 0 10px 0; font-size:22px}
+    .q{font-size:18px; line-height:1.45; margin:10px 0 14px 0}
+    .hint{opacity:.85; margin:8px 0 0 0}
+    .answer{width:100%; padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18); color:inherit; font-size:16px_tex}
+    .actionsRow{display:flex; gap:12px; flex-wrap:wrap}
+    .actionsRow .btn{flex:1 1 240px; min-width:200px}
 
-    .container{max-width:var(--max);margin:0 auto;padding:18px 16px}
-    .card{
-      background:var(--card);
-      border-radius:var(--radius);
-      border:1px solid var(--border);
-      box-shadow:var(--shadow);
-      padding:16px;
-    }
-
-    h1{margin:0 0 6px;font-size:22px}
-    .sub{color:var(--muted);line-height:1.5;margin:0}
-
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-    .row > *{flex:1;min-width:220px}
-    label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-    input[type="text"], select{
-      width:100%;
-      padding:12px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:transparent;
-      color:var(--text);
-      outline:none;
-    }
-
-    .btn{
-      width:100%;
-      padding:12px 0;
-      border-radius:14px;
-      background:var(--primary);
-      color:#fff;
-      border:1px solid var(--border);
-      cursor:pointer;
-      text-align:center;
-      transition:filter .15s ease, transform .08s ease;
-    }
-    .btn:hover{filter:brightness(1.06)}
-    .btn:active{transform:translateY(1px)}
-    .btn.secondary{background:var(--primary2);color:var(--text)}
-    .btn:disabled{opacity:.55;cursor:not-allowed}
-
-    /* кнопки в ОДИН РЯД, одинаковые */
-    .actions{
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:10px;
-      margin-top:12px;
-    }
-
-    /* текст над заданием */
-    .textBlock{
-      margin-top:14px;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.03);
-      line-height:1.65;
-    }
-    .textTop{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      margin-bottom:10px;
-    }
-    .textTop b{font-size:14px}
-    .badge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;
-      border:1px solid var(--border);
-      color:var(--muted);font-size:12px;
-      background:rgba(255,255,255,.03)
-    }
-    .textBody{max-height:320px; overflow:auto; padding-right:4px}
-    .textBody h2{margin:0 0 10px;font-size:16px}
-    .textBody p{margin:0 0 10px;color:var(--muted)}
-    .textBody b{color:var(--text)}
-
-    /* задание */
-    .task{margin-top:14px}
-    .task-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .task-top h3{margin:0;font-size:16px}
-    .hint{margin-top:8px;color:var(--muted);font-size:13px}
-    .q{margin-top:10px;line-height:1.6;color:var(--text)}
-
-    .answer{
-      margin-top:12px;
-      width:100%;
-      padding:12px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:transparent;
-      color:var(--text);
-      outline:none;
-    }
-
-    /* навигация под вводом */
-    .navRow{
-      display:flex;
-      gap:10px;
-      margin-top:12px;
-    }
-    .navRow .btn{flex:1}
-
-    .navMeta{
-      margin-top:10px;
-      text-align:center;
-      color:var(--muted);
-      font-size:13px;
-    }
-
-    footer{margin:22px 0 10px;text-align:center;color:var(--muted);font-size:13px}
-
-    @media (max-width:560px){
-      .container{padding:16px 12px}
-      .topbar-inner{padding:10px 12px}
-      .row > *{min-width:160px}
-      .textBody{max-height:260px}
-      .navRow{flex-direction:column}
-      .actions{grid-template-columns:1fr}
+    /* адаптация */
+    @media (max-width: 640px){
+      .task{padding:14px}
+      .task h3{font-size:20px}
+      .q{font-size:16px}
+      .actionsRow .btn{min-width:140px}
     }
   </style>
 </head>
 
 <body>
+  <main class="wrap" style="max-width:1100px;margin:0 auto;padding:18px;">
+    <section class="card" style="padding:18px; margin-bottom:14px;">
+      <h1 id="uiMainTitle" style="margin:0 0 6px 0;">Контрольная работа</h1>
+      <div id="uiSubtitle" style="opacity:.85;"></div>
+    </section>
 
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <div class="logo"></div>
-      <div>
-        <b id="uiSubject">Контрольная</b><br>
-        <span id="uiTitle">Контрольная работа</span>
+    <section class="card" style="padding:18px; margin-bottom:14px;">
+      <div class="grid2" style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div>
+          <label>ФИО</label>
+          <input id="studentName" class="answer" placeholder="Например: Иванов Иван" />
+        </div>
+        <div>
+          <label>Класс</label>
+          <input id="studentClass" class="answer" placeholder="Например: 10А" />
+        </div>
+        <div>
+          <label>Вариант</label>
+          <select id="variantSelect" class="answer"></select>
+        </div>
+        <div>
+          <label>Таймер</label>
+          <div class="answer" style="display:flex; align-items:center; justify-content:space-between;">
+            <span id="uiTimer">без лимита</span>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="toggle">
-      <small id="themeLabel">Тёмная</small>
-      <label>
-        <input id="themeToggle" type="checkbox">
-        <span class="switch"><span class="knob"></span></span>
-      </label>
-    </div>
-  </div>
-</div>
-
-<div class="container">
-
-  <div class="card">
-    <h1 id="uiMainTitle">Контрольная работа</h1>
-    <!-- subtitle оставляем, но JS будет ставить короткий нейтральный текст -->
-    <p class="sub" id="uiSubtitle">Заполните данные ученика и выполняйте задания.</p>
-  </div>
-
-  <div class="card" style="margin-top:14px">
-    <div class="row">
-      <div>
-        <label for="studentName">ФИО</label>
-        <input id="studentName" type="text" placeholder="Например: Иванов Иван" />
+      <!-- Кнопки в одну строку, одинаковая ширина -->
+      <div class="actionsRow" style="margin-top:14px;">
+        <button id="btnFinish" class="btn primary">Завершить</button>
+        <button id="btnDownload" class="btn ghost" disabled>Сохранить работу</button>
+        <button id="btnEmail" class="btn ghost" disabled>Отправить на email</button>
       </div>
-      <div>
-        <label for="studentClass">Класс</label>
-        <input id="studentClass" type="text" placeholder="Например: 10А" />
-      </div>
-    </div>
 
-    <div class="row">
-      <div>
-        <label for="variantSelect">Вариант</label>
-        <select id="variantSelect"></select>
-      </div>
-      <div>
-        <label>Таймер</label>
-        <input type="text" id="uiTimer" value="без лимита" readonly />
-      </div>
-    </div>
+      <!-- (если у тебя есть Cloud submit — можно добавить четвёртую кнопку здесь же, но ты её уже включала ранее) -->
+    </section>
 
-    <!-- КНОПКИ В 1 РЯД -->
-    <div class="actions">
-      <button id="btnFinish" class="btn" type="button">Завершить</button>
-      <button id="btnDownload" class="btn secondary" type="button" disabled>Сохранить работу</button>
-      <button id="btnEmail" class="btn secondary" type="button" disabled>Отправить на email</button>
-    </div>
+    <!-- ТЕКСТ над заданием (появляется только если нужен текущему заданию) -->
+    <section id="textBlock" class="card" style="padding:18px; display:none;">
+      <div id="textTitle" style="font-weight:800; margin-bottom:10px;"></div>
+      <div id="textBody" style="line-height:1.55;"></div>
+    </section>
 
-    <!-- тут: только текст (если нужен) и текущее задание -->
-    <div id="tasksContainer"></div>
-  </div>
+    <!-- ОДНО ЗАДАНИЕ -->
+    <section id="taskSingle" class="task"></section>
+  </main>
 
-  <footer>© Кодислово · Работает на компьютере, планшете и телефоне</footer>
-</div>
-
-<script src="./control_core.js"></script>
+  <script src="./control_core.js"></script>
 </body>
 </html>
