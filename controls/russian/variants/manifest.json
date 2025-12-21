@@ -2,7 +2,13 @@
   "schema": "kodislovo.manifest.v1",
   "subject": "russian",
   "subjectTitle": "Русский язык",
-  "teacherEmail": "kovaleva-sa@yandex.ru",
+
+  "submit_url": "https://d5d17sjh01l20fnemocv.3zvepvee.apigw.yandexcloud.net",
+  "submit_token": "42095b52-9d18-423d-a8c2-bfa56e5cd03b1b9d15ca-bbba-49f9-a545-f545b3e16c1fE",
+
+  "reset_consume_url": "",
+  "reset_consume_token": "",
+
   "variants": [
     {
       "id": "variant_01",
