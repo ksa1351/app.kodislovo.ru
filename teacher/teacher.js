@@ -1,39 +1,115 @@
-/* teacher.js — Kodislovo Teacher Panel
-   - Robust binding: supports multiple possible element IDs + data-action attributes.
-   - Theme toggle by click: <html data-theme="dark|light"> with localStorage persistence.
-   - Loads manifest: /controls/{subject}/variants/manifest.json (supports GitHub Pages repo prefix).
-   - Uses manifest.teacher.base_url + manifest.teacher.token by default.
-   - API: /teacher/list, /teacher/get, /teacher/void (delete fallback -> void), /teacher/config/get|set, /teacher/reset (not auto-called).
+/* teacher.js — Kodislovo Teacher Panel (matches teacher/index.html)
+   Requires: ../assets/css/control-ui.css already linked in HTML.
+
+   HTML ids used (see teacher/index.html):
+   - themeToggle, themeLabel
+   - subjectSelect
+   - timerMinutes, btnTimerLoad, btnTimerSave
+   - resetVariant, resetClass, resetFio, btnResetMake
+   - btnList, btnVoidSelected
+   - classFilter, variantFilter, fioSearch
+   - resultsTbody, jsonViewer, statusLine
 */
+
 (() => {
   "use strict";
 
-  // ---------- Small helpers ----------
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const THEME_KEY = "kodislovo_teacher_theme";
+  const $ = (id) => document.getElementById(id);
 
-  function pickEl(candidates) {
-    for (const sel of candidates) {
-      const el = $(sel);
-      if (el) return el;
+  function safeText(v){ return (v ?? "").toString().trim(); }
+  function nowIso(){ return new Date().toISOString(); }
+
+  function projectRoot() {
+    const seg = (location.pathname.split("/").filter(Boolean)[0] || "");
+    return seg ? `/${seg}/` : "/";
+  }
+  function variantsBase(subject) {
+    return `${location.origin}${projectRoot()}controls/${encodeURIComponent(subject)}/variants/`;
+  }
+
+  async function fetchJson(url){
+    const r = await fetch(url, { cache: "no-store" });
+    const text = await r.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch {}
+    if(!r.ok){
+      const msg = (json && (json.message||json.error)) ? (json.message||json.error) : text || `HTTP ${r.status}`;
+      const e = new Error(msg);
+      e.status = r.status; e.body = json || text;
+      throw e;
     }
-    return null;
+    return json;
   }
 
-  function safeText(v) {
-    if (v === null || v === undefined) return "";
-    return String(v);
+  async function apiCall(baseUrl, path, { method="GET", params=null, body=null, token="" } = {}){
+    const base = String(baseUrl||"").replace(/\/+$/,"");
+    if(!base) throw new Error("teacher.base_url не задан");
+    if(!token) throw new Error("teacher.token не задан");
+
+    const u = new URL(base + (path.startsWith("/")?path:`/${path}`));
+    if(params){
+      for(const [k,v] of Object.entries(params)){
+        if(v!==undefined && v!==null && String(v)!=="") u.searchParams.set(k, String(v));
+      }
+    }
+
+    const headers = {
+      "Accept": "application/json",
+      "X-Teacher-Token": token,
+      "Authorization": `Bearer ${token}`,
+    };
+    if(body!==null) headers["Content-Type"]="application/json;charset=utf-8";
+
+    const r = await fetch(u.toString(), {
+      method,
+      headers,
+      body: body!==null ? JSON.stringify(body) : undefined
+    });
+
+    const text = await r.text();
+    let json=null; try{ json = text ? JSON.parse(text) : null; }catch{ json=text; }
+
+    if(!r.ok){
+      const msg = (json && (json.message||json.error)) ? (json.message||json.error) : (typeof json==="string"?json:"") || `HTTP ${r.status}`;
+      const e = new Error(msg);
+      e.status=r.status; e.body=json;
+      throw e;
+    }
+    return json;
   }
 
-  function isoToLocal(iso) {
-    if (!iso) return "";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return safeText(iso);
-    return d.toLocaleString();
+  function setStatus(msg, kind="info"){
+    const el = $("statusLine");
+    if(!el) return;
+    el.textContent = msg;
+    el.style.borderColor = kind==="error" ? "rgba(255,91,110,.55)" : "var(--line)";
+    el.style.color = kind==="error" ? "var(--bad)" : "var(--muted)";
   }
 
-  function downloadBlob(blob, filename) {
+  // ---------- theme ----------
+  function getTheme(){
+    const t = localStorage.getItem(THEME_KEY);
+    if(t==="dark"||t==="light") return t;
+    const cur = document.documentElement.getAttribute("data-theme");
+    if(cur==="dark"||cur==="light") return cur;
+    return "dark";
+  }
+  function applyTheme(t){
+    const theme = (t==="light") ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+    if($("themeLabel")) $("themeLabel").textContent = theme==="light" ? "Светлая" : "Тёмная";
+    const chk = $("themeToggle");
+    if(chk) chk.checked = (theme==="light");
+  }
+  function toggleTheme(){
+    const cur = getTheme();
+    applyTheme(cur==="dark" ? "light" : "dark");
+  }
+
+  // ---------- download helpers ----------
+  function downloadBlob(blob, filename){
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -43,962 +119,376 @@
     a.remove();
     URL.revokeObjectURL(url);
   }
-
-  function downloadJson(obj, filename) {
-    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+  function downloadJson(obj, filename){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json;charset=utf-8"});
     downloadBlob(blob, filename);
   }
 
-  function toCsv(rows) {
-    // rows: array of objects
-    const cols = Array.from(
-      rows.reduce((s, r) => {
-        Object.keys(r || {}).forEach((k) => s.add(k));
-        return s;
-      }, new Set())
-    );
-
-    const esc = (val) => {
-      const s = safeText(val);
-      if (/[",\n\r;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-      return s;
+  function toCsv(rows){
+    const cols = Array.from(rows.reduce((s,r)=>{Object.keys(r||{}).forEach(k=>s.add(k)); return s;}, new Set()));
+    const esc = (v) => {
+      const s = safeText(v);
+      return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
     };
-
     const header = cols.map(esc).join(";");
-    const lines = rows.map((r) => cols.map((c) => esc(r?.[c])).join(";"));
+    const lines = rows.map(r=>cols.map(c=>esc(r?.[c])).join(";"));
     return [header, ...lines].join("\r\n");
   }
 
-  // ---------- Toast / status ----------
-  function ensureStatusNode() {
-    // Prefer existing nodes in current HTML
-    const status = pickEl([
-      "#status",
-      "#statusText",
-      "#toast",
-      "[data-role='status']",
-      ".status",
-      ".toast",
-      "#msg",
-    ]);
-    if (status) return status;
-
-    // Create minimal status area (non-invasive)
-    const div = document.createElement("div");
-    div.id = "status";
-    div.style.position = "sticky";
-    div.style.top = "0";
-    div.style.zIndex = "50";
-    div.style.padding = "10px 12px";
-    div.style.background = "rgba(0,0,0,.25)";
-    div.style.backdropFilter = "blur(8px)";
-    div.style.borderBottom = "1px solid rgba(255,255,255,.12)";
-    div.style.fontSize = "14px";
-    div.style.display = "none";
-    document.body.prepend(div);
-    return div;
+  function isoToLocal(iso){
+    if(!iso) return "";
+    const d = new Date(iso);
+    if(Number.isNaN(d.getTime())) return safeText(iso);
+    return d.toLocaleString();
   }
 
-  const statusNode = ensureStatusNode();
-
-  function showStatus(msg, kind = "info", persistMs = 3500) {
-    if (!statusNode) return;
-    statusNode.textContent = msg;
-
-    // Minimal coloring without assuming CSS variables exist
-    statusNode.style.display = "block";
-    statusNode.style.color = kind === "error" ? "#ffb3bd" : kind === "ok" ? "#b7ffd9" : "#e9ecff";
-
-    if (persistMs > 0) {
-      clearTimeout(showStatus._t);
-      showStatus._t = setTimeout(() => {
-        statusNode.style.display = "none";
-      }, persistMs);
-    }
-  }
-
-  // ---------- Theme ----------
-  const THEME_KEY = "kodislovo_teacher_theme"; // separate from student if needed
-  function getTheme() {
-    const t = localStorage.getItem(THEME_KEY);
-    if (t === "dark" || t === "light") return t;
-    // If HTML already set a theme, respect it
-    const cur = document.documentElement.getAttribute("data-theme");
-    if (cur === "dark" || cur === "light") return cur;
-    // default
-    return "dark";
-  }
-  function applyTheme(theme) {
-    const t = theme === "light" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", t);
-    localStorage.setItem(THEME_KEY, t);
-
-    // Optional: reflect on toggle button label/icon if it exists
-    const btn = findThemeToggleBtn();
-    if (btn) {
-      btn.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
-      // If button has a label span, update it softly
-      const label = btn.querySelector("[data-role='theme-label']") || btn.querySelector(".label");
-      if (label) label.textContent = t === "dark" ? "Тёмная" : "Светлая";
-      btn.title = t === "dark" ? "Переключить на светлую" : "Переключить на тёмную";
-    }
-  }
-  function toggleTheme() {
-    const cur = getTheme();
-    applyTheme(cur === "dark" ? "light" : "dark");
-  }
-  function findThemeToggleBtn() {
-    return pickEl([
-      "#themeToggle",
-      "#themeBtn",
-      "#btnTheme",
-      "[data-action='toggle-theme']",
-      "[data-action='theme']",
-      "[data-role='theme-toggle']",
-      "button.theme",
-    ]);
-  }
-
-  // ---------- State / config ----------
+  // ---------- state ----------
   const state = {
-    subject: null,
-    manifestUrl: null,
+    subject: "russian",
     manifest: null,
-
-    teacherBaseUrl: null,
-    teacherToken: null,
-
+    teacherBaseUrl: "",
+    teacherToken: "",
     items: [],
-    filtered: [],
-    selected: null,
-    keyMap: null, // optional answer key
+    filtered: []
   };
 
-  function readParam(name) {
-    const u = new URL(location.href);
-    const v = u.searchParams.get(name);
-    return v === null ? "" : v;
+  function normalizeItem(x){
+    const key = x?.key || x?.id || x?.objectKey || x?.storageKey || "";
+    const fio = x?.fio || x?.studentName || x?.student?.name || x?.name || "";
+    const cls = x?.class || x?.klass || x?.studentClass || x?.student?.class || "";
+    const variant = x?.variantId || x?.variant?.id || x?.variant || x?.variant_id || "";
+    const created = x?.createdAt || x?.created_at || x?.submittedAt || x?.submitted_at || x?.ts || "";
+    const voided = !!(x?.voided || x?.isVoided || x?.deleted || x?.archived);
+    return { ...x, __key:key, __fio:fio, __class:cls, __variant:variant, __created:created, __voided:voided };
   }
 
-  function repoPrefixGuess() {
-    // GitHub Pages: https://user.github.io/<repo>/...
-    // Custom domain: /...
-    const parts = location.pathname.split("/").filter(Boolean);
-    if (!parts.length) return "";
-    // If first segment looks like a repo name with dots (your repo is "app.kodislovo.ru")
-    // we treat it as prefix
-    if (parts[0].includes(".")) return "/" + parts[0];
-    return "";
+  function getFilters(){
+    return {
+      cls: safeText($("classFilter")?.value),
+      variant: safeText($("variantFilter")?.value),
+      q: safeText($("fioSearch")?.value),
+    };
   }
 
-  async function fetchJson(url, opts = {}) {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15000);
-    try {
-      const r = await fetch(url, { ...opts, signal: controller.signal });
-      const text = await r.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        // not JSON
+  function applyFilter(){
+    const {cls, variant, q} = getFilters();
+    const ql = q.toLowerCase();
+    state.filtered = (state.items||[]).filter(it=>{
+      if(cls && safeText(it.__class).toLowerCase() !== cls.toLowerCase()) return false;
+      if(variant && safeText(it.__variant).toLowerCase() !== variant.toLowerCase()) return false;
+      if(ql){
+        const hay = `${it.__fio} ${it.__class} ${it.__variant} ${it.__key}`.toLowerCase();
+        if(!hay.includes(ql)) return false;
       }
-      if (!r.ok) {
-        const msg = (data && (data.error || data.message)) || text || `${r.status} ${r.statusText}`;
-        const err = new Error(msg);
-        err.status = r.status;
-        err.body = data || text;
-        throw err;
-      }
-      return data;
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  function inferSubject() {
-    // Priority:
-    // 1) ?subject=
-    // 2) subject select in HTML
-    // 3) default russian
-    const qp = readParam("subject");
-    if (qp) return qp;
-
-    const sel = pickEl([
-      "#subject",
-      "#subjectSelect",
-      "select[name='subject']",
-      "[data-role='subject']",
-    ]);
-    if (sel && sel.value) return sel.value;
-
-    return "russian";
-  }
-
-  function manifestUrlFor(subject) {
-    const prefix = repoPrefixGuess();
-    const noPrefix = `/controls/${subject}/variants/manifest.json`;
-    const withPrefix = `${prefix}/controls/${subject}/variants/manifest.json`;
-    // Prefer withPrefix if we detected it; but also try fallback
-    return { withPrefix, noPrefix };
-  }
-
-  function bindSubjectSelector() {
-    const sel = pickEl([
-      "#subject",
-      "#subjectSelect",
-      "select[name='subject']",
-      "[data-role='subject']",
-    ]);
-    if (!sel) return;
-
-    sel.value = state.subject || sel.value;
-    sel.addEventListener("change", async () => {
-      state.subject = sel.value || "russian";
-      await boot(); // reload everything
+      return true;
     });
   }
 
-  function bindThemeToggle() {
-    const btn = findThemeToggleBtn();
-    if (!btn) return;
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggleTheme();
-    });
-  }
+  function renderList(){
+    const tbody = $("resultsTbody");
+    if(!tbody) return;
 
-  // ---------- API client ----------
-  function readTeacherBaseUrlFromUI() {
-    const el = pickEl([
-      "#teacherBaseUrl",
-      "#apiBaseUrl",
-      "#baseUrl",
-      "input[name='teacherBaseUrl']",
-      "input[name='apiBaseUrl']",
-      "[data-role='teacher-base-url']",
-    ]);
-    return el?.value?.trim() || "";
-  }
+    applyFilter();
+    const items = state.filtered || [];
+    tbody.innerHTML = "";
 
-  function readTeacherTokenFromUI() {
-    const el = pickEl([
-      "#teacherToken",
-      "#token",
-      "#apiToken",
-      "input[name='teacherToken']",
-      "input[name='token']",
-      "[data-role='teacher-token']",
-    ]);
-    return el?.value?.trim() || "";
-  }
-
-  function writeTeacherBaseUrlToUI(v) {
-    const el = pickEl([
-      "#teacherBaseUrl",
-      "#apiBaseUrl",
-      "#baseUrl",
-      "input[name='teacherBaseUrl']",
-      "input[name='apiBaseUrl']",
-      "[data-role='teacher-base-url']",
-    ]);
-    if (el && !el.value) el.value = v;
-  }
-
-  function writeTeacherTokenToUI(v) {
-    const el = pickEl([
-      "#teacherToken",
-      "#token",
-      "#apiToken",
-      "input[name='teacherToken']",
-      "input[name='token']",
-      "[data-role='teacher-token']",
-    ]);
-    if (el && !el.value) el.value = v;
-  }
-
-  function getEffectiveBaseUrl() {
-    return readTeacherBaseUrlFromUI() || state.teacherBaseUrl || "";
-  }
-
-  function getEffectiveToken() {
-    return readTeacherTokenFromUI() || state.teacherToken || "";
-  }
-
-  async function apiCall(path, { method = "GET", params = null, body = null } = {}) {
-    const base = getEffectiveBaseUrl();
-    const token = getEffectiveToken();
-
-    if (!base) throw new Error("Не задан teacher.base_url");
-    if (!token) throw new Error("Не задан teacher token");
-
-    const u = new URL(path.replace(/^\//, ""), base.endsWith("/") ? base : base + "/");
-    if (params && typeof params === "object") {
-      for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== null && v !== "") u.searchParams.set(k, String(v));
-      }
+    if(!items.length){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="6" style="padding:12px;color:var(--muted)">Нет результатов</td>`;
+      tbody.appendChild(tr);
+      return;
     }
 
-    const headers = new Headers();
-    headers.set("Accept", "application/json");
-    headers.set("X-Teacher-Token", token);
-    headers.set("Authorization", `Bearer ${token}`);
-    if (body !== null && body !== undefined) headers.set("Content-Type", "application/json;charset=utf-8");
+    for(const it of items){
+      const tr = document.createElement("tr");
+      tr.dataset.key = it.__key || "";
+      tr.style.borderTop = "1px solid var(--line)";
 
-    const res = await fetch(u.toString(), {
-      method,
-      headers,
-      body: body !== null && body !== undefined ? JSON.stringify(body) : undefined,
+      tr.innerHTML = `
+        <td style="padding:10px;width:44px">
+          <input type="checkbox" class="rowCheck" data-key="${escapeHtml(it.__key)}" ${it.__voided?"disabled":""}>
+        </td>
+        <td style="padding:10px">
+          <div style="font-weight:700">${escapeHtml(it.__fio || "—")}</div>
+          <div style="color:var(--muted);font-size:13px">${escapeHtml(it.__class || "")}</div>
+        </td>
+        <td style="padding:10px">${escapeHtml(it.__variant || "")}</td>
+        <td style="padding:10px">${escapeHtml(isoToLocal(it.__created))}</td>
+        <td style="padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:12px;opacity:.9">${escapeHtml(it.__key)}</td>
+        <td style="padding:10px;white-space:nowrap">
+          <button class="kd-btn secondary" style="height:36px;border-radius:12px;padding:0 12px;width:auto" data-act="get">Открыть</button>
+          <button class="kd-btn secondary" style="height:36px;border-radius:12px;padding:0 12px;width:auto" data-act="download">JSON</button>
+          <button class="kd-btn secondary" style="height:36px;border-radius:12px;padding:0 12px;width:auto;border:1px solid rgba(255,91,110,.55);color:var(--bad);background:transparent" data-act="void">Void</button>
+          <button class="kd-btn secondary" style="height:36px;border-radius:12px;padding:0 12px;width:auto" data-act="print">PDF</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function escapeHtml(s){
+    return safeText(s)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  async function loadManifest(){
+    const base = variantsBase(state.subject);
+    const m = await fetchJson(base + "manifest.json");
+    state.manifest = m;
+    state.teacherBaseUrl = m?.teacher?.base_url || "";
+    state.teacherToken = m?.teacher?.token || "";
+    return m;
+  }
+
+  async function loadList(){
+    setStatus("Загрузка списка…");
+    const {cls, variant, q} = getFilters();
+    const data = await apiCall(state.teacherBaseUrl, "/teacher/list", {
+      params: { subject: state.subject, cls, class: cls, variant, q },
+      token: state.teacherToken
     });
 
-    const text = await res.text();
-    let data = null;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = text;
-    }
+    const arr = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.results) ? data.results : [];
+    state.items = arr.map(normalizeItem).sort((a,b)=>{
+      const ta = new Date(a.__created||0).getTime();
+      const tb = new Date(b.__created||0).getTime();
+      return (tb||0)-(ta||0);
+    });
 
-    if (!res.ok) {
-      const msg = (data && (data.error || data.message)) || (typeof data === "string" ? data : "") || `${res.status} ${res.statusText}`;
-      const err = new Error(msg);
-      err.status = res.status;
-      err.body = data;
-      throw err;
-    }
+    renderList();
+    setStatus(`Загружено: ${state.items.length}`, "ok");
+  }
+
+  async function getResult(key){
+    const data = await apiCall(state.teacherBaseUrl, "/teacher/get", {
+      params: { key, subject: state.subject },
+      token: state.teacherToken
+    });
     return data;
   }
 
-  // ---------- UI: containers ----------
-  function ensureResultsContainer() {
-    const el = pickEl([
-      "#results",
-      "#resultsList",
-      "#list",
-      "#items",
-      "#tableBody",
-      "tbody#rows",
-      "[data-role='results']",
-      "[data-role='list']",
-    ]);
-    if (el) return el;
-
-    const wrap = document.createElement("div");
-    wrap.id = "results";
-    wrap.style.padding = "12px";
-    document.body.appendChild(wrap);
-    return wrap;
-  }
-
-  function ensureSearchInput() {
-    return pickEl([
-      "#search",
-      "#q",
-      "#filter",
-      "#filterText",
-      "input[name='search']",
-      "[data-role='search']",
-    ]);
-  }
-
-  function ensureLoadingFlag() {
-    const el = pickEl([
-      "#loading",
-      "[data-role='loading']",
-      ".loading",
-    ]);
-    return el;
-  }
-
-  function setLoading(isLoading) {
-    const el = ensureLoadingFlag();
-    if (el) {
-      el.style.display = isLoading ? "" : "none";
-    }
-    document.documentElement.classList.toggle("is-loading", !!isLoading);
-  }
-
-  // ---------- Render ----------
-  function normalizeItem(x) {
-    // Try to unify common fields without depending on backend exact schema
-    const key =
-      x?.key ||
-      x?.id ||
-      x?.resultKey ||
-      x?.objectKey ||
-      x?.storageKey ||
-      x?.name ||
-      "";
-
-    const created =
-      x?.createdAt ||
-      x?.created_at ||
-      x?.ts ||
-      x?.timestamp ||
-      x?.submittedAt ||
-      x?.submitted_at ||
-      x?.time ||
-      "";
-
-    const student =
-      x?.student ||
-      x?.studentName ||
-      x?.name ||
-      x?.fio ||
-      x?.user ||
-      x?.who ||
-      "";
-
-    const klass =
-      x?.class ||
-      x?.klass ||
-      x?.grade ||
-      x?.group ||
-      "";
-
-    const variant =
-      x?.variant ||
-      x?.variantId ||
-      x?.variant_id ||
-      x?.variantTitle ||
-      x?.variant_title ||
-      "";
-
-    const voided = !!(x?.voided || x?.isVoided || x?.deleted || x?.archived);
-
-    return {
-      ...x,
-      __key: key,
-      __created: created,
-      __student: student,
-      __class: klass,
-      __variant: variant,
-      __voided: voided,
-    };
-  }
-
-  function applyFilter() {
-    const q = (ensureSearchInput()?.value || "").trim().toLowerCase();
-    const items = state.items || [];
-    if (!q) {
-      state.filtered = items.slice();
-      return;
-    }
-    state.filtered = items.filter((it) => {
-      const hay = [
-        it.__key,
-        it.__student,
-        it.__class,
-        it.__variant,
-        it.__created,
-        it.subject,
-      ]
-        .map((v) => safeText(v).toLowerCase())
-        .join(" | ");
-      return hay.includes(q);
+  async function voidResult(key){
+    await apiCall(state.teacherBaseUrl, "/teacher/void", {
+      method: "POST",
+      body: { key, subject: state.subject },
+      token: state.teacherToken
     });
   }
 
-  function renderList() {
-    const root = ensureResultsContainer();
-    applyFilter();
+  async function voidSelected(){
+    const checks = Array.from(document.querySelectorAll(".rowCheck:checked"));
+    const keys = checks.map(c=>c.dataset.key).filter(Boolean);
+    if(!keys.length){ alert("Ничего не выбрано."); return; }
 
-    // If root is a <tbody>, render rows. Otherwise render cards.
-    const isTbody = root.tagName === "TBODY";
+    if(!confirm(`Аннулировать выбранные (${keys.length})?`)) return;
 
-    const items = state.filtered || [];
-    if (!items.length) {
-      if (isTbody) {
-        root.innerHTML = `<tr><td colspan="8" style="padding:12px;opacity:.8">Нет результатов</td></tr>`;
-      } else {
-        root.innerHTML = `<div style="padding:12px;opacity:.8">Нет результатов</div>`;
-      }
-      return;
+    setStatus("Аннулирую…");
+    let ok=0, bad=0;
+    for(const k of keys){
+      try{ await voidResult(k); ok++; }
+      catch(e){ console.error(e); bad++; }
     }
-
-    if (isTbody) {
-      root.innerHTML = "";
-      for (const it of items) {
-        const tr = document.createElement("tr");
-        tr.dataset.key = it.__key || "";
-        tr.innerHTML = `
-          <td>${escapeHtml(it.__key)}</td>
-          <td>${escapeHtml(it.__student)}</td>
-          <td>${escapeHtml(it.__class)}</td>
-          <td>${escapeHtml(it.__variant)}</td>
-          <td>${escapeHtml(isoToLocal(it.__created))}</td>
-          <td>${it.__voided ? "void" : ""}</td>
-          <td style="white-space:nowrap">
-            <button class="btn" data-action="download-json">JSON</button>
-            <button class="btn" data-action="print">PDF</button>
-            <button class="btn" data-action="void">${it.__voided ? "Unvoid?" : "Void"}</button>
-          </td>
-        `;
-        tr.addEventListener("click", (e) => {
-          const btn = e.target?.closest?.("button[data-action]");
-          if (btn) return; // handled by delegation
-          state.selected = it;
-        });
-        root.appendChild(tr);
-      }
-    } else {
-      root.innerHTML = "";
-      for (const it of items) {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.dataset.key = it.__key || "";
-        card.style.padding = "12px";
-        card.style.marginBottom = "10px";
-        card.style.border = "1px solid rgba(255,255,255,.12)";
-        card.style.borderRadius = "14px";
-        card.style.background = "rgba(255,255,255,.04)";
-
-        const title = `${it.__student || "Без имени"} ${it.__class ? "• " + it.__class : ""}`;
-        const meta = [
-          it.__variant ? `Вариант: ${it.__variant}` : "",
-          it.__created ? `Сдано: ${isoToLocal(it.__created)}` : "",
-          it.__key ? `Key: ${it.__key}` : "",
-          it.__voided ? `Статус: void` : "",
-        ].filter(Boolean).join(" • ");
-
-        card.innerHTML = `
-          <div style="display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap">
-            <div style="min-width:240px;flex:1">
-              <div style="font-weight:700;font-size:16px;margin-bottom:4px">${escapeHtml(title)}</div>
-              <div style="opacity:.85;font-size:13px;line-height:1.35">${escapeHtml(meta)}</div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <button class="btn" data-action="download-json">Скачать JSON</button>
-              <button class="btn" data-action="print">PDF (печать)</button>
-              <button class="btn" data-action="void">Удалить / void</button>
-            </div>
-          </div>
-          <details style="margin-top:10px">
-            <summary style="cursor:pointer;opacity:.9">Детали</summary>
-            <pre style="white-space:pre-wrap;word-break:break-word;opacity:.9;margin:10px 0 0">${escapeHtml(JSON.stringify(it, null, 2))}</pre>
-          </details>
-        `;
-
-        root.appendChild(card);
-      }
-    }
-
-    // Delegated actions
-    root.onclick = async (e) => {
-      const btn = e.target?.closest?.("button[data-action]");
-      if (!btn) return;
-
-      const host = e.target?.closest?.("[data-key]");
-      const key = host?.dataset?.key || "";
-      const it = (state.filtered || []).find((x) => x.__key === key) || (state.items || []).find((x) => x.__key === key);
-      if (!it) return;
-
-      const action = btn.dataset.action;
-      if (action === "download-json") {
-        await actionDownloadJson(it);
-      } else if (action === "print") {
-        await actionPrint(it);
-      } else if (action === "void") {
-        await actionVoid(it);
-      }
-    };
+    await loadList();
+    setStatus(`Готово. void: ${ok}, ошибок: ${bad}`, bad? "error":"ok");
   }
 
-  function escapeHtml(s) {
-    return safeText(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // ---------- Actions ----------
-  async function loadList() {
-    setLoading(true);
-    try {
-      // Many backends accept subject filter; harmless if ignored
-      const data = await apiCall("/teacher/list", { params: { subject: state.subject } });
-
-      // allow formats:
-      // 1) {items:[...]}
-      // 2) [...]
-      // 3) {results:[...]}
-      const arr = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.results) ? data.results : [];
-      state.items = arr.map(normalizeItem);
-
-      // sort newest first if possible
-      state.items.sort((a, b) => {
-        const ta = new Date(a.__created || 0).getTime();
-        const tb = new Date(b.__created || 0).getTime();
-        return (tb || 0) - (ta || 0);
-      });
-
-      renderList();
-      showStatus(`Загружено: ${state.items.length}`, "ok", 2200);
-    } catch (e) {
-      console.error(e);
-      showStatus(`Ошибка списка: ${e.message}`, "error", 6000);
-      // keep previous list if any
-      renderList();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function getResultJson(it) {
-    // Try multiple patterns to match your function without breaking it
-    const key = it.__key;
-    if (!key) throw new Error("Не найден ключ результата");
-
-    const trySeq = [
-      () => apiCall("/teacher/get", { params: { key } }),
-      () => apiCall("/teacher/get", { params: { id: key } }),
-      () => apiCall(`/teacher/get/${encodeURIComponent(key)}`),
-    ];
-
-    let lastErr = null;
-    for (const fn of trySeq) {
-      try {
-        const data = await fn();
-        return data;
-      } catch (e) {
-        lastErr = e;
-        // only continue on 400/404-ish; otherwise stop
-        if (e.status && ![400, 404].includes(e.status)) break;
-      }
-    }
-    throw lastErr || new Error("Не удалось получить результат");
-  }
-
-  async function actionDownloadJson(it) {
-    try {
-      showStatus("Получаю JSON…", "info", 0);
-      const data = await getResultJson(it);
-      const fname = `result_${state.subject}_${(it.__student || "student").replace(/\s+/g, "_")}_${(it.__variant || "variant").replace(/\s+/g, "_")}_${(it.__key || "key").slice(0, 16)}.json`;
-      downloadJson(data, fname);
-      showStatus("Скачано ✅", "ok", 1800);
-    } catch (e) {
-      console.error(e);
-      showStatus(`Ошибка JSON: ${e.message}`, "error", 6000);
-    }
-  }
-
-  async function actionVoid(it) {
-    const key = it.__key;
-    if (!key) return;
-
-    try {
-      showStatus("Удаляю (void)…", "info", 0);
-
-      // If you later add hard delete, we can call it here.
-      // For now: try /teacher/void in different shapes.
-      const trySeq = [
-        () => apiCall("/teacher/void", { method: "POST", body: { key, subject: state.subject } }),
-        () => apiCall("/teacher/void", { method: "POST", body: { id: key, subject: state.subject } }),
-        () => apiCall("/teacher/void", { params: { key } }),
-      ];
-
-      let ok = false;
-      let lastErr = null;
-      for (const fn of trySeq) {
-        try {
-          await fn();
-          ok = true;
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (e.status && ![400, 404].includes(e.status)) break;
-        }
-      }
-      if (!ok) throw lastErr || new Error("Void не выполнен");
-
-      showStatus("Готово ✅", "ok", 2000);
-      // refresh list
-      await loadList();
-    } catch (e) {
-      console.error(e);
-      showStatus(`Ошибка void: ${e.message}`, "error", 6000);
-    }
-  }
-
-  async function actionPrint(it) {
-    try {
-      showStatus("Готовлю печать…", "info", 0);
-      const result = await getResultJson(it);
-
-      // Try to also load variant JSON if it has a reference
-      let variant = null;
-      const variantId =
-        result?.variantId ||
-        result?.variant_id ||
-        result?.variant ||
-        it.__variant ||
-        "";
-
-      if (variantId && state.manifest?.variants?.length) {
-        const found = state.manifest.variants.find((v) => v.id === variantId || v.title === variantId);
-        const file = found?.file;
-        if (file) {
-          const base = state.manifestUrl.replace(/manifest\.json$/i, "");
-          const url = base + file;
-          try {
-            variant = await fetchJson(url);
-          } catch {
-            // ignore
-          }
-        }
-      }
-
-      openPrintWindow({ result, variant, it });
-      showStatus("Открыто окно печати ✅", "ok", 1800);
-    } catch (e) {
-      console.error(e);
-      showStatus(`Ошибка печати: ${e.message}`, "error", 6000);
-    }
-  }
-
-  function openPrintWindow({ result, variant, it }) {
+  function openPrintWindow(result){
     const w = window.open("", "_blank");
-    if (!w) {
-      showStatus("Браузер заблокировал popup. Разрешите всплывающие окна.", "error", 7000);
-      return;
-    }
-
-    const title = `Кодислово — ${it.__student || "ученик"} — ${it.__variant || ""}`.trim();
-
-    const cssLink = (() => {
-      // keep using shared control styles
-      const prefix = repoPrefixGuess();
-      const href1 = `${prefix}/assets/css/control-ui.css`;
-      const href2 = `/assets/css/control-ui.css`;
-      // we will include both; whichever works will load
-      return `
-        <link rel="stylesheet" href="${href1}">
-        <link rel="stylesheet" href="${href2}">
-      `;
-    })();
-
-    const htmlTheme = document.documentElement.getAttribute("data-theme") || "dark";
-
-    const variantBlock = variant
-      ? `<h2>Вариант</h2><pre>${escapeHtml(JSON.stringify(variant, null, 2))}</pre>`
-      : `<h2>Вариант</h2><p style="opacity:.8">Вариант не подгрузился (это нормально, печать всё равно доступна).</p>`;
-
-    const resultBlock = `<h2>Ответы ученика</h2><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
-
+    if(!w){ alert("Разрешите всплывающие окна для печати."); return; }
+    const theme = document.documentElement.getAttribute("data-theme") || "dark";
+    const cssHref1 = `${projectRoot()}assets/css/control-ui.css`;
+    const cssHref2 = `/assets/css/control-ui.css`;
+    const title = `Кодислово — ${safeText(result?.student?.name || result?.student?.fio || "")} — ${safeText(result?.variant?.id || result?.variantId || "")}`.trim() || "Кодислово — результат";
     w.document.open();
-    w.document.write(`
-      <!doctype html>
-      <html lang="ru" data-theme="${escapeHtml(htmlTheme)}">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>${escapeHtml(title)}</title>
-        ${cssLink}
-        <style>
-          body{padding:16px}
-          h1{margin:0 0 12px}
-          h2{margin:18px 0 8px}
-          pre{white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}
-          .meta{opacity:.85;margin:0 0 10px}
-          .toolbar{position:sticky;top:0;background:rgba(0,0,0,.25);backdrop-filter:blur(8px);padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:14px;margin-bottom:12px}
-          .btn{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
-          @media print {.toolbar{display:none} body{padding:0}}
-        </style>
-      </head>
-      <body>
-        <div class="toolbar">
-          <button class="btn" onclick="window.print()">Печать / Сохранить в PDF</button>
-        </div>
-        <h1>${escapeHtml(title)}</h1>
-        <p class="meta">${escapeHtml([
-          it.__class ? `Класс: ${it.__class}` : "",
-          it.__created ? `Сдано: ${isoToLocal(it.__created)}` : "",
-          it.__key ? `Key: ${it.__key}` : "",
-        ].filter(Boolean).join(" • "))}</p>
-        ${variantBlock}
-        ${resultBlock}
-      </body>
-      </html>
-    `);
+    w.document.write(`<!doctype html>
+<html lang="ru" data-theme="${escapeHtml(theme)}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<link rel="stylesheet" href="${cssHref1}">
+<link rel="stylesheet" href="${cssHref2}">
+<style>
+  body{padding:16px}
+  h1{margin:0 0 10px}
+  pre{white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)}
+  .toolbar{position:sticky;top:0;background:rgba(0,0,0,.25);backdrop-filter:blur(8px);padding:10px;border:1px solid var(--line);border-radius:16px;margin-bottom:12px}
+  .btn{height:40px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:inherit;font-weight:700;padding:0 14px;cursor:pointer}
+  @media print {.toolbar{display:none} body{padding:0}}
+</style>
+</head>
+<body>
+  <div class="toolbar"><button class="btn" onclick="window.print()">Печать / Сохранить в PDF</button></div>
+  <h1>${escapeHtml(title)}</h1>
+  <pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+</body>
+</html>`);
     w.document.close();
   }
 
-  // ---------- CSV export ----------
-  function bindCsvButton() {
-    const btn = pickEl([
-      "#btnCsv",
-      "#csvBtn",
-      "[data-action='export-csv']",
-      "[data-role='export-csv']",
-    ]);
-    if (!btn) return;
-
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      try {
-        applyFilter();
-        const rows = (state.filtered || []).map((it) => {
-          // flatten with safe subset
-          return {
-            key: it.__key,
-            student: it.__student,
-            class: it.__class,
-            variant: it.__variant,
-            submittedAt: it.__created,
-            voided: it.__voided ? 1 : 0,
-            subject: state.subject,
-          };
-        });
-        const csv = toCsv(rows);
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-        downloadBlob(blob, `results_${state.subject}_${new Date().toISOString().slice(0, 10)}.csv`);
-        showStatus("CSV скачан ✅", "ok", 2000);
-      } catch (err) {
-        console.error(err);
-        showStatus(`CSV ошибка: ${err.message}`, "error", 6000);
-      }
+  async function loadTimer(){
+    setStatus("Загружаю таймер…");
+    const cfg = await apiCall(state.teacherBaseUrl, "/teacher/config/get", {
+      params: { subject: state.subject },
+      token: state.teacherToken
     });
+    const minutes = Number(cfg?.timerMinutes ?? cfg?.timer_minutes ?? cfg?.timer ?? 0);
+    if($("timerMinutes")) $("timerMinutes").value = Number.isFinite(minutes) ? String(minutes) : "";
+    setStatus("Таймер загружен.", "ok");
   }
 
-  // ---------- Key file (autocheck scaffold) ----------
-  function bindKeyFileInput() {
-    const inp = pickEl([
-      "#keyFile",
-      "input[type='file'][name='key']",
-      "[data-role='key-file']",
-    ]);
-    if (!inp) return;
-
-    inp.addEventListener("change", async () => {
-      const file = inp.files?.[0];
-      if (!file) return;
-      try {
-        const txt = await file.text();
-        const json = JSON.parse(txt);
-        state.keyMap = json;
-        showStatus("Ключ загружен ✅ (автопроверка — можно подключать дальше)", "ok", 3500);
-      } catch (e) {
-        showStatus("Не удалось прочитать ключ (ожидается JSON).", "error", 6000);
-      }
+  async function saveTimer(){
+    const minutes = Number(safeText($("timerMinutes")?.value) || 0);
+    setStatus("Сохраняю таймер…");
+    await apiCall(state.teacherBaseUrl, "/teacher/config/set", {
+      method: "POST",
+      body: { subject: state.subject, timerMinutes: minutes },
+      token: state.teacherToken
     });
+    setStatus("Таймер сохранён.", "ok");
   }
 
-  // ---------- Refresh/search bindings ----------
-  function bindRefreshButton() {
-    const btn = pickEl([
-      "#btnRefresh",
-      "#refreshBtn",
-      "#reloadBtn",
-      "[data-action='refresh']",
-      "[data-role='refresh']",
-    ]);
-    if (!btn) return;
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      await loadList();
-    });
-  }
-
-  function bindSearchInput() {
-    const inp = ensureSearchInput();
-    if (!inp) return;
-    inp.addEventListener("input", () => renderList());
-  }
-
-  // ---------- Boot sequence ----------
-  async function loadManifest() {
-    const subj = state.subject;
-    const { withPrefix, noPrefix } = manifestUrlFor(subj);
-
-    // Try withPrefix first, then fallback
-    const attempts = [withPrefix, noPrefix].filter(Boolean);
-
-    let lastErr = null;
-    for (const url of attempts) {
-      try {
-        const m = await fetchJson(url);
-        state.manifest = m;
-        state.manifestUrl = url;
-        return m;
-      } catch (e) {
-        lastErr = e;
-      }
+  async function makeResetCode(){
+    const variant = safeText($("resetVariant")?.value) || safeText(state.manifest?.variants?.[0]?.id) || "variant_01";
+    const cls = safeText($("resetClass")?.value);
+    const fio = safeText($("resetFio")?.value);
+    if(!cls || !fio){
+      alert("Заполните класс и ФИО для reset-кода.");
+      return;
     }
-    throw lastErr || new Error("Не удалось загрузить manifest.json");
+    setStatus("Делаю reset-код…");
+    const data = await apiCall(state.teacherBaseUrl, "/teacher/reset", {
+      method: "POST",
+      body: { subject: state.subject, variant, cls, fio, createdAt: nowIso() },
+      token: state.teacherToken
+    });
+    const code = data?.code || data?.resetCode || data?.token || "";
+    if(code){
+      setStatus(`Reset-код: ${code}`, "ok");
+      // удобно сразу скопировать
+      try{ await navigator.clipboard.writeText(String(code)); }catch{}
+      alert(`Reset-код создан:\n\n${code}\n\n(код скопирован в буфер, если браузер разрешил)`);
+    }else{
+      setStatus("Reset-код создан (ответ без поля code).", "ok");
+      $("jsonViewer").value = JSON.stringify(data, null, 2);
+    }
   }
 
-  async function boot() {
-    state.subject = inferSubject();
-    bindSubjectSelector();
-
-    // Theme
+  function bind(){
+    // theme
     applyTheme(getTheme());
-    bindThemeToggle();
+    const t = $("themeToggle");
+    if(t && !t._kdBound){
+      t._kdBound = true;
+      t.addEventListener("click", (e)=>{ e.preventDefault(); toggleTheme(); });
+    }
+    // allow clicking the whole theme box too
+    const themeBox = t?.closest(".kd-theme");
+    if(themeBox && !themeBox._kdBound){
+      themeBox._kdBound = true;
+      themeBox.addEventListener("click", (e)=>{
+        if(e.target && e.target.tagName === "INPUT") return;
+        toggleTheme();
+      });
+    }
 
-    setLoading(true);
-    try {
-      showStatus("Загружаю manifest…", "info", 0);
-      const manifest = await loadManifest();
+    // subject select
+    const subjSel = $("subjectSelect");
+    if(subjSel && !subjSel._kdBound){
+      subjSel._kdBound = true;
+      subjSel.addEventListener("change", async ()=>{
+        state.subject = subjSel.value || "russian";
+        await boot(); // reload manifest+list+timer
+      });
+    }
 
-      // Fill defaults from manifest
-      const baseUrl = manifest?.teacher?.base_url || manifest?.teacher?.baseUrl || "";
-      const token = manifest?.teacher?.token || "";
+    // list + filters
+    $("btnList")?.addEventListener("click", ()=>loadList());
+    ["classFilter","variantFilter","fioSearch"].forEach(id=>{
+      const el = $(id);
+      if(el && !el._kdBound){
+        el._kdBound = true;
+        el.addEventListener("input", ()=>renderList());
+      }
+    });
 
-      state.teacherBaseUrl = baseUrl;
-      state.teacherToken = token;
+    $("btnVoidSelected")?.addEventListener("click", ()=>voidSelected());
 
-      // If UI inputs exist, seed them (do not overwrite user typed values)
-      if (baseUrl) writeTeacherBaseUrlToUI(baseUrl);
-      if (token) writeTeacherTokenToUI(token);
+    // timer
+    $("btnTimerLoad")?.addEventListener("click", ()=>loadTimer());
+    $("btnTimerSave")?.addEventListener("click", ()=>saveTimer());
 
-      showStatus("Manifest загружен ✅", "ok", 1600);
+    // reset
+    $("btnResetMake")?.addEventListener("click", ()=>makeResetCode());
 
-      // Bind buttons/inputs
-      bindRefreshButton();
-      bindSearchInput();
-      bindCsvButton();
-      bindKeyFileInput();
+    // table actions (delegation)
+    $("resultsTbody")?.addEventListener("click", async (e)=>{
+      const btn = e.target?.closest?.("button[data-act]");
+      if(!btn) return;
+      const tr = e.target?.closest?.("tr[data-key]");
+      const key = tr?.dataset?.key || "";
+      if(!key) return;
 
-      // Initial list load
+      try{
+        if(btn.dataset.act==="get"){
+          setStatus("Загружаю результат…");
+          const res = await getResult(key);
+          $("jsonViewer").value = JSON.stringify(res, null, 2);
+          setStatus("Готово.", "ok");
+        }
+        if(btn.dataset.act==="download"){
+          setStatus("Скачиваю JSON…");
+          const res = await getResult(key);
+          const fio = safeText(res?.student?.name || res?.student?.fio || "");
+          const variant = safeText(res?.variant?.id || res?.variantId || "");
+          downloadJson(res, `result_${state.subject}_${fio.replace(/\s+/g,"_")}_${variant}_${key.slice(0,16)}.json`);
+          setStatus("Скачано.", "ok");
+        }
+        if(btn.dataset.act==="void"){
+          if(!confirm("Аннулировать (void) эту работу?")) return;
+          setStatus("Аннулирую…");
+          await voidResult(key);
+          await loadList();
+          setStatus("Void выполнен.", "ok");
+        }
+        if(btn.dataset.act==="print"){
+          const res = await getResult(key);
+          openPrintWindow(res);
+        }
+      }catch(err){
+        console.error(err);
+        setStatus(`Ошибка: ${err.message}`, "error");
+        alert("Ошибка:\n\n" + String(err.message || err));
+      }
+    });
+
+    // CSV export shortcut: Ctrl+S? (optional) – not added to UI
+  }
+
+  async function boot(){
+    try{
+      setStatus("Загружаю manifest…");
+      await loadManifest();
+      setStatus("Manifest загружен. Обновляю список…", "ok");
+      // seed resetVariant default
+      if($("resetVariant") && !$("resetVariant").value){
+        $("resetVariant").value = safeText(state.manifest?.variants?.[0]?.id) || "variant_01";
+      }
       await loadList();
-    } catch (e) {
-      console.error(e);
-      showStatus(`Ошибка запуска: ${e.message}`, "error", 7000);
-    } finally {
-      setLoading(false);
+    }catch(err){
+      console.error(err);
+      setStatus(`Ошибка запуска: ${err.message}`, "error");
+      alert("Ошибка teacher panel:\n\n" + err.message);
     }
   }
 
-  // ---------- Global data-action (optional) ----------
-  // If your HTML uses data-action on top-level controls, we support them too.
-  function bindGlobalActions() {
-    document.addEventListener("click", (e) => {
-      const el = e.target?.closest?.("[data-action]");
-      if (!el) return;
+  // init
+  state.subject = safeText($("subjectSelect")?.value) || "russian";
+  bind();
+  boot();
 
-      const act = el.dataset.action;
-      if (act === "toggle-theme" || act === "theme") {
-        e.preventDefault();
-        toggleTheme();
-      }
-      if (act === "refresh") {
-        e.preventDefault();
-        loadList();
-      }
-      if (act === "export-csv") {
-        // handled by bindCsvButton if button exists; otherwise do it here
-        // (no-op if already bound)
-      }
-    });
-  }
-
-  // ---------- Init ----------
-  bindGlobalActions();
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
-  }
 })();
