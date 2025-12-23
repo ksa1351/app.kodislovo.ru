@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Kodislovo — Учитель (проверка + сброс)</title>
+  <link rel="stylesheet" href="../assets/css/control-ui.css">
+  <style>
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap}
+    .tabs{display:flex;gap:10px;flex-wrap:wrap}
+    .tabbtn{height:42px;border-radius:14px;padding:0 14px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);color:inherit;cursor:pointer;font-weight:900}
+    .tabbtn[aria-selected="true"]{background:rgba(255,255,255,.14)}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .right{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted);font-size:13px}
+    .kd-input{min-width:180px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+    th,td{border-bottom:1px solid rgba(255,255,255,.10);padding:10px 8px;vertical-align:top}
+    th{color:var(--muted);text-align:left;font-weight:800}
+    details{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px 12px;margin-top:10px;background:rgba(0,0,0,.12)}
+    summary{cursor:pointer;font-weight:900}
+    code{background:rgba(0,0,0,.25);padding:2px 6px;border-radius:8px}
+    .tiny{font-size:12px;color:var(--muted)}
+    .ok{color:var(--ok);font-weight:800}
+    .bad{color:var(--bad);font-weight:800}
+    .hidden{display:none !important}
+
+    /* PIN overlay */
+    .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.65);backdrop-filter:blur(10px);z-index:9999}
+    .panel{width:min(420px,92vw)}
+  </style>
+</head>
+<body>
+  <!-- PIN gate -->
+  <div id="pinOverlay" class="overlay">
+    <div class="card panel">
+      <div style="font-weight:900;font-size:18px">Вход в учительский раздел</div>
+      <div class="sub" style="margin-top:6px">Введите PIN-код. Он хранится <b>в этом браузере</b>.</div>
+
+      <div class="row" style="margin-top:12px">
+        <input id="pinInput" class="kd-input" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off">
+        <button id="btnPinEnter" class="kd-btn" type="button">Войти</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnPinReset" class="kd-btn secondary" type="button">Сменить PIN</button>
+        <span id="pinStatus" class="sub"></span>
+      </div>
+
+      <div class="tiny" style="margin-top:10px">
+        ⚠️ Это защита “от случайного входа” (client-side). Для полной защиты нужен серверный логин.
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="wrap hidden">
+    <div class="top">
+      <div>
+        <h1 style="margin:0 0 6px">Учительская панель</h1>
+        <div class="sub">Работы — из бакета через Teacher API. Ключ проверки загружается вручную. Сброс — reset-код + ссылка.</div>
+      </div>
+
+      <div class="right">
+        <label class="pill">Тема
+          <input id="themeToggle" type="checkbox" aria-label="Переключить тему">
+        </label>
+      </div>
+    </div>
+
+    <div class="tabs" style="margin-top:12px">
+      <button class="tabbtn" id="tabCheck" aria-selected="true" type="button">Проверка</button>
+      <button class="tabbtn" id="tabReset" aria-selected="false" type="button">Сброс</button>
+    </div>
+
+    <!-- CHECK TAB -->
+    <section id="panelCheck" style="margin-top:12px">
+      <div class="grid">
+        <div class="card">
+          <div style="font-weight:900;font-size:18px">1) Ключ (JSON)</div>
+          <div class="sub" style="margin-top:6px">Загрузите отдельный ключ. Он не хранится на сайте.</div>
+
+          <div class="row" style="margin-top:10px">
+            <label class="pill">Ключ:
+              <input id="keyFile" type="file" accept=".json,application/json">
+            </label>
+            <button id="btnLoadKey" class="kd-btn secondary" type="button">Загрузить ключ</button>
+          </div>
+
+          <div id="keyInfo" class="tiny" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:900;font-size:18px">2) Работы из бакета</div>
+          <div class="sub" style="margin-top:6px">Фильтры влияют на список. Проверка — по отмеченным работам.</div>
+
+          <div class="row" style="margin-top:10px">
+            <label class="sub">Предмет</label>
+            <select id="subjectSelect" class="kd-input">
+              <option value="russian">Русский</option>
+              <option value="literature">Литература</option>
+              <option value="informatics">Информатика</option>
+            </select>
+
+            <input id="variantFilter" class="kd-input" type="text" placeholder="Вариант (01 или variant_01)">
+            <input id="classFilter" class="kd-input" type="text" placeholder="Класс (10А)">
+            <input id="fioSearch" class="kd-input" type="text" placeholder="Поиск ФИО / класс">
+
+            <button id="btnLoadList" class="kd-btn" type="button">Обновить список</button>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button id="btnCheckSelected" class="kd-btn" type="button" disabled>Проверить выбранные</button>
+            <button id="btnCSV" class="kd-btn secondary" type="button" disabled>Скачать CSV</button>
+            <button id="btnClearCheck" class="kd-btn secondary" type="button">Очистить</button>
+            <button id="btnPrint" class="kd-btn secondary" type="button" disabled>Печать / PDF</button>
+
+            <label class="pill" style="margin-left:auto">
+              <input id="checkAll" type="checkbox"> выбрать всё (в фильтре)
+            </label>
+          </div>
+
+          <div id="statusLine" class="sub" style="margin-top:10px">Готово.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div style="font-weight:900;font-size:18px">Список работ</div>
+        <div id="listWrap"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div style="font-weight:900;font-size:18px">Сводка</div>
+        <div id="summary" class="sub" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div style="font-weight:900;font-size:18px">Детализация</div>
+        <div id="detailsWrap" class="sub" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- RESET TAB -->
+    <section id="panelReset" class="hidden" style="margin-top:12px">
+      <div class="grid">
+        <div class="card">
+          <div style="font-weight:900;font-size:18px">Сформировать reset-код</div>
+          <div class="sub" style="margin-top:6px">Код одноразовый. Можно выдавать ссылкой на контрольную.</div>
+
+          <div class="row" style="margin-top:10px">
+            <label class="sub">Предмет</label>
+            <select id="resetSubject" class="kd-input">
+              <option value="russian">Русский</option>
+              <option value="literature">Литература</option>
+              <option value="informatics">Информатика</option>
+            </select>
+            <input id="resetVariant" class="kd-input" type="text" placeholder="variant_01">
+            <input id="resetClass" class="kd-input" type="text" placeholder="10А">
+            <input id="resetFio" class="kd-input" type="text" placeholder="Иванов Иван">
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <button id="btnMakeReset" class="kd-btn" type="button">Сделать код</button>
+            <button id="btnCopyReset" class="kd-btn secondary" type="button" disabled>Копировать код</button>
+            <button id="btnCopyResetLink" class="kd-btn secondary" type="button" disabled>Копировать ссылку</button>
+          </div>
+
+          <div id="resetOut" class="sub" style="margin-top:10px"></div>
+          <div class="tiny" style="margin-top:10px">
+            Ссылка: <code>.../control/control.html?subject=russian&variant=variant_01&reset=КОД</code>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:900;font-size:18px">Журнал reset-кодов (локально)</div>
+          <div class="sub" style="margin-top:6px">Хранится в localStorage этого браузера.</div>
+
+          <div class="row" style="margin-top:10px">
+            <button id="btnResetHistoryClear" class="kd-btn secondary" type="button">Очистить журнал</button>
+          </div>
+
+          <div id="resetHistory" class="sub" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="./teacher_panel_tabs.js?v=1"></script>
+</body>
+</html>
