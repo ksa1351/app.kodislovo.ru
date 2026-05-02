@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Квест «12 записок» — прототип</title>
+  <link rel="stylesheet" href="./game.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <header class="game-header">
+      <h1>Квест «12 записок»</h1>
+      <p>Найди записку, реши задание и доберись до приза на 12 шаге.</p>
+    </header>
+
+    <section class="hud">
+      <div class="hud-item"><span>Шаг:</span> <strong id="stepCounter">1 / 12</strong></div>
+      <div class="hud-item"><span>Статус:</span> <strong id="statusLabel">Готов к старту</strong></div>
+      <button id="startBtn" class="primary-btn">Начать игру</button>
+    </section>
+
+    <section id="map" class="map" aria-label="Игровое поле"></section>
+
+    <p class="hint">Подсказка: записка появляется в случайной точке только после правильного ответа.</p>
+  </main>
+
+  <div id="taskModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="taskTitle">
+    <div class="modal-content">
+      <h2 id="taskTitle">Задание</h2>
+      <p id="taskText"></p>
+      <label for="answerInput">Твой ответ:</label>
+      <input id="answerInput" type="text" autocomplete="off" />
+      <p id="feedback" class="feedback"></p>
+      <div class="actions">
+        <button id="checkBtn" class="primary-btn">Проверить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="finishModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
+    <div class="modal-content">
+      <h2 id="finishTitle">Поздравляем!</h2>
+      <p>Ты прошёл все 12 шагов и нашёл клад 🎉</p>
+      <button id="restartBtn" class="primary-btn">Сыграть ещё раз</button>
+    </div>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>
