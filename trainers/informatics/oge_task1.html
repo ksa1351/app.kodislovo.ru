@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>ОГЭ информатика — задание 1</title>
+  <link rel="stylesheet" href="../../assets/css/ui.css" />
+  <style>
+    .trainer-shell{max-width:960px;margin:0 auto}
+    .task-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:14px;margin-bottom:12px}
+    .task-text{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;padding:16px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+    .answer-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:14px}
+    .trainer-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+    .feedback{min-height:28px;margin-top:12px;font-weight:700}
+    .feedback.ok{color:#65d687}
+    .feedback.bad{color:#ff8a8a}
+    .trainer-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;color:var(--muted)}
+    .jump{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .jump select{width:auto;min-width:160px}
+    @media (max-width:620px){
+      .answer-row{grid-template-columns:1fr}
+      .trainer-footer{align-items:flex-start}
+    }
+  </style>
+  <script src="./oge_task1_data.js"></script>
+</head>
+<body>
+  <main class="kd-page trainer-shell">
+    <header class="kd-hero">
+      <a class="kd-back" href="./trainer.html?section=oge">ОГЭ по информатике</a>
+      <h1>Задание 1. Количественные параметры информационных объектов</h1>
+      <p>Тренажер использует набор задач из Android-приложения: выберите задачу, введите ответ и сразу проверьте себя.</p>
+    </header>
+
+    <section class="kd-section">
+      <div class="kd-panel">
+        <div class="task-meta">
+          <span id="taskInfo">Задание загружается...</span>
+          <span id="taskCode"></span>
+        </div>
+
+        <div id="taskText" class="task-text">Задание загружается...</div>
+
+        <div class="answer-row">
+          <input id="answerInput" type="text" autocomplete="off" placeholder="Введите ответ" aria-label="Ответ">
+          <button class="kd-button" id="checkBtn" type="button">Проверить</button>
+        </div>
+
+        <div class="trainer-actions">
+          <button class="kd-button kd-button-secondary" id="showAnswerBtn" type="button">Показать ответ</button>
+          <button class="kd-button kd-button-secondary" id="prevBtn" type="button">Предыдущее</button>
+          <button class="kd-button kd-button-secondary" id="nextBtn" type="button">Следующее</button>
+          <button class="kd-button kd-button-secondary" id="randomBtn" type="button">Случайное</button>
+        </div>
+
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+
+        <div class="trainer-footer">
+          <label class="jump" for="jumpSelect">
+            Перейти к задаче:
+            <select id="jumpSelect"></select>
+          </label>
+          <div id="stats"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    if (typeof tasks === "undefined") {
+      throw new Error("Не найден массив tasks из oge_task1_data.js");
+    }
+
+    let currentIndex = 0;
+    let correctCount = 0;
+    let totalCount = 0;
+
+    const taskInfoEl = document.getElementById("taskInfo");
+    const taskCodeEl = document.getElementById("taskCode");
+    const taskTextEl = document.getElementById("taskText");
+    const answerInputEl = document.getElementById("answerInput");
+    const feedbackEl = document.getElementById("feedback");
+    const statsEl = document.getElementById("stats");
+    const jumpSelectEl = document.getElementById("jumpSelect");
+
+    function normalizeAnswer(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/ё/g, "е")
+        .replace(/[^a-zа-я0-9 -]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function loadTask(index) {
+      if (!tasks.length) return;
+      currentIndex = Math.max(0, Math.min(index, tasks.length - 1));
+      const task = tasks[currentIndex];
+
+      taskInfoEl.textContent = `Задача ${task.num} из ${tasks.length}`;
+      taskCodeEl.textContent = task.code ? `Код: ${task.code}` : "";
+      taskTextEl.textContent = task.text || "";
+      answerInputEl.value = "";
+      feedbackEl.textContent = "";
+      feedbackEl.className = "feedback";
+      jumpSelectEl.value = String(currentIndex);
+      answerInputEl.focus();
+    }
+
+    function updateStats() {
+      if (!totalCount) {
+        statsEl.textContent = "";
+        return;
+      }
+      const percent = Math.round((correctCount / totalCount) * 100);
+      statsEl.textContent = `Статистика: ${correctCount} из ${totalCount} (${percent}%)`;
+    }
+
+    function checkAnswer() {
+      const task = tasks[currentIndex];
+      const userAnswer = normalizeAnswer(answerInputEl.value);
+      const correctAnswer = normalizeAnswer(task.answer);
+
+      if (!userAnswer) {
+        feedbackEl.textContent = "Введите ответ.";
+        feedbackEl.className = "feedback bad";
+        return;
+      }
+
+      totalCount += 1;
+      if (userAnswer === correctAnswer) {
+        correctCount += 1;
+        feedbackEl.textContent = "Верно.";
+        feedbackEl.className = "feedback ok";
+      } else {
+        feedbackEl.textContent = `Неверно. Правильный ответ: ${task.answer}.`;
+        feedbackEl.className = "feedback bad";
+      }
+      updateStats();
+    }
+
+    function showAnswer() {
+      const task = tasks[currentIndex];
+      feedbackEl.textContent = `Правильный ответ: ${task.answer}.`;
+      feedbackEl.className = "feedback";
+    }
+
+    function fillJumpSelect() {
+      jumpSelectEl.innerHTML = "";
+      tasks.forEach((task, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `${task.num} (${task.code})`;
+        jumpSelectEl.appendChild(option);
+      });
+    }
+
+    document.getElementById("checkBtn").addEventListener("click", checkAnswer);
+    document.getElementById("showAnswerBtn").addEventListener("click", showAnswer);
+    document.getElementById("prevBtn").addEventListener("click", () => loadTask(currentIndex <= 0 ? tasks.length - 1 : currentIndex - 1));
+    document.getElementById("nextBtn").addEventListener("click", () => loadTask(currentIndex >= tasks.length - 1 ? 0 : currentIndex + 1));
+    document.getElementById("randomBtn").addEventListener("click", () => loadTask(Math.floor(Math.random() * tasks.length)));
+    jumpSelectEl.addEventListener("change", () => loadTask(Number(jumpSelectEl.value)));
+    answerInputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") checkAnswer();
+    });
+
+    fillJumpSelect();
+    loadTask(0);
+  </script>
+</body>
+</html>

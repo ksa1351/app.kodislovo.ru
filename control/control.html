@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Контрольная — Кодислово</title>
+
+  <!-- ЕДИНЫЙ CSS -->
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=1" />
+</head>
+
+<body>
+  <!-- topbar -->
+  <div class="kd-topbar">
+    <div class="kd-wrap">
+      <div class="kd-row">
+        <div class="kd-theme" id="themeWrap" style="cursor:pointer">
+          <span id="themeLabel">Тёмная</span>
+          <label class="kd-switch" style="cursor:pointer">
+            <input id="themeToggle" type="checkbox" aria-label="Переключить тему">
+            <span>Тема</span>
+          </label>
+        </div>
+        <div class="kd-theme">
+          <span>Таймер:</span>
+          <strong id="uiTimer">без лимита</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kd-wrap">
+
+    <!-- header -->
+    <header class="kd-header">
+      <h1 class="kd-title" id="uiMainTitle">Контрольная работа</h1>
+      <p class="kd-subtitle" id="uiSubtitle">
+        Заполните данные, выполните задания, нажмите «Завершить», затем «Отправить».
+      </p>
+    </header>
+
+    <!-- panel: student + actions -->
+    <section class="kd-panel" aria-label="Панель ученика">
+      <div class="kd-grid">
+        <div class="kd-field">
+          <label for="studentName">ФИО</label>
+          <input class="kd-input" id="studentName" type="text" placeholder="Например: Иванов Иван" autocomplete="name">
+        </div>
+
+        <div class="kd-field">
+          <label for="studentClass">Класс</label>
+          <input class="kd-input" id="studentClass" type="text" placeholder="Например: 10А" autocomplete="off">
+        </div>
+
+        <div class="kd-field" style="grid-column:1/-1">
+          <label for="variantSelect">Вариант</label>
+          <select class="kd-select" id="variantSelect"></select>
+        </div>
+      </div>
+
+      <!-- ONE ROW: finish + save + reset code + reset -->
+      <div class="kd-actions kd-actions-row" style="margin-top:14px">
+        <button class="kd-btn" id="btnFinish" type="button">Завершить</button>
+        <button class="kd-btn secondary" id="btnSubmit" type="button" disabled>Отправить</button>
+
+        <input class="kd-input" id="resetCode"
+          type="text"
+          placeholder="Код сброса"
+          autocomplete="off"
+          spellcheck="false"
+          inputmode="latin"
+          maxlength="12"
+          pattern="[0-9a-fA-F]{12}"
+        >
+
+        <button class="kd-btn secondary" id="btnReset" type="button">Сбросить</button>
+      </div>
+
+      <div class="kd-subtitle" style="margin-top:10px">
+        Сброс нужен, если ребёнок сдавал без интернета/ошибся браузер. Учитель выдаёт код → вы вводите здесь → «Сбросить».
+      </div>
+    </section>
+
+    <!-- sticky text -->
+    <section class="kd-stage kd-hidden" id="stickyTextWrap">
+      <div class="kd-row" style="margin-bottom:10px">
+        <div>
+          <div style="font-weight:800; font-size:18px" id="stickyTextTitle">Текст</div>
+          <div class="kd-subtitle" id="stickyTextRange">задания 1–5</div>
+        </div>
+        <button class="kd-btn secondary" id="stickyToggle" type="button">Скрыть</button>
+      </div>
+      <div class="kd-textbox" id="stickyTextBody"></div>
+    </section>
+
+    <!-- ONE TASK -->
+    <main id="taskOne"></main>
+
+  </div>
+
+  <script src="./control_core.js?v=9"></script>
+</body>
+</html>
