@@ -6,18 +6,34 @@
   <title>ОГЭ информатика — задание 1</title>
   <link rel="stylesheet" href="../../assets/css/ui.css" />
   <style>
+    .trainer-topbar{position:sticky;top:0;z-index:10;background:var(--header-bg);border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}
+    .trainer-topbar-inner{width:min(1120px,100%);margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .trainer-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+    .trainer-logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-hover));box-shadow:0 10px 24px rgba(79,70,229,.25)}
+    .trainer-brand b{display:block;font-size:14px}
+    .trainer-brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+    .theme-toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+    .theme-toggle input{display:none}
+    .switch{width:44px;height:26px;border-radius:999px;background:var(--card);border:1px solid var(--border);position:relative;display:inline-block}
+    .knob{width:20px;height:20px;border-radius:50%;background:var(--primary);position:absolute;top:2px;left:2px;transition:.2s;box-shadow:0 8px 18px rgba(79,70,229,.3)}
+    input:checked+.switch .knob{left:22px}
     .trainer-shell{max-width:960px;margin:0 auto}
     .task-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:14px;margin-bottom:12px}
-    .task-text{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;padding:16px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+    .task-text{background:var(--primary-soft);border:1px solid var(--border);border-radius:16px;padding:16px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+    :root[data-theme="dark"] .task-text{background:rgba(255,255,255,.05)}
     .answer-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:14px}
     .trainer-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
     .feedback{min-height:28px;margin-top:12px;font-weight:700}
-    .feedback.ok{color:#65d687}
-    .feedback.bad{color:#ff8a8a}
+    .feedback.ok{color:#238a55}
+    :root[data-theme="dark"] .feedback.ok{color:#65d687}
+    .feedback.bad{color:#b4233a}
+    :root[data-theme="dark"] .feedback.bad{color:#ff8a8a}
     .trainer-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;color:var(--muted)}
     .jump{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .jump select{width:auto;min-width:160px}
+    body>img,body>picture,body>video{display:none!important}
     @media (max-width:620px){
+      .trainer-topbar-inner{padding:10px 12px}
       .answer-row{grid-template-columns:1fr}
       .trainer-footer{align-items:flex-start}
     }
@@ -25,6 +41,25 @@
   <script src="./oge_task1_data.js"></script>
 </head>
 <body>
+  <div class="trainer-topbar">
+    <div class="trainer-topbar-inner">
+      <a class="trainer-brand" href="./index.html">
+        <span class="trainer-logo"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>ОГЭ по информатике</span>
+        </span>
+      </a>
+      <div class="theme-toggle">
+        <span>Тема</span>
+        <label>
+          <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+          <span class="switch"><span class="knob"></span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
   <main class="kd-page trainer-shell">
     <header class="kd-hero">
       <a class="kd-back" href="./trainer.html?section=oge">ОГЭ по информатике</a>
@@ -67,6 +102,16 @@
   </main>
 
   <script>
+    const toggle = document.getElementById("themeToggle");
+    const savedTheme = localStorage.getItem("kodislovo_theme") || "dark";
+    document.documentElement.dataset.theme = savedTheme;
+    toggle.checked = savedTheme === "light";
+    toggle.addEventListener("change", () => {
+      const nextTheme = toggle.checked ? "light" : "dark";
+      document.documentElement.dataset.theme = nextTheme;
+      localStorage.setItem("kodislovo_theme", nextTheme);
+    });
+
     if (typeof tasks === "undefined") {
       throw new Error("Не найден массив tasks из oge_task1_data.js");
     }
