@@ -1,24 +1,53 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Контрольные — выбор предмета</title>
   <style>
-    :root{--bg:#0b1020;--card:#121a33;--text:#e9ecff;--muted:#b8c0ff;--border:rgba(255,255,255,.12);--btn:#2b3a7a;--btn2:#1f2a57;--r:18px}
+    :root{--bg:#f7f7ff;--bg2:#fff;--header:#fff;--card:#fff;--text:#111827;--muted:#1f2937;--border:#ddd6fe;--btn:#4f46e5;--btn2:#eef2ff;--btn2-text:#4f46e5;--r:18px}
+    :root[data-theme="dark"]{--bg:#0b1020;--bg2:#080c18;--header:#0f172a;--card:#121a33;--text:#e9ecff;--muted:#b8c0ff;--border:#2b3a7a;--btn:#4f46e5;--btn2:#202a52;--btn2-text:#e9ecff}
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(180deg,#070a14,var(--bg) 40%,#070a14);color:var(--text)}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at top,rgba(79,70,229,.14),transparent 38%),linear-gradient(180deg,var(--bg2),var(--bg) 40%,var(--bg2));color:var(--text)}
+    .site-topbar{position:sticky;top:0;z-index:20;background:var(--header);border-bottom:1px solid var(--border)}
+    .site-topbar-inner{max-width:900px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .site-brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none}
+    .site-logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--btn),#6366f1);box-shadow:0 10px 24px rgba(79,70,229,.25)}
+    .site-brand b{display:block;font-size:14px;line-height:1.2}
+    .site-brand span span{display:block;margin-top:2px;color:var(--muted);font-size:12px;line-height:1.2}
+    .theme-toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+    .theme-toggle input{display:none}
+    .theme-switch{width:44px;height:26px;border-radius:999px;background:var(--card);border:1px solid var(--border);position:relative;display:inline-block}
+    .theme-knob{width:20px;height:20px;border-radius:50%;background:var(--btn);position:absolute;top:2px;left:2px;transition:left .2s ease;box-shadow:0 8px 18px rgba(79,70,229,.3)}
+    .theme-toggle input:checked+.theme-switch .theme-knob{left:22px}
     .wrap{max-width:900px;margin:0 auto;padding:26px 14px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;box-shadow:0 18px 45px rgba(0,0,0,.35)}
     h1{margin:0 0 10px;font-size:clamp(22px,3.4vw,34px)}
     p{margin:0 0 18px;color:var(--muted);line-height:1.6}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
     a.btn{display:flex;align-items:center;justify-content:center;text-align:center;gap:10px;
-      background:var(--btn);color:#fff;text-decoration:none;padding:14px 16px;border-radius:14px;border:1px solid var(--border)}
-    a.btn.secondary{background:var(--btn2);color:var(--text)}
+      background:linear-gradient(135deg,var(--btn),#6366f1);color:#fff!important;text-decoration:none;padding:14px 16px;border-radius:14px;border:1px solid transparent;box-shadow:0 10px 22px rgba(79,70,229,.25)}
+    a.btn.secondary{background:var(--btn2);color:var(--btn2-text)!important;border-color:var(--border);box-shadow:none}
   </style>
 </head>
 <body>
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>контрольные</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
   <div class="wrap">
     <div class="card">
       <h1>Контрольные работы</h1>
@@ -29,5 +58,6 @@
       </div>
     </div>
   </div>
+  <script src="../assets/js/theme.js"></script>
 </body>
 </html>

@@ -87,6 +87,94 @@ img{max-width:100%;height:auto}
 h1,h2,h3{line-height:1.15}
 p{color:var(--muted);line-height:1.6}
 
+/* ===== Topbar / Theme ===== */
+.site-topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:color-mix(in srgb,var(--header-bg) 88%,transparent);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(14px);
+}
+
+.site-topbar-inner{
+  width:min(1120px,100%);
+  margin:0 auto;
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.site-brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  color:var(--text);
+  text-decoration:none;
+}
+
+.site-logo{
+  flex:0 0 auto;
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-hover));
+  box-shadow:0 10px 24px rgba(79,70,229,.25);
+}
+
+.site-brand b{
+  display:block;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.2;
+}
+
+.site-brand span span{
+  display:block;
+  margin-top:2px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.2;
+}
+
+.theme-toggle{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.theme-toggle input{display:none}
+
+.theme-switch{
+  width:44px;
+  height:26px;
+  border-radius:999px;
+  background:var(--card);
+  border:1px solid var(--border);
+  position:relative;
+  display:inline-block;
+}
+
+.theme-knob{
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  background:var(--primary);
+  position:absolute;
+  top:2px;
+  left:2px;
+  transition:left .2s ease,background .2s ease;
+  box-shadow:0 8px 18px rgba(79,70,229,.3);
+}
+
+.theme-toggle input:checked+.theme-switch .theme-knob{left:22px}
+
 /* ===== Layout ===== */
 .container{
   max-width:var(--maxw);
@@ -128,7 +216,7 @@ p{color:var(--muted);line-height:1.6}
   border-radius:var(--radius-btn);
 
   background:linear-gradient(135deg,var(--primary),var(--primary-hover));
-  color:var(--white);
+  color:var(--white) !important;
   text-decoration:none;
 
   border:1px solid transparent;
@@ -138,9 +226,16 @@ p{color:var(--muted);line-height:1.6}
   user-select:none;
 }
 
+.btn:link,
+.btn:visited{color:var(--white) !important}
 .btn:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(79,70,229,.35)}
 .btn:active{transform:translateY(1px)}
-.btn.secondary{background:var(--primary-soft); color:var(--text); border-color:var(--border); box-shadow:none}
+.btn.secondary{background:var(--primary-soft); color:var(--primary) !important; border-color:var(--border); box-shadow:none}
+.btn.secondary:link,
+.btn.secondary:visited{color:var(--primary) !important}
+:root[data-theme="dark"] .btn.secondary,
+:root[data-theme="dark"] .btn.secondary:link,
+:root[data-theme="dark"] .btn.secondary:visited{color:var(--text) !important}
 .btn.secondary:hover{background:var(--primary-soft-2); border-color:var(--border-strong); box-shadow:none}
 .btn.ghost{background:transparent; border:1px solid var(--border); color:var(--text)}
 .btn.full{width:100%}
@@ -323,11 +418,13 @@ input:focus, select:focus, textarea:focus{
   border-radius:var(--radius-btn);
   border:1px solid transparent;
   background:linear-gradient(135deg,var(--primary),var(--primary-hover));
-  color:var(--white);
+  color:var(--white) !important;
   text-decoration:none;
   box-shadow:var(--shadow-button);
   transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
+.kd-button:link,
+.kd-button:visited{color:var(--white) !important}
 
 .kd-button:hover{
   transform:translateY(-1px);
@@ -336,10 +433,15 @@ input:focus, select:focus, textarea:focus{
 
 .kd-button-secondary{
   background:var(--primary-soft);
-  color:var(--text);
+  color:var(--primary) !important;
   border-color:var(--border);
   box-shadow:none;
 }
+.kd-button-secondary:link,
+.kd-button-secondary:visited{color:var(--primary) !important}
+:root[data-theme="dark"] .kd-button-secondary,
+:root[data-theme="dark"] .kd-button-secondary:link,
+:root[data-theme="dark"] .kd-button-secondary:visited{color:var(--text) !important}
 
 @media (max-width: 820px){
   :root{ --pad:16px; }
