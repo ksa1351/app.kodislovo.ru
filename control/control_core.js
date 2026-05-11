@@ -63,7 +63,7 @@
     return json ?? { ok: true };
   }
 
-  // ========= theme (переключение кликом, без checkbox) =========
+  // ========= theme =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "dark" || saved === "light") return saved;
@@ -77,7 +77,6 @@
     const lab = $("themeLabel");
     if (lab) lab.textContent = theme === "light" ? "Светлая" : "Тёмная";
 
-    // если вдруг остался checkbox — не ломаем, просто синхронизируем
     const t = $("themeToggle");
     if (t && "checked" in t) t.checked = theme === "light";
   }
@@ -616,14 +615,21 @@
   } catch {}
 // ========= init =========
   async function init() {
-    // theme init + toggle by click
+    // theme init + toggle
     setTheme(getPreferredTheme());
-    const themeBtn = $("themeToggle") || $("themeWrap") || $("themeSwitch") || $("themeBtn") || null;
-    if (themeBtn && !themeBtn._kdBound) {
-      themeBtn._kdBound = true;
-      themeBtn.addEventListener("click", (e) => {
-        // чтобы не срабатывало на клике по input внутри, если он вдруг есть
-        e.preventDefault();
+    const themeToggle = $("themeToggle");
+    if (themeToggle && !themeToggle._kdBound) {
+      themeToggle._kdBound = true;
+      themeToggle.addEventListener("change", (e) => {
+        setTheme(e.target.checked ? "light" : "dark");
+      });
+    }
+
+    const themeWrap = $("themeWrap");
+    if (themeWrap && !themeWrap._kdBound) {
+      themeWrap._kdBound = true;
+      themeWrap.addEventListener("click", (e) => {
+        if (e.target.closest("label") || e.target === themeToggle) return;
         toggleTheme();
       });
     }

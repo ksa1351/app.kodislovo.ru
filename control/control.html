@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Контрольная — Кодислово</title>
 
   <!-- ЕДИНЫЙ CSS -->
-  <link rel="stylesheet" href="../assets/css/control-ui.css?v=1" />
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2" />
 </head>
 
 <body>
@@ -15,10 +15,13 @@
     <div class="kd-wrap">
       <div class="kd-row">
         <div class="kd-theme" id="themeWrap" style="cursor:pointer">
-          <span id="themeLabel">Тёмная</span>
-          <label class="kd-switch" style="cursor:pointer">
+          <span class="kd-theme-state" id="themeLabel">Тёмная</span>
+          <label class="kd-switch" for="themeToggle" style="cursor:pointer">
             <input id="themeToggle" type="checkbox" aria-label="Переключить тему">
-            <span>Тема</span>
+            <span class="kd-switch-track" aria-hidden="true">
+              <span class="kd-switch-thumb"></span>
+            </span>
+            <span class="kd-switch-text">Тема</span>
           </label>
         </div>
         <div class="kd-theme">
@@ -98,6 +101,6 @@
 
   </div>
 
-  <script src="./control_core.js?v=9"></script>
+  <script src="./control_core.js?v=10"></script>
 </body>
 </html>
