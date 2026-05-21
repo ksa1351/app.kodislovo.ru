@@ -460,21 +460,23 @@ function renderList() {
     const created = safeStr(item.createdAt).replace("T", " ").slice(0, 16);
     return `
       <tr>
-        <td style="width:44px"><input type="checkbox" class="pick" data-key="${escapeHtml(item.key)}"></td>
-        <td><b>${escapeHtml(item.fio || "—")}</b><div class="sub">${escapeHtml(item.cls || "")}</div></td>
-        <td>${escapeHtml(getWorkKindLabel(item))}</td>
-        <td>${escapeHtml(item.variant || "—")}</td>
-        <td>${escapeHtml(created)}</td>
-        <td class="sub"><code>${escapeHtml(item.key)}</code></td>
+        <td data-label="Выбор"><input type="checkbox" class="pick" data-key="${escapeHtml(item.key)}"></td>
+        <td data-label="Ученик"><b>${escapeHtml(item.fio || "—")}</b><div class="sub">${escapeHtml(item.cls || "")}</div></td>
+        <td data-label="Формат">${escapeHtml(getWorkKindLabel(item))}</td>
+        <td data-label="Работа">${escapeHtml(item.variant || "—")}</td>
+        <td data-label="Дата">${escapeHtml(created)}</td>
+        <td data-label="Ключ S3" class="sub"><code>${escapeHtml(item.key)}</code></td>
       </tr>
     `;
   }).join("");
 
   wrap.innerHTML = `
-    <table>
-      <thead><tr><th></th><th>Ученик</th><th>Формат</th><th>Работа</th><th>Дата</th><th>Ключ (S3)</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="result-table">
+        <thead><tr><th></th><th>Ученик</th><th>Формат</th><th>Работа</th><th>Дата</th><th>Ключ (S3)</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -579,21 +581,28 @@ function renderControlDetails(report) {
   const header = `${safeStr(report.fio) || "—"} (${safeStr(report.cls) || "—"}) — ${report.points}/${report.maxPoints} • ${report.percent.toFixed(1)}% • оценка ${report.grade}`;
   const rows = report.items.map((item) => `
     <tr>
-      <td><b>${escapeHtml(item.n)}</b></td>
-      <td>${escapeHtml(normalizeText(item.user) ? item.user : "—")}</td>
-      <td class="sub">${escapeHtml((item.right || []).join(" / "))}</td>
-      <td>${item.ok ? '<span class="ok">верно</span>' : '<span class="bad">ошибка</span>'}</td>
+      <td data-label="№"><b>${escapeHtml(item.n)}</b></td>
+      <td data-label="Ответ">${escapeHtml(normalizeText(item.user) ? item.user : "—")}</td>
+      <td data-label="Ключ" class="sub">${escapeHtml((item.right || []).join(" / "))}</td>
+      <td data-label="Статус">${item.ok ? '<span class="ok">верно</span>' : '<span class="bad">ошибка</span>'}</td>
     </tr>
   `).join("");
 
   return `
     <details>
       <summary>${escapeHtml(header)}</summary>
-      <div class="sub" style="margin-top:8px">Вариант: <b>${escapeHtml(report.variant || "—")}</b> • S3: <code>${escapeHtml(report.key)}</code></div>
-      <table style="margin-top:10px">
-        <thead><tr><th style="width:60px">№</th><th>Ответ</th><th>Ключ</th><th style="width:110px">Статус</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="detail-grid" style="margin-top:8px">
+        <div class="detail-meta">
+          <span class="pill">Вариант: <b>${escapeHtml(report.variant || "—")}</b></span>
+          <span class="pill">S3: <code>${escapeHtml(report.key)}</code></span>
+        </div>
+        <div class="table-scroll">
+          <table class="detail-table">
+            <thead><tr><th style="width:60px">№</th><th>Ответ</th><th>Ключ</th><th style="width:110px">Статус</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
     </details>
   `;
 }
@@ -601,17 +610,19 @@ function renderControlDetails(report) {
 function renderSummaryDetails(report) {
   const answersHtml = report.answers.length
     ? `
-      <table style="margin-top:10px">
-        <thead><tr><th style="width:220px">Блок</th><th>Ответ ученика</th></tr></thead>
-        <tbody>
-          ${report.answers.map((answer) => `
-            <tr>
-              <td><b>${escapeHtml(answer.label)}</b></td>
-              <td>${escapeHtml(answer.value)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="detail-table">
+          <thead><tr><th style="width:220px">Блок</th><th>Ответ ученика</th></tr></thead>
+          <tbody>
+            ${report.answers.map((answer) => `
+              <tr>
+                <td data-label="Блок"><b>${escapeHtml(answer.label)}</b></td>
+                <td data-label="Ответ ученика">${escapeHtml(answer.value)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `
     : `<div class="sub" style="margin-top:10px">Развёрнутые ответы по микротемам не сохранены.</div>`;
 
@@ -625,12 +636,19 @@ function renderSummaryDetails(report) {
   return `
     <details>
       <summary>${escapeHtml(`${safeStr(report.fio) || "—"} (${safeStr(report.cls) || "—"}) — ${report.title} • ${report.words} слов`)}</summary>
-      <div class="sub" style="margin-top:8px">S3: <code>${escapeHtml(report.key)}</code></div>
-      <div class="sub" style="margin-top:4px">Вариант: <b>${escapeHtml(report.variant || "—")}</b> • ответов по микротемам: <b>${report.answerCount}</b></div>
-      <div style="margin-top:12px;font-weight:800">Готовое изложение</div>
-      <pre>${escapeHtml(report.draft || "Текст не найден.")}</pre>
-      ${answersHtml}
-      ${sourceBlock}
+      <div class="detail-grid" style="margin-top:8px">
+        <div class="detail-meta">
+          <span class="pill">S3: <code>${escapeHtml(report.key)}</code></span>
+          <span class="pill">Вариант: <b>${escapeHtml(report.variant || "—")}</b></span>
+          <span class="pill">Ответов по микротемам: <b>${report.answerCount}</b></span>
+        </div>
+        <div>
+          <div style="margin-top:12px;font-weight:800">Готовое изложение</div>
+          <pre>${escapeHtml(report.draft || "Текст не найден.")}</pre>
+        </div>
+        ${answersHtml}
+        ${sourceBlock}
+      </div>
     </details>
   `;
 }
