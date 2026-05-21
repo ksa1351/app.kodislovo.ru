@@ -6,30 +6,82 @@
   <title>Kodislovo — Учитель (проверка + сброс)</title>
   <link rel="stylesheet" href="../assets/css/control-ui.css">
   <style>
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap}
+    .wrap{max-width:1280px;margin:0 auto;padding:clamp(12px,2vw,24px)}
+    .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
     .tabs{display:flex;gap:10px;flex-wrap:wrap}
     .tabbtn{height:42px;border-radius:14px;padding:0 14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;font-weight:900}
     .tabbtn[aria-selected="true"]{background:rgba(255,255,255,.14)}
-    .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:clamp(14px,1.8vw,20px)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1 1 180px}
+    .row > .pill{flex:0 1 auto}
+    .row > .sub{flex:0 0 auto}
+    .row > .kd-btn{flex:0 1 auto}
     .right{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
     .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted);font-size:13px}
-    .kd-input{min-width:180px}
-    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+    .kd-input{min-width:180px;width:100%}
+    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
     th,td{border-bottom:1px solid rgba(255,255,255,.10);padding:10px 8px;vertical-align:top}
     th{color:var(--muted);text-align:left;font-weight:800}
     details{border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px 12px;margin-top:10px;background:rgba(0,0,0,.12)}
     summary{cursor:pointer;font-weight:900}
     code{background:rgba(0,0,0,.25);padding:2px 6px;border-radius:8px}
     pre{white-space:pre-wrap;word-break:break-word;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}
+    .detail-grid{display:grid;gap:12px}
+    .detail-meta{display:flex;gap:10px;flex-wrap:wrap}
+    .detail-meta .pill{background:rgba(255,255,255,.04)}
+    .result-table td:first-child,.result-table th:first-child{width:44px}
     .tiny{font-size:12px;color:var(--muted)}
     .ok{color:var(--ok);font-weight:800}
     .bad{color:var(--bad);font-weight:800}
     .hidden{display:none !important}
     .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(10px);z-index:9999}
     .panel{width:min(420px,92vw)}
+    @media (max-width: 960px){
+      .grid{grid-template-columns:1fr}
+      .top{align-items:flex-start}
+      .right{width:100%;justify-content:flex-start}
+      .row > *{flex:1 1 220px}
+    }
+    @media (max-width: 720px){
+      .tabs{display:grid;grid-template-columns:1fr 1fr}
+      .tabbtn{width:100%}
+      .row{align-items:stretch}
+      .row > *{flex:1 1 100%}
+      .row > .pill{width:100%;justify-content:space-between}
+      .row > .kd-btn{width:100%}
+      .right{justify-content:stretch}
+      .right > *{width:100%}
+      .detail-meta{flex-direction:column}
+      .result-table thead,
+      .detail-table thead{display:none}
+      .result-table,
+      .result-table tbody,
+      .result-table tr,
+      .result-table td,
+      .detail-table,
+      .detail-table tbody,
+      .detail-table tr,
+      .detail-table td{display:block;width:100%}
+      .result-table tr,
+      .detail-table tr{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10)}
+      .result-table td,
+      .detail-table td{padding:6px 0;border-bottom:none}
+      .result-table td:first-child,
+      .detail-table td:first-child{padding-top:0}
+      .result-table td:last-child,
+      .detail-table td:last-child{padding-bottom:0}
+      .result-table td[data-label]::before,
+      .detail-table td[data-label]::before{
+        content:attr(data-label);
+        display:block;
+        color:var(--muted);
+        font-size:12px;
+        margin-bottom:4px;
+      }
+    }
   </style>
 </head>
 <body>
