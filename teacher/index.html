@@ -7,6 +7,35 @@
 
   <!-- Общие стили -->
   <link rel="stylesheet" href="../assets/css/control-ui.css">
+  <style>
+    .teacher-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      align-items:center;
+    }
+    .teacher-actions .kd-btn{
+      height:32px;
+      min-height:32px;
+      padding:0 10px;
+      border-radius:10px;
+      font-size:12px;
+      line-height:1;
+      box-shadow:none;
+    }
+    .teacher-actions .kd-btn:hover{
+      transform:none;
+      box-shadow:none;
+    }
+    @media (max-width: 1366px){
+      .teacher-actions .kd-btn{
+        height:30px;
+        min-height:30px;
+        padding:0 8px;
+        font-size:11px;
+      }
+    }
+  </style>
 </head>
 
 <body>
