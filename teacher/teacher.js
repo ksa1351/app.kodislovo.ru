@@ -229,10 +229,12 @@ function renderTable(items) {
       <td style="padding:10px">${escapeHtml(created)}</td>
       <td style="padding:10px;font-size:12px;opacity:.9">${escapeHtml(it.key || "")}</td>
       <td style="padding:10px;white-space:nowrap">
-        <button class="kd-btn secondary" data-get="${escapeHtml(it.key)}">JSON</button>
-        <button class="kd-btn secondary" data-dl="${escapeHtml(it.key)}">Скачать</button>
-        <button class="kd-btn secondary" data-print="${escapeHtml(it.key)}">Печать</button>
-        <button class="kd-btn secondary" data-check="${escapeHtml(it.key)}">Проверить</button>
+        <div class="teacher-actions">
+          <button class="kd-btn secondary" data-get="${escapeHtml(it.key)}">JSON</button>
+          <button class="kd-btn secondary" data-dl="${escapeHtml(it.key)}">Скачать</button>
+          <button class="kd-btn secondary" data-print="${escapeHtml(it.key)}">Печать</button>
+          <button class="kd-btn secondary" data-check="${escapeHtml(it.key)}">Проверить</button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
