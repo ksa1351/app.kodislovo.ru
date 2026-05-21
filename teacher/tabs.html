@@ -9,7 +9,7 @@
     .wrap{max-width:1280px;margin:0 auto;padding:clamp(12px,2vw,24px)}
     .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap}
     .tabs{display:flex;gap:10px;flex-wrap:wrap}
-    .tabbtn{height:42px;border-radius:14px;padding:0 14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;font-weight:900}
+    .tabbtn{height:38px;border-radius:12px;padding:0 12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;cursor:pointer;font-weight:900;font-size:13px}
     .tabbtn[aria-selected="true"]{background:rgba(255,255,255,.14)}
     .card{background:var(--card);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:clamp(14px,1.8vw,20px)}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
@@ -21,6 +21,23 @@
     .right{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
     .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted);font-size:13px}
     .kd-input{min-width:180px;width:100%}
+    .kd-btn{
+      min-height:36px;
+      padding:8px 12px;
+      border-radius:12px;
+      font-size:13px;
+      line-height:1.15;
+      white-space:nowrap;
+    }
+    .action-row{
+      gap:8px;
+    }
+    .action-row > .kd-btn{
+      min-height:34px;
+      padding:7px 11px;
+      font-size:12px;
+      border-radius:11px;
+    }
     .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
     table{width:100%;border-collapse:collapse;font-size:14px}
     th,td{border-bottom:1px solid rgba(255,255,255,.10);padding:10px 8px;vertical-align:top}
@@ -52,6 +69,10 @@
       .row > *{flex:1 1 100%}
       .row > .pill{width:100%;justify-content:space-between}
       .row > .kd-btn{width:100%}
+      .action-row > .kd-btn{
+        min-height:38px;
+        font-size:13px;
+      }
       .right{justify-content:stretch}
       .right > *{width:100%}
       .detail-meta{flex-direction:column}
@@ -131,7 +152,7 @@
           <div style="font-weight:900;font-size:18px">1) Ключ (JSON, для тестов)</div>
           <div class="sub" style="margin-top:6px">Загрузите отдельный ключ для автопроверки тестовых работ. Для изложений ключ не нужен.</div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <label class="pill">Ключ:
               <input id="keyFile" type="file" accept=".json,application/json">
             </label>
@@ -145,7 +166,7 @@
           <div style="font-weight:900;font-size:18px">2) Работы из бакета</div>
           <div class="sub" style="margin-top:6px">Фильтры влияют на список. Тесты можно автопроверять по ключу, а изложения — открывать и смотреть без ключа.</div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <label class="sub">Предмет</label>
             <select id="subjectSelect" class="kd-input">
               <option value="russian">Русский</option>
@@ -159,7 +180,7 @@
             <button id="btnLoadList" class="kd-btn" type="button">Обновить список</button>
           </div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <button id="btnCheckSelected" class="kd-btn" type="button" disabled>Проверить выбранные</button>
             <button id="btnCSV" class="kd-btn secondary" type="button" disabled>Скачать CSV</button>
             <button id="btnClearCheck" class="kd-btn secondary" type="button">Очистить</button>
@@ -196,7 +217,7 @@
           <div style="font-weight:900;font-size:18px">Сформировать reset-код</div>
           <div class="sub" style="margin-top:6px">Код одноразовый. Его можно выдавать вместе со ссылкой на контрольную.</div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <label class="sub">Предмет</label>
             <select id="resetSubject" class="kd-input">
               <option value="russian">Русский</option>
@@ -207,7 +228,7 @@
             <input id="resetFio" class="kd-input" type="text" placeholder="Иванов Иван">
           </div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <button id="btnMakeReset" class="kd-btn" type="button">Сделать код</button>
             <button id="btnCopyReset" class="kd-btn secondary" type="button" disabled>Копировать код</button>
             <button id="btnCopyResetLink" class="kd-btn secondary" type="button" disabled>Копировать ссылку</button>
@@ -223,7 +244,7 @@
           <div style="font-weight:900;font-size:18px">Журнал reset-кодов (локально)</div>
           <div class="sub" style="margin-top:6px">Хранится в localStorage этого браузера.</div>
 
-          <div class="row" style="margin-top:10px">
+          <div class="row action-row" style="margin-top:10px">
             <button id="btnResetHistoryClear" class="kd-btn secondary" type="button">Очистить журнал</button>
           </div>
 
