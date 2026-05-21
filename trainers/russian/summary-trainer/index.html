@@ -32,6 +32,23 @@
       <p>Прочитайте текст, ответьте на вопросы по микротемам, соберите черновик и отредактируйте итоговый вариант.</p>
     </header>
 
+    <section class="summary-student-bar kd-panel" aria-label="Данные ученика и отправка">
+      <div class="summary-student-grid">
+        <label class="field" for="studentName">
+          <span class="label">ФИО ученика</span>
+          <input id="studentName" class="input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
+        </label>
+        <label class="field" for="studentClass">
+          <span class="label">Класс</span>
+          <input id="studentClass" class="input" type="text" placeholder="Например: 9А" autocomplete="off" />
+        </label>
+      </div>
+      <div class="summary-submit-row">
+        <button id="submitCloud" class="kd-button" type="button">Отправить в Yandex Cloud</button>
+        <span id="submitStatus" class="summary-submit-status" aria-live="polite">Работа не отправлена</span>
+      </div>
+    </section>
+
     <section class="summary-toolbar">
       <div class="summary-toolbar-copy">
         <span class="kd-kicker">Подготовка к ОГЭ</span>

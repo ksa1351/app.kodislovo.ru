@@ -4,20 +4,27 @@
   const AUTOSAVE_MESSAGE = "Изменения сохраняются автоматически";
   const MANUAL_SAVE_MESSAGE = "Сохранено";
 
+  const CLOUD_MANIFEST_URL = "../../../controls/russian/variants/manifest.json";
+
   const textSelect = document.getElementById("textSelect");
+  const studentName = document.getElementById("studentName");
+  const studentClass = document.getElementById("studentClass");
   const sourceTitle = document.getElementById("sourceTitle");
   const sourceText = document.getElementById("sourceText");
   const questionsArea = document.getElementById("questionsArea");
   const draftText = document.getElementById("draftText");
   const wordCount = document.getElementById("wordCount");
   const saveStatus = document.getElementById("saveStatus");
+  const submitStatus = document.getElementById("submitStatus");
 
   const buildDraftButton = document.getElementById("buildDraft");
   const saveWorkButton = document.getElementById("saveWork");
   const downloadTxtButton = document.getElementById("downloadTxt");
   const clearWorkButton = document.getElementById("clearWork");
+  const submitCloudButton = document.getElementById("submitCloud");
 
   let currentText = null;
+  let cloudConfigPromise = null;
 
   function storageKey(id) {
     return `${STORAGE_PREFIX}:${id}`;
@@ -25,6 +32,56 @@
 
   function setSaveStatus(message) {
     saveStatus.textContent = message;
+  }
+
+  function setSubmitStatus(message) {
+    if (submitStatus) {
+      submitStatus.textContent = message;
+    }
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async function postJson(url, body, headers) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(headers || {})
+      },
+      body: JSON.stringify(body)
+    });
+
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (error) {
+      data = null;
+    }
+
+    if (!response.ok) {
+      throw new Error((data && (data.message || data.error)) || text || `HTTP ${response.status}`);
+    }
+
+    return data;
+  }
+
+  function getStudentData() {
+    return {
+      name: studentName ? studentName.value.trim() : "",
+      className: studentClass ? studentClass.value.trim() : ""
+    };
   }
 
   function updateWordCount() {
@@ -47,9 +104,11 @@
     }
 
     const settings = options || {};
+    const student = getStudentData();
     const data = {
       draft: draftText.value,
-      answers: collectAnswers()
+      answers: collectAnswers(),
+      student
     };
 
     localStorage.setItem(storageKey(currentText.id), JSON.stringify(data));
@@ -66,6 +125,12 @@
     });
 
     if (!raw) {
+      if (studentName) {
+        studentName.value = "";
+      }
+      if (studentClass) {
+        studentClass.value = "";
+      }
       updateWordCount();
       setSaveStatus(AUTOSAVE_MESSAGE);
       return;
@@ -74,6 +139,15 @@
     try {
       const data = JSON.parse(raw);
       draftText.value = data.draft || "";
+
+      if (data.student) {
+        if (studentName) {
+          studentName.value = data.student.name || "";
+        }
+        if (studentClass) {
+          studentClass.value = data.student.className || "";
+        }
+      }
 
       if (Array.isArray(data.answers)) {
         data.answers.forEach((answer) => {
@@ -148,6 +222,89 @@
     draftText.value = "";
     updateWordCount();
     setSaveStatus(AUTOSAVE_MESSAGE);
+  }
+
+  async function loadCloudConfig() {
+    if (!cloudConfigPromise) {
+      cloudConfigPromise = fetchJson(CLOUD_MANIFEST_URL).then((manifest) => ({
+        submitUrl: manifest && manifest.submit ? manifest.submit.url : "",
+        submitToken: manifest && manifest.submit ? manifest.submit.token : ""
+      }));
+    }
+
+    return cloudConfigPromise;
+  }
+
+  function buildSubmissionPayload() {
+    const student = getStudentData();
+
+    return {
+      schema: "kodislovo.summary-trainer.result.v1",
+      createdAt: nowIso(),
+      subject: "russian",
+      subjectTitle: "Русский язык",
+      trainer: "summary-trainer",
+      variant: `summary_${currentText.id}`,
+      variantTitle: currentText.title,
+      identity: {
+        fio: student.name,
+        cls: student.className
+      },
+      student: {
+        name: student.name,
+        class: student.className
+      },
+      text: {
+        id: currentText.id,
+        title: currentText.title
+      },
+      draft: draftText.value.trim(),
+      sourceText: currentText.sourceText,
+      answers: collectAnswers(),
+      submittedFrom: location.href
+    };
+  }
+
+  async function submitToCloud() {
+    if (!currentText) {
+      return;
+    }
+
+    const student = getStudentData();
+    const draft = draftText.value.trim();
+
+    if (!student.name || !student.className) {
+      window.alert("Заполните ФИО и класс перед отправкой.");
+      return;
+    }
+
+    if (!draft) {
+      window.alert("Сначала соберите или введите готовое изложение.");
+      return;
+    }
+
+    submitCloudButton.disabled = true;
+    setSubmitStatus("Идёт отправка...");
+
+    try {
+      const config = await loadCloudConfig();
+      if (!config.submitUrl || !config.submitToken) {
+        throw new Error("В manifest.json не настроены submit.url или submit.token.");
+      }
+
+      await postJson(config.submitUrl, buildSubmissionPayload(), {
+        "X-Submit-Token": config.submitToken
+      });
+
+      saveWork({ manual: true });
+      setSubmitStatus(`Отправлено: ${new Date().toLocaleString("ru-RU")}`);
+      window.alert("Изложение успешно отправлено.");
+    } catch (error) {
+      setSubmitStatus("Ошибка отправки");
+      window.alert(`Не удалось отправить работу.\n\n${error.message || error}`);
+    } finally {
+      submitCloudButton.disabled = false;
+    }
   }
 
   function createQuestion(groupIndex, questionIndex, question) {
@@ -233,12 +390,29 @@
       loadText(textSelect.value);
     });
 
+    if (studentName) {
+      studentName.addEventListener("input", function () {
+        saveWork();
+      });
+    }
+
+    if (studentClass) {
+      studentClass.addEventListener("input", function () {
+        saveWork();
+      });
+    }
+
     buildDraftButton.addEventListener("click", buildDraft);
     saveWorkButton.addEventListener("click", function () {
       saveWork({ manual: true });
     });
     downloadTxtButton.addEventListener("click", downloadTxt);
     clearWorkButton.addEventListener("click", clearWork);
+    if (submitCloudButton) {
+      submitCloudButton.addEventListener("click", function () {
+        submitToCloud();
+      });
+    }
     draftText.addEventListener("input", function () {
       updateWordCount();
       saveWork();

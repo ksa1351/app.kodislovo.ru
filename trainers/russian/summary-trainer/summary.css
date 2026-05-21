@@ -22,6 +22,31 @@
   box-shadow: var(--shadow);
 }
 
+.summary-student-bar {
+  margin-bottom: 18px;
+}
+
+.summary-student-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.summary-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
+
+.summary-submit-status {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .summary-toolbar-copy {
   display: grid;
   gap: 8px;
@@ -174,6 +199,10 @@ html[data-theme="light"] #textSelect option {
 }
 
 @media (max-width: 900px) {
+  .summary-student-grid {
+    grid-template-columns: 1fr;
+  }
+
   .summary-toolbar {
     flex-direction: column;
     align-items: stretch;
