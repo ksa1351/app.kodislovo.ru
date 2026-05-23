@@ -133,6 +133,7 @@
   let variantData = null;
   let currentVariantId = null;
   let currentVariantFile = null;
+  let currentVariantEntry = null;
 
   let startedAt = null;
   let finishedAt = null;
@@ -144,9 +145,140 @@
   let answersMap = {};
   let currentTaskIndex = 0;
   let backendServicesPromise = null;
+  const variantSourceCache = new Map();
 
   function lsKey() {
     return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
+  }
+
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function getManifestVariantById(id) {
+    return (manifest?.variants || []).find((variant) => variant.id === id) || null;
+  }
+
+  async function loadVariantSource(file) {
+    if (!variantSourceCache.has(file)) {
+      variantSourceCache.set(file, fetchJson(base + file));
+    }
+    return deepClone(await variantSourceCache.get(file));
+  }
+
+  function findTextKeyForTaskId(texts, taskId) {
+    for (const [textKey, textInfo] of Object.entries(texts || {})) {
+      const range = Array.isArray(textInfo?.range) ? textInfo.range : null;
+      const from = range ? Number(range[0]) : NaN;
+      const to = range ? Number(range[1]) : NaN;
+      if (Number.isFinite(from) && Number.isFinite(to) && taskId >= from && taskId <= to) {
+        return textKey;
+      }
+    }
+    return null;
+  }
+
+  async function buildComposedVariant(entry) {
+    const compose = entry?.compose || {};
+    const sources = Array.isArray(compose.sources) ? compose.sources : [];
+    if (!sources.length) {
+      throw new Error(`Вариант "${entry?.id || "compose"}" не содержит sources.`);
+    }
+
+    const selectedTasks = [];
+
+    for (const source of sources) {
+      const sourceFile = safeText(source?.file);
+      if (!sourceFile) {
+        throw new Error(`В compose-источнике варианта "${entry.id}" не задан file.`);
+      }
+
+      const sourceData = await loadVariantSource(sourceFile);
+      const sourceMeta = sourceData?.meta || {};
+      const sourceTasks = Array.isArray(sourceData?.tasks) ? sourceData.tasks : [];
+      const taskIds = Array.isArray(source?.taskIds) && source.taskIds.length
+        ? source.taskIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        : sourceTasks.map((task) => Number(task.id)).filter((id) => Number.isFinite(id));
+
+      for (const sourceTaskId of taskIds) {
+        const sourceTask = sourceTasks.find((task) => Number(task.id) === sourceTaskId);
+        if (!sourceTask) {
+          throw new Error(`В файле "${sourceFile}" не найдено задание ${sourceTaskId}.`);
+        }
+
+        selectedTasks.push({
+          task: deepClone(sourceTask),
+          sourceFile,
+          sourceTaskId,
+          textKey: findTextKeyForTaskId(sourceMeta.texts, sourceTaskId),
+          texts: deepClone(sourceMeta.texts || {}),
+        });
+      }
+    }
+
+    if (!selectedTasks.length) {
+      throw new Error(`Вариант "${entry.id}" не содержит выбранных заданий.`);
+    }
+
+    const textRanges = {};
+    const finalTasks = selectedTasks.map((item, index) => {
+      const task = item.task;
+      const nextId = index + 1;
+      task.id = nextId;
+      task.source = {
+        file: item.sourceFile,
+        taskId: item.sourceTaskId,
+      };
+
+      if (item.textKey && item.texts[item.textKey]) {
+        const rangeKey = `${item.sourceFile}::${item.textKey}`;
+        if (!textRanges[rangeKey]) {
+          textRanges[rangeKey] = {
+            title: item.texts[item.textKey].title || "Текст",
+            html: item.texts[item.textKey].html || "",
+            from: nextId,
+            to: nextId,
+          };
+        } else {
+          textRanges[rangeKey].to = nextId;
+        }
+      }
+
+      return task;
+    });
+
+    const finalTexts = {};
+    Object.values(textRanges).forEach((block, index) => {
+      finalTexts[`T${index + 1}`] = {
+        title: block.title,
+        range: [block.from, block.to],
+        html: block.html,
+      };
+    });
+
+    const maxPoints = finalTasks.reduce((sum, task) => sum + Number(task.points || 0), 0);
+    const firstSourceMeta = (await loadVariantSource(safeText(sources[0]?.file)))?.meta || {};
+    const meta = deepClone(firstSourceMeta);
+
+    meta.title = compose.title || entry.title || meta.title || entry.id;
+    meta.subtitle = compose.subtitle || meta.subtitle || "";
+    meta.texts = finalTexts;
+    meta.maxPoints = Number(compose.maxPoints || maxPoints || meta.maxPoints || 0);
+    if (compose.grading) meta.grading = deepClone(compose.grading);
+    if (Number.isFinite(Number(compose.time_limit_minutes))) {
+      meta.time_limit_minutes = Number(compose.time_limit_minutes);
+    }
+
+    meta.composed = true;
+    meta.composeSources = sources.map((source) => ({
+      file: source.file,
+      taskIds: Array.isArray(source.taskIds) ? source.taskIds.slice() : [],
+    }));
+
+    return {
+      meta,
+      tasks: finalTasks,
+    };
   }
 
   function saveProgress() {
@@ -458,17 +590,18 @@
       const opt = document.createElement("option");
       opt.value = v.id;
       opt.textContent = v.title || v.id;
-      opt.dataset.file = v.file;
       sel.appendChild(opt);
       if (idx === 0) {
         currentVariantId = v.id;
-        currentVariantFile = v.file;
+        currentVariantEntry = v;
+        currentVariantFile = v.file || `compose:${v.id}`;
       }
     });
 
     if (sel.options.length) {
       sel.value = currentVariantId;
-      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
+      currentVariantEntry = getManifestVariantById(sel.value);
+      currentVariantFile = currentVariantEntry?.file || `compose:${sel.value}`;
     } else {
       throw new Error("manifest.json: список variants пустой");
     }
@@ -476,13 +609,33 @@
     sel.addEventListener("change", async () => {
       if (isFinished) return;
       currentVariantId = sel.value;
-      currentVariantFile = sel.options[sel.selectedIndex].dataset.file;
-      await loadVariant(currentVariantFile);
+      currentVariantEntry = getManifestVariantById(currentVariantId);
+      currentVariantFile = currentVariantEntry?.file || `compose:${currentVariantId}`;
+      await loadVariant(currentVariantEntry);
     });
   }
 
-  async function loadVariant(file) {
-    variantData = await fetchJson(base + file);
+  async function loadVariant(entryOrFile) {
+    const entry = typeof entryOrFile === "string"
+      ? { id: currentVariantId || safeText(entryOrFile), file: entryOrFile }
+      : entryOrFile;
+
+    if (!entry) {
+      throw new Error("Не удалось определить вариант для загрузки.");
+    }
+
+    currentVariantEntry = entry;
+    currentVariantId = entry.id || currentVariantId;
+    currentVariantFile = entry.file || `compose:${currentVariantId}`;
+
+    if (entry.compose) {
+      variantData = await buildComposedVariant(entry);
+    } else if (entry.file) {
+      variantData = await fetchJson(base + entry.file);
+    } else {
+      throw new Error(`Вариант "${currentVariantId}" не содержит file или compose.`);
+    }
+
     variantMeta = extractVariantMeta(variantData);
 
     // time limit from variant meta (если задано в варианте)
