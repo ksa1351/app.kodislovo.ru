@@ -146,6 +146,7 @@
   let currentTaskIndex = 0;
   let backendServicesPromise = null;
   const variantSourceCache = new Map();
+  let summaryBankPromise = null;
 
   function lsKey() {
     return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
@@ -164,6 +165,13 @@
       variantSourceCache.set(file, fetchJson(base + file));
     }
     return deepClone(await variantSourceCache.get(file));
+  }
+
+  async function loadSummaryBank() {
+    if (!summaryBankPromise) {
+      summaryBankPromise = fetchJson(`${location.origin}${projectRoot()}controls/russian/summary-bank.json`);
+    }
+    return deepClone(await summaryBankPromise);
   }
 
   function findTextKeyForTaskId(texts, taskId) {
@@ -267,6 +275,20 @@
     if (compose.grading) meta.grading = deepClone(compose.grading);
     if (Number.isFinite(Number(compose.time_limit_minutes))) {
       meta.time_limit_minutes = Number(compose.time_limit_minutes);
+    }
+    if (compose.summaryTextId) {
+      const summaryBank = await loadSummaryBank();
+      const summaryText = summaryBank.find((item) => item.id === compose.summaryTextId);
+      if (!summaryText) {
+        throw new Error(`В банке изложений не найден text id "${compose.summaryTextId}".`);
+      }
+      meta.summary = {
+        id: summaryText.id,
+        title: summaryText.title,
+        sourceText: summaryText.sourceText,
+        groups: deepClone(summaryText.groups || []),
+        trainerUrl: `${location.origin}${projectRoot()}trainers/russian/summary-trainer/index.html?text=${encodeURIComponent(summaryText.id)}`,
+      };
     }
 
     meta.composed = true;
@@ -855,7 +877,7 @@
     }
 
     await loadManifest();
-    await loadVariant(currentVariantFile);
+    await loadVariant(currentVariantEntry || currentVariantFile);
   }
 
   init().catch((err) => {
