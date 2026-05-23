@@ -8,6 +8,7 @@
       "title": "Вариант 1",
       "compose": {
         "subtitle": "Собран из уже существующих заданий варианта 1.",
+        "summaryTextId": "text_01",
         "sources": [
           {
             "file": "variant_01.json",
