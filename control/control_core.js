@@ -548,8 +548,16 @@
 
   // ========= reset consume (код сброса) =========
   async function consumeResetCode() {
-    const raw = String($("resetCode")?.value ?? "");
-    const code = raw.trim().toLowerCase();
+    const input = $("resetCode");
+    let raw = String(input?.value ?? "");
+    let code = raw.trim().toLowerCase();
+
+    if (!code) {
+      const prompted = window.prompt("Введите код сброса:", "");
+      if (prompted === null) return;
+      code = String(prompted).trim().toLowerCase();
+      if (input) input.value = code;
+    }
 
     if (!code) {
       alert("Введите код сброса.");
