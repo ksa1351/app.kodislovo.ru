@@ -76,11 +76,29 @@
         return {
           submitUrl: new URL(services.submitUrl, `${baseUrl}/`).toString(),
           resetConsumeUrl: new URL(services.resetConsumeUrl, `${baseUrl}/`).toString(),
+          timerConfigUrl: services.timerConfigUrl
+            ? new URL(services.timerConfigUrl, `${baseUrl}/`).toString()
+            : "",
         };
       });
     }
 
     return backendServicesPromise;
+  }
+
+  async function loadTimerConfig(variantId) {
+    try {
+      const services = await loadBackendServices();
+      if (!services.timerConfigUrl) return null;
+
+      const url = new URL(services.timerConfigUrl);
+      if (variantId) url.searchParams.set("variant", variantId);
+
+      return await fetchJson(url.toString());
+    } catch (error) {
+      console.warn("timer config load failed", error);
+      return null;
+    }
   }
 
   // ========= theme =========
@@ -468,8 +486,11 @@
     variantMeta = extractVariantMeta(variantData);
 
     // time limit from variant meta (если задано в варианте)
+    const remoteTimerConfig = await loadTimerConfig(currentVariantId);
+    const tlmRemote = Number(remoteTimerConfig?.time_limit_minutes || 0);
     const tlmLocal = Number(variantMeta.time_limit_minutes || 0);
-    timeLimitSec = tlmLocal > 0 ? tlmLocal * 60 : null;
+    const timerMinutes = tlmRemote > 0 ? tlmRemote : tlmLocal;
+    timeLimitSec = timerMinutes > 0 ? timerMinutes * 60 : null;
 
     const progress = loadProgress();
     startedAt = progress?.startedAt || nowIso();
