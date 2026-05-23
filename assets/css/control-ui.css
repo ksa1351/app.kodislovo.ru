@@ -199,6 +199,36 @@ a{ color:inherit; }
 }
 .kd-btn:disabled{ opacity:.55; cursor:not-allowed; }
 
+.kd-reset-block{
+  margin-top:14px;
+}
+
+.kd-reset-label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin:0 0 8px 2px;
+}
+
+.kd-reset-row{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 180px;
+  gap:12px;
+  align-items:stretch;
+}
+
+.kd-reset-row .kd-input,
+.kd-reset-row .kd-btn{
+  height:46px;
+  margin:0;
+}
+
+@media (max-width: 620px){
+  .kd-reset-row{
+    grid-template-columns:1fr;
+  }
+}
+
 .kd-row{
   display:flex;
   align-items:center;
