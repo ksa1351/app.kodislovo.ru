@@ -5,6 +5,7 @@
   const MANUAL_SAVE_MESSAGE = "Сохранено";
 
   const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
+  const SUMMARY_BANK_URL = "../../../controls/russian/summary-bank.json";
 
   const textSelect = document.getElementById("textSelect");
   const studentName = document.getElementById("studentName");
@@ -25,6 +26,7 @@
 
   let currentText = null;
   let cloudConfigPromise = null;
+  let summaryTexts = [];
 
   function storageKey(id) {
     return `${STORAGE_PREFIX}:${id}`;
@@ -50,6 +52,19 @@
       throw new Error(`HTTP ${response.status}`);
     }
     return response.json();
+  }
+
+  function getRequestedTextId() {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get("text") || params.get("textId") || "").trim();
+  }
+
+  async function loadSummaryBank() {
+    const data = await fetchJson(SUMMARY_BANK_URL);
+    if (!Array.isArray(data)) {
+      throw new Error("Банк текстов изложений имеет неверный формат.");
+    }
+    summaryTexts = data;
   }
 
   async function postJson(url, body, headers) {
@@ -368,7 +383,7 @@
   }
 
   function loadText(id) {
-    currentText = SUMMARY_TEXTS.find((item) => item.id === id) || SUMMARY_TEXTS[0] || null;
+    currentText = summaryTexts.find((item) => item.id === id) || summaryTexts[0] || null;
 
     if (!currentText) {
       return;
@@ -382,7 +397,7 @@
   }
 
   function populateSelect() {
-    SUMMARY_TEXTS.forEach((item) => {
+    summaryTexts.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.id;
       option.textContent = item.title;
@@ -424,11 +439,22 @@
     });
   }
 
-  function init() {
-    if (!Array.isArray(window.SUMMARY_TEXTS) || window.SUMMARY_TEXTS.length === 0) {
+  async function init() {
+    try {
+      await loadSummaryBank();
+    } catch (error) {
       textSelect.disabled = true;
       sourceTitle.textContent = "Тексты не загружены";
-      sourceText.textContent = "Добавьте данные в файл data/texts.js.";
+      sourceText.textContent = "Не удалось загрузить общий банк текстов изложений.";
+      setSaveStatus("Нет данных для работы");
+      console.error(error);
+      return;
+    }
+
+    if (!summaryTexts.length) {
+      textSelect.disabled = true;
+      sourceTitle.textContent = "Тексты не загружены";
+      sourceText.textContent = "Общий банк текстов пока пуст.";
       setSaveStatus("Нет данных для работы");
       return;
     }
@@ -436,10 +462,13 @@
     populateSelect();
     bindEvents();
 
+    const requestedTextId = getRequestedTextId();
     const lastTextId = localStorage.getItem(LAST_TEXT_KEY);
-    const defaultText = SUMMARY_TEXTS.some((item) => item.id === lastTextId)
-      ? lastTextId
-      : SUMMARY_TEXTS[0].id;
+    const defaultText = summaryTexts.some((item) => item.id === requestedTextId)
+      ? requestedTextId
+      : summaryTexts.some((item) => item.id === lastTextId)
+        ? lastTextId
+        : summaryTexts[0].id;
 
     loadText(defaultText);
   }
