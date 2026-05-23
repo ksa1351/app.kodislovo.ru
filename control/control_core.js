@@ -63,6 +63,26 @@
     return json ?? { ok: true };
   }
 
+  async function loadBackendServices() {
+    if (!backendServicesPromise) {
+      const configUrl = `${location.origin}${projectRoot()}assets/config/public-api.json`;
+      backendServicesPromise = fetchJson(configUrl).then(async (config) => {
+        const baseUrl = safeText(config?.baseUrl).replace(/\/+$/, "");
+        if (!baseUrl) {
+          throw new Error("В assets/config/public-api.json не задан baseUrl.");
+        }
+
+        const services = await fetchJson(`${baseUrl}/api/public/subjects/${encodeURIComponent(subject)}/services`);
+        return {
+          submitUrl: new URL(services.submitUrl, `${baseUrl}/`).toString(),
+          resetConsumeUrl: new URL(services.resetConsumeUrl, `${baseUrl}/`).toString(),
+        };
+      });
+    }
+
+    return backendServicesPromise;
+  }
+
   // ========= theme =========
   function getPreferredTheme() {
     const saved = localStorage.getItem(THEME_KEY);
@@ -105,6 +125,7 @@
 
   let answersMap = {};
   let currentTaskIndex = 0;
+  let backendServicesPromise = null;
 
   function lsKey() {
     return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
@@ -495,10 +516,6 @@
 
   // ========= submit to Yandex Cloud =========
   async function submitResultToCloud() {
-    if (!manifest?.submit?.url || !manifest?.submit?.token) {
-      alert("В manifest.json не задан submit.url / submit.token.");
-      return;
-    }
     if (!isFinished) {
       alert("Сначала нажмите «Завершить».");
       return;
@@ -510,10 +527,8 @@
 
     try {
       const payload = buildResultPayload();
-
-      await postJson(manifest.submit.url, payload, {
-        "X-Submit-Token": manifest.submit.token,
-      });
+      const services = await loadBackendServices();
+      await postJson(services.submitUrl, payload);
 
       // ✅ после успешной отправки — удаляем временное автосохранение
       clearLocalProgress();
@@ -551,11 +566,6 @@
       return;
     }
 
-    if (!manifest?.teacher?.base_url || !manifest?.teacher?.token) {
-      alert("В manifest.json не задан teacher.base_url / teacher.token.");
-      return;
-    }
-
     const fio = safeText($("studentName")?.value);
     const cls = safeText($("studentClass")?.value);
     if (!fio || !cls) {
@@ -563,21 +573,18 @@
       return;
     }
 
-    const url = String(manifest.teacher.base_url).replace(/\/+$/, "") + "/teacher/reset/consume";
-
     const btn = $("btnReset");
     const prevText = btn ? btn.textContent : "";
     if (btn) { btn.disabled = true; btn.textContent = "Проверка…"; }
 
     try {
-      await postJson(url, {
+      const services = await loadBackendServices();
+      await postJson(services.resetConsumeUrl, {
         subject,
         fio,
         cls,
         variant: currentVariantId,
         code,
-      }, {
-        "X-Teacher-Token": manifest.teacher.token,
       });
 
       // ✅ сброс: очищаем локальный прогресс и стартуем заново
