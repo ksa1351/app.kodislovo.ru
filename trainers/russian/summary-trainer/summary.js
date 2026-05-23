@@ -4,7 +4,7 @@
   const AUTOSAVE_MESSAGE = "Изменения сохраняются автоматически";
   const MANUAL_SAVE_MESSAGE = "Сохранено";
 
-  const CLOUD_MANIFEST_URL = "../../../controls/russian/variants/manifest.json";
+  const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
 
   const textSelect = document.getElementById("textSelect");
   const studentName = document.getElementById("studentName");
@@ -226,10 +226,17 @@
 
   async function loadCloudConfig() {
     if (!cloudConfigPromise) {
-      cloudConfigPromise = fetchJson(CLOUD_MANIFEST_URL).then((manifest) => ({
-        submitUrl: manifest && manifest.submit ? manifest.submit.url : "",
-        submitToken: manifest && manifest.submit ? manifest.submit.token : ""
-      }));
+      cloudConfigPromise = fetchJson(PUBLIC_API_CONFIG_URL).then(async (config) => {
+        const baseUrl = ((config && config.baseUrl) || "").replace(/\/+$/, "");
+        if (!baseUrl) {
+          throw new Error("В assets/config/public-api.json не задан baseUrl.");
+        }
+
+        const services = await fetchJson(`${baseUrl}/api/public/subjects/russian/services`);
+        return {
+          submitUrl: new URL(services.submitUrl, `${baseUrl}/`).toString()
+        };
+      });
     }
 
     return cloudConfigPromise;
@@ -288,13 +295,11 @@
 
     try {
       const config = await loadCloudConfig();
-      if (!config.submitUrl || !config.submitToken) {
-        throw new Error("В manifest.json не настроены submit.url или submit.token.");
+      if (!config.submitUrl) {
+        throw new Error("Backend submit endpoint не настроен.");
       }
 
-      await postJson(config.submitUrl, buildSubmissionPayload(), {
-        "X-Submit-Token": config.submitToken
-      });
+      await postJson(config.submitUrl, buildSubmissionPayload());
 
       saveWork({ manual: true });
       setSubmitStatus(`Отправлено: ${new Date().toLocaleString("ru-RU")}`);
