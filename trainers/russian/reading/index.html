@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Тренажёр итогового собеседования</title>
-  <link rel="stylesheet" href="../../../assets/css/ui.css" />
-  <link rel="stylesheet" href="./reading.css" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-26-1" />
+  <link rel="stylesheet" href="./reading.css?v=2026-05-26-1" />
 </head>
 <body>
   <div class="site-topbar">
@@ -232,7 +232,7 @@
 
           <article class="kd-panel reading-panel">
             <h2>Аудио и автоанализ</h2>
-            <p class="reading-prompt">Полуавтоматический режим: запись аудио, отправка на backend и подготовка ответа для будущего распознавания через SpeechKit.</p>
+            <p class="reading-prompt">Полуавтоматический режим: запись аудио, отправка на backend, распознавание через SpeechKit и черновая разметка расхождений по эталонному тексту.</p>
             <div class="reading-mini-actions">
               <button id="recordStartBtn" class="kd-button" type="button">Запись</button>
               <button id="recordStopBtn" class="kd-button kd-button-secondary" type="button">Стоп</button>
@@ -244,7 +244,44 @@
               <span class="reading-label">Черновой транскрипт</span>
               <textarea id="transcriptText" class="reading-notes" placeholder="После анализа здесь появится текст распознавания или технический ответ backend."></textarea>
             </label>
-            <pre id="audioAnalysisBox" class="reading-report reading-report-compact">Результат аудиоанализа пока не получен.</pre>
+            <div id="audioAnalysisSummary" class="reading-auto-summary">
+              <div class="reading-auto-card">
+                <span>Режим</span>
+                <strong id="audioModeValue">нет данных</strong>
+              </div>
+              <div class="reading-auto-card">
+                <span>Точность STT</span>
+                <strong id="audioConfidenceValue">—</strong>
+              </div>
+              <div class="reading-auto-card">
+                <span>Формат</span>
+                <strong id="audioFormatValue">—</strong>
+              </div>
+            </div>
+
+            <div class="reading-auto-groups">
+              <section class="reading-auto-group">
+                <h3>Пропущено</h3>
+                <div id="diffSkips" class="reading-auto-list reading-auto-list-warning">Пока нет данных.</div>
+              </section>
+              <section class="reading-auto-group">
+                <h3>Заменено</h3>
+                <div id="diffReplacements" class="reading-auto-list">Пока нет данных.</div>
+              </section>
+              <section class="reading-auto-group">
+                <h3>Лишнее</h3>
+                <div id="diffInsertions" class="reading-auto-list">Пока нет данных.</div>
+              </section>
+              <section class="reading-auto-group">
+                <h3>Повторы</h3>
+                <div id="diffRepeats" class="reading-auto-list">Пока нет данных.</div>
+              </section>
+            </div>
+
+            <details class="reading-technical">
+              <summary>Технические детали анализа</summary>
+              <pre id="audioAnalysisBox" class="reading-report reading-report-compact">Результат аудиоанализа пока не получен.</pre>
+            </details>
           </article>
 
           <article class="kd-panel reading-panel">
@@ -279,6 +316,6 @@
   </main>
 
   <script src="../../../assets/js/theme.js"></script>
-  <script src="./reading.js"></script>
+  <script src="./reading.js?v=2026-05-26-1"></script>
 </body>
 </html>
