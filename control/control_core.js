@@ -23,6 +23,14 @@
   function safeText(s) {
     return (s ?? "").toString().trim();
   }
+  function escapeHtml(s) {
+    return safeText(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
   function normalizeAnswer(s) {
     return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
@@ -518,6 +526,40 @@
     if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
   }
 
+  function setSummaryVisible(visible) {
+    const wrap = $("summaryTextWrap");
+    if (!wrap) return;
+    wrap.classList.toggle("kd-hidden", !visible);
+  }
+
+  function formatSummaryText(text) {
+    return safeText(text)
+      .split(/\n{2,}/)
+      .map((part) => `<p>${escapeHtml(part).replace(/\n/g, "<br>")}</p>`)
+      .join("");
+  }
+
+  function setSummaryContent(summary) {
+    const title = $("summaryTextTitle");
+    const meta = $("summaryTextMeta");
+    const body = $("summaryTextBody");
+    const openBtn = $("summaryOpenBtn");
+    if (!title || !meta || !body || !openBtn) return;
+
+    const groupsCount = Array.isArray(summary?.groups) ? summary.groups.length : 0;
+    title.textContent = safeText(summary?.title) || "Текст изложения";
+    meta.textContent = groupsCount > 0
+      ? `Связанный текст изложения: ${groupsCount} микротем`
+      : "Связанный текст изложения для варианта ОГЭ";
+    body.innerHTML = formatSummaryText(summary?.sourceText);
+
+    const trainerUrl = safeText(summary?.trainerUrl);
+    openBtn.disabled = !trainerUrl;
+    openBtn.onclick = trainerUrl
+      ? () => { window.location.href = trainerUrl; }
+      : null;
+  }
+
   function findBlockForTask(blocks, taskId) {
     if (!taskId) return null;
     for (const b of blocks) if (taskId >= b.from && taskId <= b.to) return b;
@@ -681,6 +723,12 @@
     setHeader();
 
     stickyBlocks = getTextRangesFromMeta();
+    if (variantMeta?.summary?.sourceText) {
+      setSummaryVisible(true);
+      setSummaryContent(variantMeta.summary);
+    } else {
+      setSummaryVisible(false);
+    }
 
     // sticky collapse btn
     const stBtn = $("stickyToggle");
