@@ -1,0 +1,105 @@
+/* Shared Kodislovo theme */
+
+:root {
+  --ks-bg: #f8fafc;
+  --ks-bg-soft: #f1f5f9;
+  --ks-surface: #ffffff;
+  --ks-surface-2: #f8fafc;
+  --ks-border: #dbe4ef;
+
+  --ks-text: #0f172a;
+  --ks-text-soft: #334155;
+  --ks-muted: #64748b;
+  --ks-muted-2: #94a3b8;
+
+  --ks-primary: #17437c;
+  --ks-primary-hover: #0f3264;
+  --ks-primary-soft: #dbeafe;
+
+  --ks-accent: #2ac3de;
+  --ks-accent-hover: #12a9c4;
+  --ks-accent-soft: #cffafe;
+
+  --ks-gold: #e0af68;
+  --ks-gold-soft: #fff3d6;
+
+  --ks-danger: #ef4444;
+  --ks-success: #10b981;
+  --ks-warning: #f59e0b;
+
+  --ks-russian: #1d4f91;
+  --ks-russian-soft: #e8f1ff;
+  --ks-literature: #a56621;
+  --ks-literature-soft: #fff2df;
+  --ks-informatics: #0f8c83;
+  --ks-informatics-soft: #e1fbf7;
+  --ks-exam: #6d4cc2;
+  --ks-exam-soft: #f1ecff;
+
+  --ks-font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --ks-font-serif: Georgia, "Times New Roman", serif;
+  --ks-font-mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+
+  --ks-radius-sm: 10px;
+  --ks-radius: 16px;
+  --ks-radius-lg: 22px;
+  --ks-radius-xl: 28px;
+
+  --ks-shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.06);
+  --ks-shadow: 0 14px 38px rgba(15, 23, 42, 0.12);
+  --ks-shadow-lg: 0 22px 60px rgba(15, 23, 42, 0.18);
+
+  --ks-container: 1180px;
+  --ks-transition: 180ms ease;
+}
+
+[data-theme="dark"] {
+  --ks-bg: #0b1120;
+  --ks-bg-soft: #111827;
+  --ks-surface: #111c2f;
+  --ks-surface-2: #162238;
+  --ks-border: rgba(148, 163, 184, 0.22);
+
+  --ks-text: #f8fafc;
+  --ks-text-soft: #dbe4ef;
+  --ks-muted: #94a3b8;
+  --ks-muted-2: #64748b;
+
+  --ks-primary: #38bdf8;
+  --ks-primary-hover: #7dd3fc;
+  --ks-primary-soft: rgba(56, 189, 248, 0.12);
+
+  --ks-accent: #2dd4bf;
+  --ks-accent-hover: #5eead4;
+  --ks-accent-soft: rgba(45, 212, 191, 0.13);
+
+  --ks-gold: #e0af68;
+  --ks-gold-soft: rgba(224, 175, 104, 0.14);
+
+  --ks-russian-soft: rgba(59, 130, 246, 0.14);
+  --ks-literature-soft: rgba(245, 158, 11, 0.14);
+  --ks-informatics-soft: rgba(20, 184, 166, 0.14);
+  --ks-exam-soft: rgba(139, 92, 246, 0.16);
+
+  --ks-shadow-sm: 0 4px 18px rgba(0, 0, 0, 0.24);
+  --ks-shadow: 0 16px 44px rgba(0, 0, 0, 0.34);
+  --ks-shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--ks-font-sans);
+  color: var(--ks-text);
+  background:
+    radial-gradient(circle at top left, rgba(42, 195, 222, 0.12), transparent 32rem),
+    radial-gradient(circle at top right, rgba(224, 175, 104, 0.12), transparent 28rem),
+    var(--ks-bg);
+  line-height: 1.55;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; }
