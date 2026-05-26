@@ -3,7 +3,7 @@
 
   const ORAL_BANK_URL = "../../../controls/russian/oral-bank.json";
   const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
-  const LS_KEY = "kodislovo:russian:oral-trainer:v1";
+  const LS_KEY = "kodislovo:russian:oral-trainer:v2";
   const ERROR_TYPES = ["skip", "replace", "distort", "repeat", "stress", "pause"];
 
   const $ = (id) => document.getElementById(id);
@@ -20,12 +20,16 @@
   let dialogAnswers = {};
   let errors = createEmptyErrors();
   let backendServicesPromise = null;
+
   let recordingStream = null;
-  let mediaRecorder = null;
-  let recordedChunks = [];
+  let audioContext = null;
+  let mediaSourceNode = null;
+  let processorNode = null;
+  let pcmChunks = [];
+  let isRecording = false;
   let recordedBlob = null;
   let recordedAudioUrl = "";
-  let recordedMimeType = "";
+  let recordedSampleRate = 16000;
   let audioAnalysisResult = null;
 
   function createEmptyErrors() {
@@ -49,27 +53,6 @@
       throw new Error(`Не удалось загрузить ${url} (HTTP ${response.status})`);
     }
     return await response.json();
-  }
-
-  function setRecordingStatus(text) {
-    $("recordingStatus").textContent = text;
-  }
-
-  function setRecordedAudio(blob) {
-    if (recordedAudioUrl) {
-      URL.revokeObjectURL(recordedAudioUrl);
-      recordedAudioUrl = "";
-    }
-    recordedBlob = blob;
-    if (blob) {
-      recordedAudioUrl = URL.createObjectURL(blob);
-      $("recordedAudio").src = recordedAudioUrl;
-      setRecordingStatus(`Аудиозапись готова: ${Math.round(blob.size / 1024)} КБ`);
-    } else {
-      $("recordedAudio").removeAttribute("src");
-      $("recordedAudio").load();
-      setRecordingStatus("Аудиозапись не создана.");
-    }
   }
 
   async function loadBackendServices() {
@@ -129,7 +112,7 @@
     const errorsTotal = sumErrors();
     const minutes = secondsElapsed > 0 ? secondsElapsed / 60 : 0;
     const wordsPerMinute = minutes > 0 ? Math.round(wordsTotal / minutes) : 0;
-    const accuracyValue = wordsTotal > 0
+    const accuracy = wordsTotal > 0
       ? Math.max(0, Math.round(((wordsTotal - errorsTotal) / wordsTotal) * 100))
       : 0;
     const expressivenessScore = getExpressivenessScore();
@@ -148,10 +131,23 @@
       seconds: secondsElapsed,
       wordsPerMinute,
       errorsTotal,
-      accuracy: accuracyValue,
+      accuracy,
       expressivenessScore,
       level,
     };
+  }
+
+  function updateTimer() {
+    $("timerDisplay").textContent = formatTime(secondsElapsed);
+  }
+
+  function updateCompletionStatus() {
+    $("statusReading").textContent = readingFinished || secondsElapsed > 0 ? "да" : "нет";
+    $("statusRetelling").textContent = safeText($("retellingText").value) ? "да" : "нет";
+    $("statusMonologue").textContent = safeText($("monologueText").value) ? "да" : "нет";
+    const dialogCount = Array.isArray(selectedTopic?.dialogQuestions) ? selectedTopic.dialogQuestions.length : 0;
+    const answeredCount = Object.values(dialogAnswers).map(safeText).filter(Boolean).length;
+    $("statusDialog").textContent = dialogCount > 0 && answeredCount === dialogCount ? "да" : "нет";
   }
 
   function updateStats() {
@@ -165,10 +161,6 @@
     updateCompletionStatus();
   }
 
-  function updateTimer() {
-    $("timerDisplay").textContent = formatTime(secondsElapsed);
-  }
-
   function renderErrors() {
     ERROR_TYPES.forEach((key) => {
       const target = $(`${key}Count`);
@@ -178,19 +170,9 @@
     saveState();
   }
 
-  function renderText() {
-    $("textTitle").textContent = getReadingTitle();
-    $("readingText").textContent = getReadingText();
-    $("retellingPrompt").textContent = safeText(selectedText?.retellingTask?.prompt)
-      || "Подсказка для пересказа пока не добавлена.";
-    renderMonologueTopics();
-    updateStats();
-  }
-
-  function fillSelect() {
+  function fillTextSelect() {
     const select = $("textSelect");
     select.innerHTML = "";
-
     oralTexts
       .filter((item) => item && item.active !== false)
       .forEach((item) => {
@@ -212,16 +194,10 @@
     });
   }
 
-  function renderMonologueTopics() {
-    fillTopicSelect();
-    const firstTopicId = selectedTopic?.id || getTopics()[0]?.id || "";
-    selectTopic(firstTopicId);
-  }
-
   function renderMonologuePlan() {
+    $("monologueTitle").textContent = safeText(selectedTopic?.title) || "Тема";
     const list = $("monologuePlan");
     list.innerHTML = "";
-    $("monologueTitle").textContent = safeText(selectedTopic?.title) || "Тема";
     (selectedTopic?.plan || []).forEach((item) => {
       const li = document.createElement("li");
       li.textContent = item;
@@ -258,7 +234,6 @@
         saveState();
       });
       card.appendChild(area);
-
       wrap.appendChild(card);
     });
   }
@@ -270,7 +245,6 @@
     if ($("monologueTopicSelect") && selectedTopic) {
       $("monologueTopicSelect").value = selectedTopic.id;
     }
-
     if (!preserveAnswers) {
       dialogAnswers = {};
     }
@@ -278,6 +252,16 @@
     renderDialogQuestions();
     updateCompletionStatus();
     saveState();
+  }
+
+  function renderText() {
+    $("textTitle").textContent = getReadingTitle();
+    $("readingText").textContent = getReadingText();
+    $("retellingPrompt").textContent = safeText(selectedText?.retellingTask?.prompt)
+      || "Подсказка для пересказа пока не добавлена.";
+    fillTopicSelect();
+    selectTopic(selectedTopic?.id || getTopics()[0]?.id || "");
+    updateStats();
   }
 
   function selectText(textId, options = {}) {
@@ -293,6 +277,9 @@
       $("monologueText").value = "";
       $("monologueNotes").value = "";
       $("dialogNotes").value = "";
+      $("transcriptText").value = "";
+      audioAnalysisResult = null;
+      $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
     }
     renderText();
     $("reportBox").textContent = "Отчёт появится после формирования.";
@@ -310,58 +297,143 @@
     }
   }
 
+  function setRecordingStatus(text) {
+    $("recordingStatus").textContent = text;
+  }
+
+  function mergeFloat32Chunks(chunks) {
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const merged = new Float32Array(totalLength);
+    let offset = 0;
+    chunks.forEach((chunk) => {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    });
+    return merged;
+  }
+
+  function encodeLpcm16(samples) {
+    const buffer = new ArrayBuffer(samples.length * 2);
+    const view = new DataView(buffer);
+    for (let i = 0; i < samples.length; i += 1) {
+      const sample = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    }
+    return buffer;
+  }
+
+  function encodeWav(samples, sampleRate) {
+    const pcmBuffer = encodeLpcm16(samples);
+    const wavBuffer = new ArrayBuffer(44 + pcmBuffer.byteLength);
+    const view = new DataView(wavBuffer);
+
+    function writeString(offset, value) {
+      for (let i = 0; i < value.length; i += 1) {
+        view.setUint8(offset + i, value.charCodeAt(i));
+      }
+    }
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + pcmBuffer.byteLength, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, "data");
+    view.setUint32(40, pcmBuffer.byteLength, true);
+    new Uint8Array(wavBuffer, 44).set(new Uint8Array(pcmBuffer));
+    return wavBuffer;
+  }
+
+  function setRecordedAudio(analysisBlob, previewBlob) {
+    if (recordedAudioUrl) {
+      URL.revokeObjectURL(recordedAudioUrl);
+      recordedAudioUrl = "";
+    }
+
+    recordedBlob = analysisBlob;
+    if (previewBlob) {
+      recordedAudioUrl = URL.createObjectURL(previewBlob);
+      $("recordedAudio").src = recordedAudioUrl;
+      setRecordingStatus(`Аудиозапись готова: ${Math.round(analysisBlob.size / 1024)} КБ`);
+    } else {
+      $("recordedAudio").removeAttribute("src");
+      $("recordedAudio").load();
+      if (analysisBlob) {
+        setRecordingStatus(`Аудиозапись подготовлена: ${Math.round(analysisBlob.size / 1024)} КБ`);
+      } else {
+        setRecordingStatus("Аудиозапись не создана.");
+      }
+    }
+  }
+
   async function startAudioRecording() {
-    if (mediaRecorder && mediaRecorder.state === "recording") return;
+    if (isRecording) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("Браузер не поддерживает запись с микрофона.");
     }
 
     recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recordedChunks = [];
-    const preferredMimeTypes = [
-      "audio/ogg;codecs=opus",
-      "audio/webm;codecs=opus",
-      "audio/webm",
-    ];
-    const recorderOptions = {};
-    const supportedType = preferredMimeTypes.find((mimeType) => MediaRecorder.isTypeSupported?.(mimeType));
-    if (supportedType) {
-      recorderOptions.mimeType = supportedType;
-      recordedMimeType = supportedType;
-    } else {
-      recordedMimeType = "";
-    }
+    pcmChunks = [];
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    recordedSampleRate = audioContext.sampleRate || 16000;
+    mediaSourceNode = audioContext.createMediaStreamSource(recordingStream);
+    processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+    processorNode.onaudioprocess = (event) => {
+      if (!isRecording) return;
+      const input = event.inputBuffer.getChannelData(0);
+      pcmChunks.push(new Float32Array(input));
+    };
 
-    mediaRecorder = new MediaRecorder(recordingStream, recorderOptions);
-
-    mediaRecorder.addEventListener("dataavailable", (event) => {
-      if (event.data && event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    });
-
-    mediaRecorder.addEventListener("stop", () => {
-      const mimeType = mediaRecorder.mimeType || recordedMimeType || "audio/webm";
-      const blob = new Blob(recordedChunks, { type: mimeType });
-      recordedMimeType = mimeType;
-      setRecordedAudio(blob);
-      if (recordingStream) {
-        recordingStream.getTracks().forEach((track) => track.stop());
-        recordingStream = null;
-      }
-      saveState();
-    });
-
-    mediaRecorder.start();
+    mediaSourceNode.connect(processorNode);
+    processorNode.connect(audioContext.destination);
+    isRecording = true;
     setRecordingStatus("Идёт запись аудио…");
   }
 
+  function cleanupAudioRecordingContext() {
+    if (processorNode) {
+      processorNode.disconnect();
+      processorNode.onaudioprocess = null;
+      processorNode = null;
+    }
+    if (mediaSourceNode) {
+      mediaSourceNode.disconnect();
+      mediaSourceNode = null;
+    }
+    if (recordingStream) {
+      recordingStream.getTracks().forEach((track) => track.stop());
+      recordingStream = null;
+    }
+    if (audioContext) {
+      audioContext.close().catch(() => {});
+      audioContext = null;
+    }
+  }
+
   function stopAudioRecording() {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
+    if (!isRecording) {
+      setRecordingStatus(recordedBlob ? "Аудиозапись уже сохранена." : "Запись не была запущена.");
       return;
     }
-    setRecordingStatus(recordedBlob ? "Аудиозапись уже сохранена." : "Запись не была запущена.");
+
+    isRecording = false;
+    cleanupAudioRecordingContext();
+
+    const merged = mergeFloat32Chunks(pcmChunks);
+    const lpcmBuffer = encodeLpcm16(merged);
+    const wavBuffer = encodeWav(merged, recordedSampleRate);
+    setRecordedAudio(
+      new Blob([lpcmBuffer], { type: "application/octet-stream" }),
+      new Blob([wavBuffer], { type: "audio/wav" }),
+    );
+    pcmChunks = [];
+    saveState();
   }
 
   async function analyzeAudio() {
@@ -379,8 +451,9 @@
     form.append("reading_text", getReadingText());
     form.append("student_name", safeText($("studentName").value));
     form.append("student_class", safeText($("studentClass").value));
-    const extension = recordedMimeType.includes("ogg") ? "ogg" : "webm";
-    form.append("audio", recordedBlob, `oral_${selectedText?.id || "text"}.${extension}`);
+    form.append("audio_format", "lpcm");
+    form.append("sample_rate_hertz", String(recordedSampleRate || 16000));
+    form.append("audio", recordedBlob, `oral_${selectedText?.id || "text"}.pcm`);
 
     setRecordingStatus("Аудио отправляется на backend…");
     const response = await fetch(services.oralAnalyzeUrl, {
@@ -419,50 +492,6 @@
     saveState();
   }
 
-  function resetAll() {
-    stopTimer();
-    secondsElapsed = 0;
-    timerStartedAt = null;
-    errors = createEmptyErrors();
-    errorHistory = [];
-    lastResult = null;
-    readingFinished = false;
-    dialogAnswers = {};
-    audioAnalysisResult = null;
-    recordedMimeType = "";
-
-    [
-      "exprPauses",
-      "exprIntonation",
-      "exprPace",
-      "exprStress",
-    ].forEach((id) => {
-      const input = $(id);
-      if (input) input.checked = false;
-    });
-
-    [
-      "teacherNotes",
-      "retellingText",
-      "retellingNotes",
-      "monologueText",
-      "monologueNotes",
-      "dialogNotes",
-    ].forEach((id) => {
-      const input = $(id);
-      if (input) input.value = "";
-    });
-
-    setRecordedAudio(null);
-    $("transcriptText").value = "";
-    $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
-    $("reportBox").textContent = "Отчёт появится после формирования.";
-    renderDialogQuestions();
-    updateTimer();
-    renderErrors();
-    saveState();
-  }
-
   function addError(type) {
     if (!Object.prototype.hasOwnProperty.call(errors, type)) return;
     errors[type] += 1;
@@ -483,31 +512,57 @@
     renderErrors();
   }
 
-  function hasRetelling() {
-    return safeText($("retellingText").value).length > 0;
-  }
+  function resetAll() {
+    stopTimer();
+    cleanupAudioRecordingContext();
+    isRecording = false;
+    secondsElapsed = 0;
+    timerStartedAt = null;
+    errors = createEmptyErrors();
+    errorHistory = [];
+    lastResult = null;
+    readingFinished = false;
+    dialogAnswers = {};
+    audioAnalysisResult = null;
+    recordedSampleRate = 16000;
+    pcmChunks = [];
 
-  function hasMonologue() {
-    return safeText($("monologueText").value).length > 0;
-  }
+    [
+      "exprPauses",
+      "exprIntonation",
+      "exprPace",
+      "exprStress",
+    ].forEach((id) => {
+      const input = $(id);
+      if (input) input.checked = false;
+    });
 
-  function hasDialog() {
-    const values = Object.values(dialogAnswers).map(safeText).filter(Boolean);
-    const questionsCount = Array.isArray(selectedTopic?.dialogQuestions) ? selectedTopic.dialogQuestions.length : 0;
-    return questionsCount > 0 && values.length === questionsCount;
-  }
+    [
+      "teacherNotes",
+      "retellingText",
+      "retellingNotes",
+      "monologueText",
+      "monologueNotes",
+      "dialogNotes",
+      "transcriptText",
+    ].forEach((id) => {
+      const input = $(id);
+      if (input) input.value = "";
+    });
 
-  function updateCompletionStatus() {
-    $("statusReading").textContent = readingFinished || secondsElapsed > 0 ? "да" : "нет";
-    $("statusRetelling").textContent = hasRetelling() ? "да" : "нет";
-    $("statusMonologue").textContent = hasMonologue() ? "да" : "нет";
-    $("statusDialog").textContent = hasDialog() ? "да" : "нет";
+    setRecordedAudio(null, null);
+    $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
+    $("reportBox").textContent = "Отчёт появится после формирования.";
+    renderDialogQuestions();
+    updateTimer();
+    renderErrors();
+    saveState();
   }
 
   function buildResult() {
     const metrics = calculateMetrics();
     return {
-      schema: "kodislovo.oral-trainer.v1",
+      schema: "kodislovo.oral-trainer.v2",
       createdAt: new Date().toISOString(),
       student: safeText($("studentName").value),
       className: safeText($("studentClass").value),
@@ -535,6 +590,7 @@
       },
       retelling: {
         prompt: safeText(selectedText?.retellingTask?.prompt),
+        anchorQuote: safeText(selectedText?.retellingTask?.anchorQuote),
         text: safeText($("retellingText").value),
         notes: safeText($("retellingNotes").value),
       },
@@ -555,9 +611,13 @@
       teacherNotes: safeText($("teacherNotes").value),
       completion: {
         reading: readingFinished || secondsElapsed > 0,
-        retelling: hasRetelling(),
-        monologue: hasMonologue(),
-        dialog: hasDialog(),
+        retelling: safeText($("retellingText").value).length > 0,
+        monologue: safeText($("monologueText").value).length > 0,
+        dialog: (() => {
+          const dialogCount = Array.isArray(selectedTopic?.dialogQuestions) ? selectedTopic.dialogQuestions.length : 0;
+          const answeredCount = Object.values(dialogAnswers).map(safeText).filter(Boolean).length;
+          return dialogCount > 0 && answeredCount === dialogCount;
+        })(),
       },
     };
   }
@@ -586,28 +646,28 @@
 
   function saveState() {
     const payload = {
-      studentName: safeText($("studentName")?.value),
-      studentClass: safeText($("studentClass")?.value),
+      studentName: safeText($("studentName").value),
+      studentClass: safeText($("studentClass").value),
       selectedTextId: selectedText?.id || "",
       selectedTopicId: selectedTopic?.id || "",
       secondsElapsed,
       readingFinished,
       errors,
       errorHistory,
-      teacherNotes: safeText($("teacherNotes")?.value),
-      retellingText: safeText($("retellingText")?.value),
-      retellingNotes: safeText($("retellingNotes")?.value),
-      monologueText: safeText($("monologueText")?.value),
-      monologueNotes: safeText($("monologueNotes")?.value),
-      dialogNotes: safeText($("dialogNotes")?.value),
+      teacherNotes: safeText($("teacherNotes").value),
+      retellingText: safeText($("retellingText").value),
+      retellingNotes: safeText($("retellingNotes").value),
+      monologueText: safeText($("monologueText").value),
+      monologueNotes: safeText($("monologueNotes").value),
+      dialogNotes: safeText($("dialogNotes").value),
       dialogAnswers: { ...dialogAnswers },
-      transcriptText: safeText($("transcriptText")?.value),
+      transcriptText: safeText($("transcriptText").value),
       audioAnalysisResult,
       expressiveness: {
-        pauses: Boolean($("exprPauses")?.checked),
-        intonation: Boolean($("exprIntonation")?.checked),
-        pace: Boolean($("exprPace")?.checked),
-        stress: Boolean($("exprStress")?.checked),
+        pauses: Boolean($("exprPauses").checked),
+        intonation: Boolean($("exprIntonation").checked),
+        pace: Boolean($("exprPace").checked),
+        stress: Boolean($("exprStress").checked),
       },
       lastResult,
     };
@@ -626,7 +686,6 @@
 
   function applySavedState(saved) {
     if (!saved) return {};
-
     $("studentName").value = safeText(saved.studentName);
     $("studentClass").value = safeText(saved.studentClass);
     $("teacherNotes").value = safeText(saved.teacherNotes);
@@ -653,12 +712,12 @@
 
     updateTimer();
     renderErrors();
-    if (lastResult) {
-      $("reportBox").textContent = JSON.stringify(lastResult, null, 2);
-    }
     if (audioAnalysisResult) {
       $("audioAnalysisBox").textContent = JSON.stringify(audioAnalysisResult, null, 2);
       setRecordingStatus(audioAnalysisResult?.message || "Есть сохранённый результат аудиоанализа.");
+    }
+    if (lastResult) {
+      $("reportBox").textContent = JSON.stringify(lastResult, null, 2);
     }
 
     return {
@@ -689,6 +748,9 @@
     $("buildReportBtn").addEventListener("click", buildReport);
     $("downloadBtn").addEventListener("click", downloadJSON);
     $("resetBtn").addEventListener("click", resetAll);
+    $("undoErrorBtn").addEventListener("click", undoLastError);
+    $("clearErrorsBtn").addEventListener("click", clearErrors);
+
     $("recordStartBtn").addEventListener("click", async () => {
       try {
         await startAudioRecording();
@@ -697,7 +759,16 @@
         setRecordingStatus(`Ошибка записи: ${error.message}`);
       }
     });
-    $("recordStopBtn").addEventListener("click", stopAudioRecording);
+
+    $("recordStopBtn").addEventListener("click", () => {
+      try {
+        stopAudioRecording();
+      } catch (error) {
+        console.error(error);
+        setRecordingStatus(`Ошибка остановки записи: ${error.message}`);
+      }
+    });
+
     $("analyzeAudioBtn").addEventListener("click", async () => {
       try {
         await analyzeAudio();
@@ -706,8 +777,6 @@
         setRecordingStatus(`Ошибка анализа: ${error.message}`);
       }
     });
-    $("undoErrorBtn").addEventListener("click", undoLastError);
-    $("clearErrorsBtn").addEventListener("click", clearErrors);
 
     document.querySelectorAll(".reading-error-btn").forEach((button) => {
       button.addEventListener("click", () => addError(button.dataset.error));
@@ -743,7 +812,7 @@
   async function init() {
     bindEvents();
     await loadBank();
-    fillSelect();
+    fillTextSelect();
 
     const params = new URLSearchParams(window.location.search);
     const saved = restoreState();
@@ -751,12 +820,14 @@
       selectedTextId: safeText(saved.selectedTextId),
       selectedTopicId: safeText(saved.selectedTopicId),
     } : {};
+
     const initialTextId = params.get("text") || restoredIds.selectedTextId || oralTexts[0]?.id || "";
     selectText(initialTextId, { preserveContent: Boolean(saved) });
     applySavedState(saved);
     if (restoredIds.selectedTopicId) {
       selectTopic(restoredIds.selectedTopicId, { preserveAnswers: true });
     }
+
     updateTimer();
     updateStats();
     updateCompletionStatus();
