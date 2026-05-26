@@ -25,6 +25,7 @@
   let recordedChunks = [];
   let recordedBlob = null;
   let recordedAudioUrl = "";
+  let recordedMimeType = "";
   let audioAnalysisResult = null;
 
   function createEmptyErrors() {
@@ -317,7 +318,21 @@
 
     recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recordedChunks = [];
-    mediaRecorder = new MediaRecorder(recordingStream);
+    const preferredMimeTypes = [
+      "audio/ogg;codecs=opus",
+      "audio/webm;codecs=opus",
+      "audio/webm",
+    ];
+    const recorderOptions = {};
+    const supportedType = preferredMimeTypes.find((mimeType) => MediaRecorder.isTypeSupported?.(mimeType));
+    if (supportedType) {
+      recorderOptions.mimeType = supportedType;
+      recordedMimeType = supportedType;
+    } else {
+      recordedMimeType = "";
+    }
+
+    mediaRecorder = new MediaRecorder(recordingStream, recorderOptions);
 
     mediaRecorder.addEventListener("dataavailable", (event) => {
       if (event.data && event.data.size > 0) {
@@ -326,8 +341,9 @@
     });
 
     mediaRecorder.addEventListener("stop", () => {
-      const mimeType = mediaRecorder.mimeType || "audio/webm";
+      const mimeType = mediaRecorder.mimeType || recordedMimeType || "audio/webm";
       const blob = new Blob(recordedChunks, { type: mimeType });
+      recordedMimeType = mimeType;
       setRecordedAudio(blob);
       if (recordingStream) {
         recordingStream.getTracks().forEach((track) => track.stop());
@@ -363,7 +379,8 @@
     form.append("reading_text", getReadingText());
     form.append("student_name", safeText($("studentName").value));
     form.append("student_class", safeText($("studentClass").value));
-    form.append("audio", recordedBlob, `oral_${selectedText?.id || "text"}.webm`);
+    const extension = recordedMimeType.includes("ogg") ? "ogg" : "webm";
+    form.append("audio", recordedBlob, `oral_${selectedText?.id || "text"}.${extension}`);
 
     setRecordingStatus("Аудио отправляется на backend…");
     const response = await fetch(services.oralAnalyzeUrl, {
@@ -412,6 +429,7 @@
     readingFinished = false;
     dialogAnswers = {};
     audioAnalysisResult = null;
+    recordedMimeType = "";
 
     [
       "exprPauses",
