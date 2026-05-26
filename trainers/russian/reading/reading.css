@@ -288,6 +288,17 @@
   resize:vertical;
 }
 
+.reading-audio-status{
+  margin-top:12px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.reading-audio-player{
+  width:100%;
+  margin-top:12px;
+}
+
 .reading-completion-list{
   display:grid;
   gap:10px;
@@ -317,6 +328,11 @@
   white-space:pre-wrap;
   line-height:1.55;
   font-family:Consolas, "Courier New", monospace;
+}
+
+.reading-report-compact{
+  margin-top:14px;
+  max-height:240px;
 }
 
 @media (max-width: 980px){
