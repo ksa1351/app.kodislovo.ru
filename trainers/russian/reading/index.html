@@ -231,6 +231,23 @@
           </article>
 
           <article class="kd-panel reading-panel">
+            <h2>Аудио и автоанализ</h2>
+            <p class="reading-prompt">Полуавтоматический режим: запись аудио, отправка на backend и подготовка ответа для будущего распознавания через SpeechKit.</p>
+            <div class="reading-mini-actions">
+              <button id="recordStartBtn" class="kd-button" type="button">Запись</button>
+              <button id="recordStopBtn" class="kd-button kd-button-secondary" type="button">Стоп</button>
+              <button id="analyzeAudioBtn" class="kd-button kd-button-secondary" type="button">Анализировать</button>
+            </div>
+            <div id="recordingStatus" class="reading-audio-status">Аудиозапись не создана.</div>
+            <audio id="recordedAudio" class="reading-audio-player" controls></audio>
+            <label class="reading-field" for="transcriptText">
+              <span class="reading-label">Черновой транскрипт</span>
+              <textarea id="transcriptText" class="reading-notes" placeholder="После анализа здесь появится текст распознавания или технический ответ backend."></textarea>
+            </label>
+            <pre id="audioAnalysisBox" class="reading-report reading-report-compact">Результат аудиоанализа пока не получен.</pre>
+          </article>
+
+          <article class="kd-panel reading-panel">
             <h2>Готовность этапов</h2>
             <div class="reading-completion-list">
               <div class="reading-completion-item">
