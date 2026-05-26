@@ -2,6 +2,7 @@
   "use strict";
 
   const ORAL_BANK_URL = "../../../controls/russian/oral-bank.json";
+  const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
   const LS_KEY = "kodislovo:russian:oral-trainer:v1";
   const ERROR_TYPES = ["skip", "replace", "distort", "repeat", "stress", "pause"];
 
@@ -18,6 +19,13 @@
   let errorHistory = [];
   let dialogAnswers = {};
   let errors = createEmptyErrors();
+  let backendServicesPromise = null;
+  let recordingStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recordedBlob = null;
+  let recordedAudioUrl = "";
+  let audioAnalysisResult = null;
 
   function createEmptyErrors() {
     return {
@@ -32,6 +40,54 @@
 
   function safeText(value) {
     return (value ?? "").toString().trim();
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Не удалось загрузить ${url} (HTTP ${response.status})`);
+    }
+    return await response.json();
+  }
+
+  function setRecordingStatus(text) {
+    $("recordingStatus").textContent = text;
+  }
+
+  function setRecordedAudio(blob) {
+    if (recordedAudioUrl) {
+      URL.revokeObjectURL(recordedAudioUrl);
+      recordedAudioUrl = "";
+    }
+    recordedBlob = blob;
+    if (blob) {
+      recordedAudioUrl = URL.createObjectURL(blob);
+      $("recordedAudio").src = recordedAudioUrl;
+      setRecordingStatus(`Аудиозапись готова: ${Math.round(blob.size / 1024)} КБ`);
+    } else {
+      $("recordedAudio").removeAttribute("src");
+      $("recordedAudio").load();
+      setRecordingStatus("Аудиозапись не создана.");
+    }
+  }
+
+  async function loadBackendServices() {
+    if (!backendServicesPromise) {
+      backendServicesPromise = fetchJson(PUBLIC_API_CONFIG_URL).then(async (config) => {
+        const baseUrl = safeText(config?.baseUrl).replace(/\/+$/, "");
+        if (!baseUrl) {
+          throw new Error("В public-api.json не задан baseUrl.");
+        }
+        const services = await fetchJson(`${baseUrl}/api/public/subjects/russian/services`);
+        return {
+          baseUrl,
+          oralAnalyzeUrl: services.oralAnalyzeUrl
+            ? new URL(services.oralAnalyzeUrl, `${baseUrl}/`).toString()
+            : "",
+        };
+      });
+    }
+    return backendServicesPromise;
   }
 
   function formatTime(totalSeconds) {
@@ -253,6 +309,79 @@
     }
   }
 
+  async function startAudioRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Браузер не поддерживает запись с микрофона.");
+    }
+
+    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(recordingStream);
+
+    mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    });
+
+    mediaRecorder.addEventListener("stop", () => {
+      const mimeType = mediaRecorder.mimeType || "audio/webm";
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      setRecordedAudio(blob);
+      if (recordingStream) {
+        recordingStream.getTracks().forEach((track) => track.stop());
+        recordingStream = null;
+      }
+      saveState();
+    });
+
+    mediaRecorder.start();
+    setRecordingStatus("Идёт запись аудио…");
+  }
+
+  function stopAudioRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      return;
+    }
+    setRecordingStatus(recordedBlob ? "Аудиозапись уже сохранена." : "Запись не была запущена.");
+  }
+
+  async function analyzeAudio() {
+    if (!recordedBlob) {
+      throw new Error("Сначала запишите аудио.");
+    }
+
+    const services = await loadBackendServices();
+    if (!services.oralAnalyzeUrl) {
+      throw new Error("Backend не вернул oralAnalyzeUrl.");
+    }
+
+    const form = new FormData();
+    form.append("text_id", selectedText?.id || "");
+    form.append("reading_text", getReadingText());
+    form.append("student_name", safeText($("studentName").value));
+    form.append("student_class", safeText($("studentClass").value));
+    form.append("audio", recordedBlob, `oral_${selectedText?.id || "text"}.webm`);
+
+    setRecordingStatus("Аудио отправляется на backend…");
+    const response = await fetch(services.oralAnalyzeUrl, {
+      method: "POST",
+      body: form,
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.detail || `HTTP ${response.status}`);
+    }
+
+    audioAnalysisResult = data;
+    $("audioAnalysisBox").textContent = JSON.stringify(data, null, 2);
+    $("transcriptText").value = safeText(data?.transcript?.text || "");
+    setRecordingStatus(data?.message || "Аудио проанализировано.");
+    saveState();
+  }
+
   function startReading() {
     if (!selectedText || timerInterval) return;
     timerStartedAt = Date.now() - (secondsElapsed * 1000);
@@ -282,6 +411,7 @@
     lastResult = null;
     readingFinished = false;
     dialogAnswers = {};
+    audioAnalysisResult = null;
 
     [
       "exprPauses",
@@ -305,6 +435,9 @@
       if (input) input.value = "";
     });
 
+    setRecordedAudio(null);
+    $("transcriptText").value = "";
+    $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
     $("reportBox").textContent = "Отчёт появится после формирования.";
     renderDialogQuestions();
     updateTimer();
@@ -399,6 +532,8 @@
         answers: { ...dialogAnswers },
         notes: safeText($("dialogNotes").value),
       },
+      audioAnalysis: audioAnalysisResult,
+      transcriptDraft: safeText($("transcriptText").value),
       teacherNotes: safeText($("teacherNotes").value),
       completion: {
         reading: readingFinished || secondsElapsed > 0,
@@ -448,6 +583,8 @@
       monologueNotes: safeText($("monologueNotes")?.value),
       dialogNotes: safeText($("dialogNotes")?.value),
       dialogAnswers: { ...dialogAnswers },
+      transcriptText: safeText($("transcriptText")?.value),
+      audioAnalysisResult,
       expressiveness: {
         pauses: Boolean($("exprPauses")?.checked),
         intonation: Boolean($("exprIntonation")?.checked),
@@ -480,12 +617,14 @@
     $("monologueText").value = safeText(saved.monologueText);
     $("monologueNotes").value = safeText(saved.monologueNotes);
     $("dialogNotes").value = safeText(saved.dialogNotes);
+    $("transcriptText").value = safeText(saved.transcriptText);
 
     secondsElapsed = Math.max(0, Number(saved.secondsElapsed || 0));
     readingFinished = Boolean(saved.readingFinished);
     errors = { ...createEmptyErrors(), ...(saved.errors || {}) };
     errorHistory = Array.isArray(saved.errorHistory) ? saved.errorHistory.slice() : [];
     dialogAnswers = saved.dialogAnswers && typeof saved.dialogAnswers === "object" ? { ...saved.dialogAnswers } : {};
+    audioAnalysisResult = saved.audioAnalysisResult || null;
     lastResult = saved.lastResult || null;
 
     const expr = saved.expressiveness || {};
@@ -498,6 +637,10 @@
     renderErrors();
     if (lastResult) {
       $("reportBox").textContent = JSON.stringify(lastResult, null, 2);
+    }
+    if (audioAnalysisResult) {
+      $("audioAnalysisBox").textContent = JSON.stringify(audioAnalysisResult, null, 2);
+      setRecordingStatus(audioAnalysisResult?.message || "Есть сохранённый результат аудиоанализа.");
     }
 
     return {
@@ -528,6 +671,23 @@
     $("buildReportBtn").addEventListener("click", buildReport);
     $("downloadBtn").addEventListener("click", downloadJSON);
     $("resetBtn").addEventListener("click", resetAll);
+    $("recordStartBtn").addEventListener("click", async () => {
+      try {
+        await startAudioRecording();
+      } catch (error) {
+        console.error(error);
+        setRecordingStatus(`Ошибка записи: ${error.message}`);
+      }
+    });
+    $("recordStopBtn").addEventListener("click", stopAudioRecording);
+    $("analyzeAudioBtn").addEventListener("click", async () => {
+      try {
+        await analyzeAudio();
+      } catch (error) {
+        console.error(error);
+        setRecordingStatus(`Ошибка анализа: ${error.message}`);
+      }
+    });
     $("undoErrorBtn").addEventListener("click", undoLastError);
     $("clearErrorsBtn").addEventListener("click", clearErrors);
 
@@ -544,6 +704,7 @@
       "monologueText",
       "monologueNotes",
       "dialogNotes",
+      "transcriptText",
       "exprPauses",
       "exprIntonation",
       "exprPace",
@@ -581,6 +742,7 @@
     updateTimer();
     updateStats();
     updateCompletionStatus();
+    setRecordingStatus(audioAnalysisResult?.message || "Аудиозапись не создана.");
   }
 
   init().catch((error) => {
