@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Тренажёр итогового собеседования</title>
+  <link rel="stylesheet" href="../../../assets/css/ui.css" />
+  <link rel="stylesheet" href="./reading.css" />
+</head>
+<body>
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>русский язык</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
+  <main class="kd-page reading-page">
+    <header class="kd-hero reading-hero">
+      <a class="kd-back" href="../index.html">Русский язык</a>
+      <h1>Тренажёр итогового собеседования</h1>
+      <p>Единая рабочая страница для чтения, пересказа, монолога и диалога. Тексты и темы берутся из банка итогового собеседования.</p>
+    </header>
+
+    <section class="kd-section" aria-labelledby="oralTrainerTitle">
+      <div class="kd-section-head reading-head">
+        <div>
+          <h2 id="oralTrainerTitle">Полный маршрут собеседования</h2>
+          <p>Сначала читаем текст, затем заполняем пересказ, выбираем тему монолога и отвечаем на вопросы диалога по этой теме.</p>
+        </div>
+        <div class="reading-timer-card">
+          <span class="reading-timer-label">Таймер чтения</span>
+          <strong id="timerDisplay" class="reading-timer-value">00:00</strong>
+        </div>
+      </div>
+
+      <div class="reading-layout">
+        <section class="reading-main">
+          <article class="kd-panel reading-panel">
+            <div class="reading-step">
+              <span class="reading-step-badge">Шаг 0</span>
+              <div>
+                <h2>Ученик и материал</h2>
+                <p>Выберите текст и заполните данные ученика перед началом чтения.</p>
+              </div>
+            </div>
+
+            <div class="reading-form-grid">
+              <label class="reading-field" for="studentName">
+                <span class="reading-label">ФИО ученика</span>
+                <input id="studentName" class="reading-input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
+              </label>
+              <label class="reading-field" for="studentClass">
+                <span class="reading-label">Класс</span>
+                <input id="studentClass" class="reading-input" type="text" placeholder="Например: 9А" autocomplete="off" />
+              </label>
+            </div>
+
+            <label class="reading-field" for="textSelect">
+              <span class="reading-label">Текст собеседования</span>
+              <select id="textSelect" class="reading-input"></select>
+            </label>
+
+            <div class="reading-actions">
+              <button id="startBtn" class="kd-button" type="button">Начать чтение</button>
+              <button id="finishBtn" class="kd-button kd-button-secondary" type="button">Завершить чтение</button>
+              <button id="buildReportBtn" class="kd-button kd-button-secondary" type="button">Сформировать отчёт</button>
+              <button id="downloadBtn" class="kd-button kd-button-secondary" type="button">Скачать JSON</button>
+              <button id="resetBtn" class="kd-button kd-button-secondary" type="button">Сбросить всё</button>
+            </div>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <div class="reading-step">
+              <span class="reading-step-badge">Шаг 1</span>
+              <div>
+                <h2>Чтение</h2>
+                <p>Во время чтения запускайте таймер и отмечайте ошибки в правой колонке.</p>
+              </div>
+            </div>
+
+            <div class="reading-text-wrap">
+              <div class="reading-text-head">
+                <div>
+                  <span class="kd-kicker">Выразительное чтение</span>
+                  <h3 id="textTitle">Текст</h3>
+                </div>
+                <div class="reading-text-stats">
+                  <span id="wordsTotalLabel">Слов: 0</span>
+                </div>
+              </div>
+              <div id="readingText" class="reading-text-box"></div>
+            </div>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <div class="reading-step">
+              <span class="reading-step-badge">Шаг 2</span>
+              <div>
+                <h2>Пересказ</h2>
+                <p>После чтения соберите пересказ по подсказке. Здесь можно фиксировать полноценный ответ ученика или его черновик.</p>
+              </div>
+            </div>
+
+            <div class="reading-block reading-block-soft">
+              <span class="kd-kicker">Задание на пересказ</span>
+              <p id="retellingPrompt" class="reading-prompt">Здесь появится задание для пересказа по выбранному тексту.</p>
+            </div>
+
+            <label class="reading-field" for="retellingText">
+              <span class="reading-label">Текст пересказа</span>
+              <textarea id="retellingText" class="reading-notes reading-answer" placeholder="Запишите пересказ ученика или ключевые опорные фразы."></textarea>
+            </label>
+
+            <label class="reading-field" for="retellingNotes">
+              <span class="reading-label">Заметки к пересказу</span>
+              <textarea id="retellingNotes" class="reading-notes" placeholder="Что удалось сохранить? Какие факты выпали? Насколько связным получился пересказ?"></textarea>
+            </label>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <div class="reading-step">
+              <span class="reading-step-badge">Шаг 3</span>
+              <div>
+                <h2>Монолог</h2>
+                <p>Выберите одну тему и заполните ответ по плану.</p>
+              </div>
+            </div>
+
+            <label class="reading-field" for="monologueTopicSelect">
+              <span class="reading-label">Тема монолога</span>
+              <select id="monologueTopicSelect" class="reading-input"></select>
+            </label>
+
+            <div class="reading-block">
+              <span class="kd-kicker">План ответа</span>
+              <h3 id="monologueTitle">Тема</h3>
+              <ol id="monologuePlan" class="reading-plan"></ol>
+            </div>
+
+            <label class="reading-field" for="monologueText">
+              <span class="reading-label">Текст монолога</span>
+              <textarea id="monologueText" class="reading-notes reading-answer" placeholder="Запишите монолог ученика по выбранной теме."></textarea>
+            </label>
+
+            <label class="reading-field" for="monologueNotes">
+              <span class="reading-label">Заметки к монологу</span>
+              <textarea id="monologueNotes" class="reading-notes" placeholder="Что раскрыто хорошо? Чего не хватило? Были ли примеры и логика?"></textarea>
+            </label>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <div class="reading-step">
+              <span class="reading-step-badge">Шаг 4</span>
+              <div>
+                <h2>Диалог</h2>
+                <p>Вопросы подтягиваются по выбранной теме монолога. Ответы сохраняются в общем отчёте.</p>
+              </div>
+            </div>
+
+            <div id="dialogQuestions" class="reading-dialog-list"></div>
+
+            <label class="reading-field" for="dialogNotes">
+              <span class="reading-label">Заметки к диалогу</span>
+              <textarea id="dialogNotes" class="reading-notes" placeholder="Как ученик реагировал на вопросы? Ответы были полными? Требовались ли уточнения?"></textarea>
+            </label>
+          </article>
+        </section>
+
+        <aside class="reading-side">
+          <article class="kd-panel reading-panel">
+            <h2>Ошибки чтения</h2>
+            <div class="reading-error-grid">
+              <button class="reading-error-btn" data-error="skip" type="button">Пропуск <b id="skipCount">0</b></button>
+              <button class="reading-error-btn" data-error="replace" type="button">Замена <b id="replaceCount">0</b></button>
+              <button class="reading-error-btn" data-error="distort" type="button">Искажение <b id="distortCount">0</b></button>
+              <button class="reading-error-btn" data-error="repeat" type="button">Повтор <b id="repeatCount">0</b></button>
+              <button class="reading-error-btn" data-error="stress" type="button">Ударение <b id="stressCount">0</b></button>
+              <button class="reading-error-btn" data-error="pause" type="button">Пауза <b id="pauseCount">0</b></button>
+            </div>
+            <div class="reading-mini-actions">
+              <button id="undoErrorBtn" class="kd-button kd-button-secondary" type="button">Отменить последнее</button>
+              <button id="clearErrorsBtn" class="kd-button kd-button-secondary" type="button">Очистить ошибки</button>
+            </div>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <h2>Выразительность чтения</h2>
+            <label class="reading-check"><input id="exprPauses" type="checkbox" /> Соблюдает паузы</label>
+            <label class="reading-check"><input id="exprIntonation" type="checkbox" /> Использует интонацию</label>
+            <label class="reading-check"><input id="exprPace" type="checkbox" /> Держит подходящий темп</label>
+            <label class="reading-check"><input id="exprStress" type="checkbox" /> Выделяет важные слова</label>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <h2>Итог по чтению</h2>
+            <div class="reading-stats-grid">
+              <div class="reading-stat">
+                <b id="secondsTotal">0</b>
+                <span>секунд</span>
+              </div>
+              <div class="reading-stat">
+                <b id="wpm">0</b>
+                <span>слов в минуту</span>
+              </div>
+              <div class="reading-stat">
+                <b id="accuracy">0%</b>
+                <span>точность</span>
+              </div>
+              <div class="reading-stat">
+                <b id="errorsTotal">0</b>
+                <span>ошибок всего</span>
+              </div>
+            </div>
+            <div id="levelBadge" class="reading-level">Уровень пока не рассчитан</div>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <h2>Общие заметки учителя</h2>
+            <textarea id="teacherNotes" class="reading-notes" placeholder="Здесь можно сохранить общие комментарии по всему собеседованию."></textarea>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <h2>Готовность этапов</h2>
+            <div class="reading-completion-list">
+              <div class="reading-completion-item">
+                <span>Чтение завершено</span>
+                <b id="statusReading">нет</b>
+              </div>
+              <div class="reading-completion-item">
+                <span>Пересказ заполнен</span>
+                <b id="statusRetelling">нет</b>
+              </div>
+              <div class="reading-completion-item">
+                <span>Монолог заполнен</span>
+                <b id="statusMonologue">нет</b>
+              </div>
+              <div class="reading-completion-item">
+                <span>Диалог заполнен</span>
+                <b id="statusDialog">нет</b>
+              </div>
+            </div>
+          </article>
+
+          <article class="kd-panel reading-panel">
+            <h2>Отчёт</h2>
+            <pre id="reportBox" class="reading-report">Отчёт появится после формирования.</pre>
+          </article>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="../../../assets/js/theme.js"></script>
+  <script src="./reading.js"></script>
+</body>
+</html>
