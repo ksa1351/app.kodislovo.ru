@@ -47,6 +47,15 @@
     return (value ?? "").toString().trim();
   }
 
+  function escapeHtml(value) {
+    return safeText(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   async function fetchJson(url) {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
@@ -279,7 +288,7 @@
       $("dialogNotes").value = "";
       $("transcriptText").value = "";
       audioAnalysisResult = null;
-      $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
+      renderAudioAnalysisState(null);
     }
     renderText();
     $("reportBox").textContent = "Отчёт появится после формирования.";
@@ -299,6 +308,57 @@
 
   function setRecordingStatus(text) {
     $("recordingStatus").textContent = text;
+  }
+
+  function renderChipList(targetId, items, formatter) {
+    const target = $(targetId);
+    if (!target) return;
+    target.innerHTML = "";
+
+    const normalizedItems = Array.isArray(items) ? items : [];
+    if (!normalizedItems.length) {
+      target.textContent = "Нет замечаний.";
+      return;
+    }
+
+    normalizedItems.forEach((item) => {
+      const chip = document.createElement("span");
+      chip.className = "reading-auto-chip";
+      if (formatter) {
+        chip.innerHTML = formatter(item);
+      } else {
+        chip.textContent = safeText(item);
+      }
+      target.appendChild(chip);
+    });
+  }
+
+  function renderAudioAnalysisState(data) {
+    $("audioAnalysisBox").textContent = data
+      ? JSON.stringify(data, null, 2)
+      : "Результат аудиоанализа пока не получен.";
+
+    $("audioModeValue").textContent = data?.mode || "нет данных";
+    const confidence = data?.transcript?.confidence;
+    $("audioConfidenceValue").textContent = Number.isFinite(Number(confidence))
+      ? `${Math.round(Number(confidence) * 100)}%`
+      : "—";
+
+    const detectedFormat = safeText(data?.audio?.detectedFormat || data?.audio?.requestedFormat || "");
+    const sampleRate = safeText(data?.audio?.recognizedSampleRateHertz || data?.audio?.sampleRateHertz || "");
+    $("audioFormatValue").textContent = detectedFormat
+      ? `${detectedFormat}${sampleRate ? ` • ${sampleRate} Hz` : ""}`
+      : "—";
+
+    const diff = data?.diff || {};
+    renderChipList("diffSkips", diff.skips, (item) => safeText(item));
+    renderChipList(
+      "diffReplacements",
+      diff.replacements,
+      (item) => `<strong>${escapeHtml(item?.expected)}</strong><code>→</code><span>${escapeHtml(item?.actual)}</span>`,
+    );
+    renderChipList("diffInsertions", diff.insertions, (item) => safeText(item));
+    renderChipList("diffRepeats", diff.repeats, (item) => safeText(item));
   }
 
   function mergeFloat32Chunks(chunks) {
@@ -466,7 +526,7 @@
     }
 
     audioAnalysisResult = data;
-    $("audioAnalysisBox").textContent = JSON.stringify(data, null, 2);
+    renderAudioAnalysisState(data);
     $("transcriptText").value = safeText(data?.transcript?.text || "");
     setRecordingStatus(data?.message || "Аудио проанализировано.");
     saveState();
@@ -551,7 +611,7 @@
     });
 
     setRecordedAudio(null, null);
-    $("audioAnalysisBox").textContent = "Результат аудиоанализа пока не получен.";
+    renderAudioAnalysisState(null);
     $("reportBox").textContent = "Отчёт появится после формирования.";
     renderDialogQuestions();
     updateTimer();
@@ -713,11 +773,14 @@
     updateTimer();
     renderErrors();
     if (audioAnalysisResult) {
-      $("audioAnalysisBox").textContent = JSON.stringify(audioAnalysisResult, null, 2);
+      renderAudioAnalysisState(audioAnalysisResult);
       setRecordingStatus(audioAnalysisResult?.message || "Есть сохранённый результат аудиоанализа.");
     }
     if (lastResult) {
       $("reportBox").textContent = JSON.stringify(lastResult, null, 2);
+    }
+    if (!audioAnalysisResult) {
+      renderAudioAnalysisState(null);
     }
 
     return {
