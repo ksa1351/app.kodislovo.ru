@@ -35,6 +35,10 @@
     return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
   }
 
+  function normalizeStrictSequence(s) {
+    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, "");
+  }
+
   // Варианты лежат в /controls/<subject>/variants/ (controls в корне сайта)
   function projectRoot() {
   // GitHub Pages: первый сегмент пути — это папка проекта (например "app.kodislovo.ru")
@@ -280,6 +284,8 @@
     meta.subtitle = compose.subtitle || meta.subtitle || "";
     meta.texts = finalTexts;
     meta.maxPoints = Number(compose.maxPoints || maxPoints || meta.maxPoints || 0);
+    if (compose.examFormat) meta.examFormat = compose.examFormat;
+    if (compose.gradeLevel) meta.gradeLevel = compose.gradeLevel;
     if (compose.grading) meta.grading = deepClone(compose.grading);
     if (Number.isFinite(Number(compose.time_limit_minutes))) {
       meta.time_limit_minutes = Number(compose.time_limit_minutes);
@@ -352,21 +358,50 @@
 
   // ========= header =========
   function setHeader() {
-    setText("uiMainTitle", variantMeta?.title || "Контрольная работа");
+    const format = safeText(variantMeta?.examFormat || currentVariantEntry?.examFormat).toLowerCase();
+    const formatPrefix = format === "oge" ? "ОГЭ · " : format === "ege" ? "ЕГЭ · " : "";
+    setText("uiMainTitle", `${formatPrefix}${variantMeta?.title || "Контрольная работа"}`);
+    const gradingHint = global.KodislovoControlGrading
+      ? global.KodislovoControlGrading.formatGradingHint(variantMeta, currentVariantEntry)
+      : "";
     setText(
       "uiSubtitle",
-      variantMeta?.subtitle ||
+      [variantMeta?.subtitle, gradingHint].filter(Boolean).join(" ") ||
         "Заполните данные ученика, выполните задания, завершите и отправьте результат."
     );
   }
 
   // ========= scoring (для результата) =========
   function checkOne(task, studentAnswerRaw) {
+    const maxPts = Number(task.points ?? 1);
+
+    if (task.checkStrict) {
+      const acceptable = (task.answers || []).map(normalizeStrictSequence).filter(Boolean);
+      const actual = normalizeStrictSequence(studentAnswerRaw);
+      if (!actual || !acceptable.length) return { ok: false, earned: 0 };
+
+      for (const expected of acceptable) {
+        if (actual === expected) {
+          return { ok: true, earned: maxPts };
+        }
+        if (maxPts >= 2 && actual.length === expected.length) {
+          let mismatches = 0;
+          for (let i = 0; i < expected.length; i += 1) {
+            if (expected[i] !== actual[i]) mismatches += 1;
+          }
+          if (mismatches > 0 && mismatches <= 2) {
+            return { ok: false, earned: 1 };
+          }
+        }
+      }
+      return { ok: false, earned: 0 };
+    }
+
     const acceptable = (task.answers || []).map(normalizeAnswer);
     const a = normalizeAnswer(studentAnswerRaw);
     if (!a) return { ok: false, earned: 0 };
     const ok = acceptable.includes(a);
-    return { ok, earned: ok ? Number(task.points ?? 1) : 0 };
+    return { ok, earned: ok ? maxPts : 0 };
   }
 
   function calcScore() {
@@ -393,7 +428,10 @@
     }
 
     const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
-    return { earned, max, percent, perTask };
+    const mark = global.KodislovoControlGrading
+      ? global.KodislovoControlGrading.markFromScore(earned, max, variantMeta, currentVariantEntry)
+      : null;
+    return { earned, max, percent, perTask, mark };
   }
 
   // ========= timer =========
@@ -423,24 +461,62 @@
     if (bar) bar.classList.toggle("is-warning", Boolean(active));
   }
 
+  function getFormatFilter() {
+    const format = safeText(getParam("format")).toLowerCase();
+    return format === "oge" || format === "ege" ? format : "";
+  }
+
+  function getExamFormatLabel(format) {
+    if (format === "oge") return "ОГЭ · 9 класс";
+    if (format === "ege") return "ЕГЭ · 11 класс";
+    return "";
+  }
+
   function findManifestSection(entry) {
-    const sectionId = safeText(entry?.sectionId || entry?.section || variantMeta?.sectionId);
+    const sectionId = safeText(entry?.sectionId || entry?.section);
     if (!sectionId) return null;
     return (manifest?.sections || []).find((section) => section.id === sectionId) || null;
+  }
+
+  function countComposeTasks(entry) {
+    const sources = entry?.compose?.sources;
+    if (!Array.isArray(sources)) return 0;
+    return sources.reduce((sum, source) => {
+      const ids = source?.taskIds;
+      return sum + (Array.isArray(ids) ? ids.length : 0);
+    }, 0);
   }
 
   function getVariantCardBadges(entry, meta) {
     const badges = [];
     const section = findManifestSection(entry);
-    const minutes = Number(meta?.time_limit_minutes || section?.time || 0);
+    const examFormat = safeText(meta?.examFormat || entry?.examFormat).toLowerCase();
+    const minutes = Number(
+      meta?.time_limit_minutes || entry?.compose?.time_limit_minutes || section?.time || 0
+    );
     const maxPoints = Number(meta?.maxPoints || meta?.max_points || section?.max_score || 0);
-    const grade = section?.grade;
+    const gradeLevel = Number(meta?.gradeLevel || entry?.gradeLevel || section?.grade || 0);
+    const taskCount =
+      entry.id === currentVariantId && Array.isArray(variantData?.tasks)
+        ? variantData.tasks.length
+        : countComposeTasks(entry);
 
+    if (examFormat === "oge") badges.push({ className: "format-oge", text: "ОГЭ" });
+    else if (examFormat === "ege") badges.push({ className: "format-ege", text: "ЕГЭ" });
+    if (gradeLevel > 0) badges.push({ className: "grade", text: `${gradeLevel} класс` });
+    if (taskCount > 0) badges.push({ className: "score", text: `${taskCount} зад.` });
+    else if (maxPoints > 0) badges.push({ className: "score", text: `${maxPoints} б.` });
     if (minutes > 0) badges.push({ className: "time", text: `${minutes} мин` });
-    if (maxPoints > 0) badges.push({ className: "score", text: `${maxPoints} б.` });
-    if (grade) badges.push({ className: "grade", text: `${grade} класс` });
-    if (entry?.compose?.summaryTextId) badges.push({ className: "score", text: "с изложением" });
+    if (entry?.compose?.summaryTextId) badges.push({ className: "summary", text: "+ изложение" });
     return badges;
+  }
+
+  function getFilteredVariants() {
+    const format = getFormatFilter();
+    return (manifest?.variants || []).filter((entry) => {
+      if (!format) return true;
+      return safeText(entry.examFormat).toLowerCase() === format;
+    });
   }
 
   function renderVariantCards() {
@@ -449,8 +525,13 @@
     if (!grid || !manifest) return;
 
     grid.innerHTML = "";
-    const variants = manifest.variants || [];
+    const variants = getFilteredVariants();
     const metaForBadges = variantMeta || {};
+
+    if (!variants.length) {
+      grid.innerHTML = '<p class="kd-subtitle">Нет вариантов для выбранного формата. Вернитесь к списку контрольных.</p>';
+      return;
+    }
 
     variants.forEach((entry) => {
       const btn = document.createElement("button");
@@ -470,7 +551,9 @@
         : `<div class="kd-variant-badges"><span class="kd-variant-badge">открыть вариант</span></div>`;
 
       const subtitle = safeText(entry?.compose?.subtitle || entry?.subtitle);
+      const formatLabel = getExamFormatLabel(safeText(entry.examFormat).toLowerCase());
       btn.innerHTML = `
+        ${formatLabel ? `<span class="kd-variant-format-label">${escapeHtml(formatLabel)}</span>` : ""}
         <strong>${escapeHtml(entry.title || entry.id)}</strong>
         ${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}
         ${badgeHtml}
@@ -500,9 +583,12 @@
     const payload = buildResultPayload();
     setText("successStudent", `${safeText(payload.student?.name) || "—"} · ${safeText(payload.student?.class) || "—"}`);
     setText("successVariant", payload.variant?.title || payload.variant?.id || "—");
+    const markText = score.mark != null ? ` · отметка ${score.mark}` : "";
     setText(
       "successScore",
-      score.max > 0 ? `${score.earned} из ${score.max} баллов (${score.percent}%)` : "Отправлено"
+      score.max > 0
+        ? `${score.earned} из ${score.max} баллов (${score.percent}%)${markText}`
+        : "Отправлено"
     );
 
     const back = $("successBackBtn");
@@ -569,11 +655,15 @@
         file: currentVariantFile,
         title: variantMeta?.title || "",
         subtitle: variantMeta?.subtitle || "",
+        examFormat: variantMeta?.examFormat || currentVariantEntry?.examFormat || "",
+        gradeLevel: variantMeta?.gradeLevel || currentVariantEntry?.gradeLevel || null,
       },
       grading: {
         maxPoints: score.max,
         earnedPoints: score.earned,
         percent: score.percent,
+        mark: score.mark,
+        scale: variantMeta?.grading || null,
       },
       student: {
         name: safeText($("studentName")?.value),
@@ -778,25 +868,29 @@
     if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
 
     sel.innerHTML = "";
-    (manifest.variants || []).forEach((v, idx) => {
+    const variants = getFilteredVariants();
+    if (!variants.length) {
+      throw new Error("manifest.json: нет вариантов для выбранного формата (проверьте ?format=oge или ?format=ege).");
+    }
+
+    const preferredId = safeText(getParam("variant"));
+    variants.forEach((v, idx) => {
       const opt = document.createElement("option");
       opt.value = v.id;
       opt.textContent = v.title || v.id;
       sel.appendChild(opt);
-      if (idx === 0) {
+      const isPreferred = preferredId && v.id === preferredId;
+      const isFirst = idx === 0;
+      if (isPreferred || (!preferredId && isFirst)) {
         currentVariantId = v.id;
         currentVariantEntry = v;
         currentVariantFile = v.file || `compose:${v.id}`;
       }
     });
 
-    if (sel.options.length) {
-      sel.value = currentVariantId;
-      currentVariantEntry = getManifestVariantById(sel.value);
-      currentVariantFile = currentVariantEntry?.file || `compose:${sel.value}`;
-    } else {
-      throw new Error("manifest.json: список variants пустой");
-    }
+    sel.value = currentVariantId;
+    currentVariantEntry = getManifestVariantById(sel.value) || variants[0];
+    currentVariantFile = currentVariantEntry?.file || `compose:${currentVariantId}`;
 
     sel.addEventListener("change", async () => {
       if (isFinished) return;
@@ -1056,6 +1150,33 @@
 
     const backLink = $("controlBackLink");
     if (backLink) backLink.href = "./index.html";
+
+    const format = getFormatFilter();
+    const formatNavWrap = $("controlFormatNav");
+    if (formatNavWrap) {
+      formatNavWrap.classList.toggle("kd-hidden", subject !== "russian");
+    }
+    const formatNav = document.querySelectorAll("[data-format-nav]");
+    formatNav.forEach((link) => {
+      const linkFormat = safeText(link.getAttribute("data-format-nav")).toLowerCase();
+      link.href = `control.html?subject=${encodeURIComponent(subject)}&format=${linkFormat}`;
+      link.classList.toggle("is-active", linkFormat === format);
+      if (linkFormat === format) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
+
+    const formatTitle = $("controlFormatTitle");
+    if (formatTitle) {
+      if (format === "oge") {
+        formatTitle.textContent =
+          "ОГЭ 2026 (демо ФИПИ): тренажёр — часть 2, задания 2–12 (11 б.). Отметка по шкале под заголовком.";
+      } else if (format === "ege") {
+        formatTitle.textContent =
+          "ЕГЭ 2026 (демо ФИПИ): тренажёр — часть 1, задания 1–26 (28 перв. б., №8 и №22 — по 2 б.). Отметка по %.";
+      } else if (subject === "russian") {
+        formatTitle.textContent = "Выберите формат выше (ОГЭ или ЕГЭ), затем карточку варианта.";
+      }
+    }
 
     $("successCloseBtn")?.addEventListener("click", hideSubmitSuccessOverlay);
     $("submitSuccessOverlay")?.addEventListener("click", (event) => {
