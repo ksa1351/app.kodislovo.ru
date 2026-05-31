@@ -1,0 +1,51 @@
+{
+  "schema": "kodislovo.exam-spec.v1",
+  "source": "ФИПИ, демоверсия ОГЭ 2026, русский язык (РУ-9 ОГЭ 2026_ДЕМО.pdf)",
+  "subject": "russian",
+  "examFormat": "oge",
+  "gradeLevel": 9,
+  "year": 2026,
+  "structure": {
+    "parts": [
+      {
+        "id": "part1",
+        "title": "Часть 1",
+        "tasks": [1],
+        "description": "Сжатое изложение по прослушанному тексту (бланк № 2)",
+        "maxPrimary": 6,
+        "grading": "expert",
+        "timeHintMinutes": null
+      },
+      {
+        "id": "part2",
+        "title": "Часть 2",
+        "tasks": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "description": "Краткий ответ, бланк № 1",
+        "maxPrimary": 11,
+        "grading": "auto",
+        "pointsPerTask": { "default": 1 }
+      },
+      {
+        "id": "part3",
+        "title": "Часть 3",
+        "tasks": ["13.1", "13.2", "13.3"],
+        "description": "Сочинение-рассуждение на выбор (бланк № 2)",
+        "maxPrimary": 20,
+        "grading": "expert",
+        "note": "7 баллов по СК1–СК4 + до 13 по ГК/ФК вместе с изложением"
+      }
+    ],
+    "totalTasks": 13,
+    "totalPrimaryMax": 37,
+    "timeMinutes": 235
+  },
+  "platform": {
+    "automatedPart": "part2",
+    "bankFile": "../bank/oge-demo-2026.json",
+    "availableTaskIdsInBank": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "missingInBank": [],
+    "trainingVariantTaskIds": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "trainingMaxPrimary": 11,
+    "note": "Тренажёр покрывает часть 2 без №3 и №8. Изложение и сочинение — отдельно (тренажёр изложения / ручная проверка)."
+  }
+}
