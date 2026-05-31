@@ -363,6 +363,84 @@ input:focus, select:focus, textarea:focus {
   gap: 12px;
 }
 
+.kd-status {
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.kd-status-live {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--success) 34%, var(--border));
+}
+
+.kd-status-soon {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border));
+}
+
+.kd-card-soon {
+  cursor: default;
+  opacity: 0.82;
+  background: color-mix(in srgb, var(--card-soft) 88%, transparent);
+}
+
+.kd-card-soon:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.kd-card-soon .kd-kicker {
+  color: var(--muted);
+}
+
+.kd-card-live {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.kd-callout {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary-soft) 56%, var(--card));
+}
+
+.kd-callout-soon {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--card));
+}
+
+.kd-callout strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.kd-callout p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.kd-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 820px) {
   :root { --pad: 16px; }
   .grid2 { grid-template-columns: 1fr; }
