@@ -47,7 +47,29 @@
   }
 
   function variantsBase(subject) {
-  return `${location.origin}${projectRoot()}controls/${encodeURIComponent(subject)}/variants/`;
+    return `${location.origin}${projectRoot()}controls/${encodeURIComponent(subject)}/variants/`;
+  }
+
+  function controlsBase(subject) {
+    return `${location.origin}${projectRoot()}controls/${encodeURIComponent(subject)}/`;
+  }
+
+  /** Пути ../bank/… из manifest — в канонический URL без «..» (стабильнее на статике). */
+  function resolveVariantSourceUrl(file) {
+    const rel = safeText(file);
+    if (!rel) throw new Error("Не задан путь к файлу банка заданий.");
+    if (rel.startsWith("bank:")) {
+      return `${controlsBase(subject)}bank/${encodeURIComponent(rel.slice(5))}`;
+    }
+    const bankRel = rel.match(/^\.\.\/bank\/(.+)$/);
+    if (bankRel) {
+      return `${controlsBase(subject)}bank/${bankRel[1].split("/").map(encodeURIComponent).join("/")}`;
+    }
+    try {
+      return new URL(rel, base).href;
+    } catch {
+      return base + rel;
+    }
   }
 
   async function fetchJson(url) {
@@ -159,6 +181,8 @@
   let backendServicesPromise = null;
   const variantSourceCache = new Map();
   let summaryBankPromise = null;
+  let variantLoadError = null;
+  let variantLoading = false;
 
   function lsKey() {
     return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
@@ -173,8 +197,15 @@
   }
 
   async function loadVariantSource(file) {
+    const url = resolveVariantSourceUrl(file);
     if (!variantSourceCache.has(file)) {
-      variantSourceCache.set(file, fetchJson(base + file));
+      variantSourceCache.set(
+        file,
+        fetchJson(url).catch((err) => {
+          variantSourceCache.delete(file);
+          throw err;
+        })
+      );
     }
     return deepClone(await variantSourceCache.get(file));
   }
@@ -540,7 +571,8 @@
       btn.setAttribute("role", "option");
       btn.setAttribute("aria-selected", entry.id === currentVariantId ? "true" : "false");
       if (entry.id === currentVariantId) btn.classList.add("is-active");
-      if (isFinished) btn.disabled = true;
+      if (variantLoading && entry.id === currentVariantId) btn.classList.add("is-loading");
+      if (isFinished || variantLoading) btn.disabled = true;
 
       const badges = getVariantCardBadges(
         entry,
@@ -559,14 +591,12 @@
         ${badgeHtml}
       `;
 
-      btn.addEventListener("click", async () => {
-        if (isFinished || entry.id === currentVariantId) return;
-        if (sel) sel.value = entry.id;
-        currentVariantId = entry.id;
-        currentVariantEntry = entry;
-        currentVariantFile = entry.file || `compose:${entry.id}`;
-        await loadVariant(entry);
-        renderVariantCards();
+      btn.addEventListener("click", () => {
+        if (isFinished) return;
+        selectVariant(entry, { force: entry.id === currentVariantId }).catch((err) => {
+          console.error(err);
+          alert("Не удалось загрузить вариант: " + (err.message || err));
+        });
       });
 
       grid.appendChild(btn);
@@ -767,14 +797,38 @@
   // ========= render ONE task =========
   let stickyBlocks = [];
 
+  function renderTaskLoadState() {
+    const cont = $("taskOne");
+    if (!cont) return;
+    if (variantLoading) {
+      cont.innerHTML = "<div class='kd-task'>Загрузка заданий…</div>";
+      setStickyVisible(false);
+      return;
+    }
+    if (variantLoadError) {
+      cont.innerHTML = `<div class='kd-task'><p>Не удалось загрузить задания.</p><p class="kd-subtitle">${escapeHtml(variantLoadError)}</p><p class="kd-subtitle">Нажмите на карточку варианта ещё раз или обновите страницу.</p></div>`;
+      setStickyVisible(false);
+      return;
+    }
+    const tasks = variantData?.tasks || [];
+    if (!tasks.length) {
+      cont.innerHTML = "<div class='kd-task'>Нет заданий в варианте. Выберите другую карточку или обновите страницу.</div>";
+      setStickyVisible(false);
+    }
+  }
+
   function renderCurrentTask() {
     const cont = $("taskOne");
     if (!cont) return;
 
+    if (variantLoading || variantLoadError) {
+      renderTaskLoadState();
+      return;
+    }
+
     const tasks = variantData?.tasks || [];
     if (!tasks.length) {
-      cont.innerHTML = "<div class='kd-task'>Нет заданий в варианте.</div>";
-      setStickyVisible(false);
+      renderTaskLoadState();
       return;
     }
 
@@ -892,13 +946,50 @@
     currentVariantEntry = getManifestVariantById(sel.value) || variants[0];
     currentVariantFile = currentVariantEntry?.file || `compose:${currentVariantId}`;
 
-    sel.addEventListener("change", async () => {
+    sel.addEventListener("change", () => {
       if (isFinished) return;
-      currentVariantId = sel.value;
-      currentVariantEntry = getManifestVariantById(currentVariantId);
-      currentVariantFile = currentVariantEntry?.file || `compose:${currentVariantId}`;
-      await loadVariant(currentVariantEntry);
+      const entry = getManifestVariantById(sel.value);
+      if (!entry) return;
+      selectVariant(entry).catch((err) => {
+        console.error(err);
+        alert("Не удалось загрузить вариант: " + (err.message || err));
+      });
     });
+  }
+
+  async function selectVariant(entry, options = {}) {
+    const force = Boolean(options.force);
+    if (!entry || isFinished) return;
+    if (!force && entry.id === currentVariantId && Array.isArray(variantData?.tasks) && variantData.tasks.length) {
+      return;
+    }
+
+    const sel = $("variantSelect");
+    if (sel) sel.value = entry.id;
+    currentVariantId = entry.id;
+    currentVariantEntry = entry;
+    currentVariantFile = entry.file || `compose:${entry.id}`;
+
+    variantLoading = true;
+    variantLoadError = null;
+    renderTaskLoadState();
+    renderVariantCards();
+
+    try {
+      await loadVariant(entry);
+      variantLoadError = null;
+    } catch (err) {
+      variantLoadError = safeText(err.message || err);
+      variantData = null;
+      variantMeta = null;
+      throw err;
+    } finally {
+      variantLoading = false;
+      renderVariantCards();
+      if (variantLoadError || !Array.isArray(variantData?.tasks) || !variantData.tasks.length) {
+        renderTaskLoadState();
+      }
+    }
   }
 
   async function loadVariant(entryOrFile) {
@@ -1185,7 +1276,11 @@
 
     await loadManifest();
     renderVariantCards();
-    await loadVariant(currentVariantEntry || currentVariantFile);
+    if (currentVariantEntry) {
+      await selectVariant(currentVariantEntry, { force: true });
+    } else {
+      throw new Error("Не выбран вариант в manifest.json.");
+    }
   }
 
   init().catch((err) => {
