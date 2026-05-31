@@ -295,9 +295,13 @@
       if (item.textKey && item.texts[item.textKey]) {
         const rangeKey = `${item.sourceFile}::${item.textKey}`;
         if (!textRanges[rangeKey]) {
+          const kimRange = Array.isArray(item.texts[item.textKey].range)
+            ? item.texts[item.textKey].range.map((n) => Number(n))
+            : null;
           textRanges[rangeKey] = {
             title: item.texts[item.textKey].title || "Текст",
             html: item.texts[item.textKey].html || "",
+            rangeKim: kimRange,
             from: nextId,
             to: nextId,
           };
@@ -314,6 +318,7 @@
       finalTexts[`T${index + 1}`] = {
         title: block.title,
         range: [block.from, block.to],
+        rangeKim: Array.isArray(block.rangeKim) ? block.rangeKim.slice() : null,
         html: block.html,
       };
     });
@@ -736,7 +741,14 @@
         const r = Array.isArray(t.range) ? t.range : null;
         const from = r ? Number(r[0]) : NaN;
         const to = r ? Number(r[1]) : NaN;
-        return { title: t.title || "Текст", from, to, html: t.html || "" };
+        const rangeKim = Array.isArray(t.rangeKim) ? t.rangeKim.map((n) => Number(n)) : null;
+        return {
+          title: t.title || "Текст",
+          from,
+          to,
+          html: t.html || "",
+          rangeKim: rangeKim && rangeKim.length === 2 ? rangeKim : null,
+        };
       })
       .filter((b) => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
 
@@ -757,7 +769,7 @@
     if (!title || !range || !body) return;
 
     title.textContent = block.title;
-    range.textContent = `задания ${block.from}–${block.to}`;
+    range.textContent = formatTaskRangeLabel(block);
     body.innerHTML = block.html;
 
     body.style.display = stickyCollapsed ? "none" : "";
@@ -799,14 +811,42 @@
       : null;
   }
 
-  function findBlockForTask(blocks, taskId) {
-    if (!taskId) return null;
-    for (const b of blocks) if (taskId >= b.from && taskId <= b.to) return b;
+  function getTaskKimId(task) {
+    const fromSource = Number(task?.source?.taskId);
+    if (Number.isFinite(fromSource)) return fromSource;
+    const kim = Number(task?.kimNumber);
+    if (Number.isFinite(kim)) return kim;
+    return Number(task?.id);
+  }
+
+  function findBlockForTask(blocks, task) {
+    if (!task) return null;
+    const displayId = Number(task.id);
+    const kimId = getTaskKimId(task);
+    for (const b of blocks) {
+      const kimRange = b.rangeKim;
+      if (Array.isArray(kimRange) && kimRange.length === 2) {
+        const fromKim = Number(kimRange[0]);
+        const toKim = Number(kimRange[1]);
+        if (Number.isFinite(fromKim) && Number.isFinite(toKim) && kimId >= fromKim && kimId <= toKim) {
+          return b;
+        }
+      }
+      if (Number.isFinite(displayId) && displayId >= b.from && displayId <= b.to) return b;
+    }
     return null;
   }
 
   function refreshStickyBlocks() {
     stickyBlocks = getTextRangesFromMeta();
+  }
+
+  function formatTaskRangeLabel(block) {
+    const kim = Array.isArray(block?.rangeKim) ? block.rangeKim : null;
+    if (kim && kim.length === 2) {
+      return `задания КИМ ${kim[0]}–${kim[1]}`;
+    }
+    return `задания ${block.from}–${block.to}`;
   }
 
   function renderTaskReadingHtml(block) {
@@ -815,7 +855,7 @@
       <section class="kd-task-reading kd-textbox" aria-label="${escapeHtml(block.title || "Текст")}">
         <header class="kd-task-reading-head">
           <strong>${escapeHtml(block.title || "Текст для заданий")}</strong>
-          <span class="kd-subtitle">задания ${block.from}–${block.to}</span>
+          <span class="kd-subtitle">${escapeHtml(formatTaskRangeLabel(block))}</span>
         </header>
         <div class="kd-task-reading-body">${block.html}</div>
       </section>
@@ -864,7 +904,7 @@
     const task = tasks[currentTaskIndex];
 
     refreshStickyBlocks();
-    const block = findBlockForTask(stickyBlocks, Number(task.id));
+    const block = findBlockForTask(stickyBlocks, task);
     if (block) {
       setStickyVisible(true);
       setStickyContent(block);
