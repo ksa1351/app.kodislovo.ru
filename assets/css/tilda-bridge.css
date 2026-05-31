@@ -1,0 +1,393 @@
+/*
+  Kodislovo Tilda bridge
+  Requires theme.css loaded first.
+  Maps Tilda page class names to shared design tokens (--ks-*).
+*/
+
+:root {
+  --bg: var(--ks-bg);
+  --bg2: var(--ks-bg-soft);
+  --header-bg: color-mix(in srgb, var(--ks-bg) 88%, transparent);
+  --header: var(--header-bg);
+  --card: var(--ks-surface);
+  --card-soft: var(--ks-surface-2);
+  --card2: var(--ks-surface-2);
+  --text: var(--ks-text);
+  --muted: var(--ks-text-soft);
+  --muted-soft: var(--ks-muted);
+  --border: var(--ks-border);
+  --border-strong: color-mix(in srgb, var(--ks-primary) 32%, var(--ks-border));
+  --primary: var(--ks-primary);
+  --accent: var(--ks-accent);
+  --primary-hover: var(--ks-accent);
+  --primary2: color-mix(in srgb, var(--ks-primary-soft) 76%, var(--ks-surface));
+  --primary-soft: var(--ks-primary-soft);
+  --primary-soft-2: color-mix(in srgb, var(--ks-primary-soft) 78%, var(--ks-surface));
+  --success: var(--ks-success);
+  --warning: var(--ks-warning);
+  --danger: var(--ks-danger);
+  --glow: var(--ks-accent);
+  --white: #ffffff;
+  --radius: var(--ks-radius-lg);
+  --shadow: var(--ks-shadow);
+  --shadow-button: 0 10px 22px color-mix(in srgb, var(--ks-primary) 28%, transparent);
+  --max: var(--ks-container);
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--ks-accent) 16%, transparent), transparent 28rem),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ks-gold) 12%, transparent), transparent 24rem),
+    linear-gradient(180deg, var(--bg2), var(--bg) 42%, var(--bg2));
+}
+
+.container {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 18px 16px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--header-bg) 92%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="light"] .topbar {
+  background: color-mix(in srgb, var(--ks-surface) 88%, transparent);
+}
+
+.topbar-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--ks-primary) 24%, transparent);
+}
+
+.brand b {
+  display: block;
+  font-family: var(--ks-font-serif);
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.brand span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle input { display: none; }
+
+.toggle small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.switch {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  position: relative;
+  display: inline-block;
+}
+
+.knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left var(--ks-transition);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--ks-primary) 28%, transparent);
+}
+
+input:checked + .switch .knob { left: 22px; }
+
+.hero {
+  padding: 22px 0 6px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-family: var(--ks-font-serif);
+  font-size: clamp(28px, 4vw, 44px);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.hero p {
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+.section-title {
+  margin: 28px 0 10px;
+  font-family: var(--ks-font-serif);
+  font-size: clamp(20px, 3vw, 26px);
+  color: var(--text);
+}
+
+.section-note {
+  margin: 0 auto 14px;
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.section {
+  margin-top: 22px;
+}
+
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-family: var(--ks-font-serif);
+  font-size: 22px;
+  color: var(--text);
+}
+
+.section-head p {
+  margin: 0;
+  max-width: 520px;
+  text-align: right;
+  color: var(--muted);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.card {
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform var(--ks-transition), border-color var(--ks-transition), box-shadow var(--ks-transition);
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.card h3 {
+  margin: 0 0 8px;
+  font-family: var(--ks-font-serif);
+  color: var(--text);
+}
+
+.card p,
+.card small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.card strong {
+  font-size: 18px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.card.featured { grid-column: span 2; }
+
+.card.live {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.card.soon {
+  opacity: 0.82;
+  cursor: default;
+}
+
+.card.soon:hover {
+  transform: none;
+  border-color: var(--border);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.chip,
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kicker {
+  width: max-content;
+  max-width: 100%;
+  min-height: 0;
+  padding: 5px 9px;
+}
+
+.chip.soon {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+  cursor: default;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.status.live {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--success) 34%, var(--border));
+}
+
+.status.soon {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--warning) 34%, var(--border));
+}
+
+.card .btns,
+.btns {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: var(--white) !important;
+  border: 1px solid transparent;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--shadow-button);
+  transition: transform var(--ks-transition), box-shadow var(--ks-transition);
+  cursor: pointer;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--ks-primary) 32%, transparent);
+}
+
+.btn.secondary {
+  background: var(--primary2);
+  color: var(--primary) !important;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .btn.secondary,
+[data-theme="dark"] .btn.secondary:link,
+[data-theme="dark"] .btn.secondary:visited {
+  color: var(--text) !important;
+}
+
+.btn.secondary:hover {
+  background: var(--primary-soft-2);
+  border-color: var(--border-strong);
+}
+
+footer {
+  text-align: center;
+  margin-top: 26px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+  .section-head { display: block; }
+  .section-head p { text-align: left; margin-top: 6px; }
+  .topbar-inner { padding: 10px 12px; }
+  .container { padding: 16px 12px; }
+  .card.featured { grid-column: auto; }
+}
