@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Информатика — раздел</title>
-  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-26-1" />
+  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-1" />
 </head>
 <body>
   <div class="site-topbar">
@@ -32,12 +32,19 @@
     </header>
 
     <section class="kd-section">
-      <div class="kd-panel">
+      <div id="sectionCallout" class="kd-callout kd-callout-soon" hidden>
+        <div>
+          <strong>Раздел в разработке</strong>
+          <p id="sectionCalloutText">Интерактивные задания для этого раздела пока готовятся. Ниже — план тем, которые появятся позже.</p>
+        </div>
+      </div>
+
+      <div class="kd-panel" style="margin-top:16px">
         <h2>Что будет в разделе</h2>
         <ul id="sectionItems" class="kd-list"></ul>
         <div id="sectionLinks" class="kd-actions" style="margin-bottom:12px"></div>
         <div class="kd-actions">
-          <a class="kd-button" href="../../control/control.html?subject=informatics">Открыть контрольную</a>
+          <a id="sectionPrimaryLink" class="kd-button" href="../../control/control.html?subject=informatics">Открыть контрольную</a>
           <a class="kd-button kd-button-secondary" href="./index.html">К разделам</a>
         </div>
       </div>
