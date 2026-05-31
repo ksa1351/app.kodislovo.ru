@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Контрольная — Кодислово</title>
   <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-8" />
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-9" />
   <link rel="stylesheet" href="../assets/css/control-phase4.css?v=2026-05-31-8" />
 </head>
 
@@ -100,13 +100,13 @@
       </div>
     </section>
 
-    <section class="kd-stage kd-hidden" id="stickyTextWrap">
-      <div class="kd-row" style="margin-bottom:10px">
+    <section class="kd-stage kd-hidden kd-reading-panel" id="stickyTextWrap" aria-label="Текст к заданиям">
+      <div class="kd-row kd-reading-panel-head">
         <div>
           <div style="font-weight:800; font-size:18px" id="stickyTextTitle">Текст</div>
           <div class="kd-subtitle" id="stickyTextRange">задания 1–5</div>
         </div>
-        <button class="kd-btn secondary" id="stickyToggle" type="button">Скрыть</button>
+        <button class="kd-btn secondary" id="stickyToggle" type="button" aria-expanded="true" aria-controls="stickyTextBody">Скрыть</button>
       </div>
       <div class="kd-textbox" id="stickyTextBody"></div>
     </section>
@@ -146,6 +146,6 @@
   </div>
 
   <script src="../assets/js/control-grading.js?v=2026-05-31-7"></script>
-  <script src="./control_core.js?v=19"></script>
+  <script src="./control_core.js?v=20"></script>
 </body>
 </html>
