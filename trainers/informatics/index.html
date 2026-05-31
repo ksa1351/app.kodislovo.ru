@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Информатика — Кодислово</title>
-  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-26-1" />
+  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-1" />
 </head>
 <body>
   <div class="site-topbar">
@@ -28,48 +28,73 @@
     <header class="kd-hero">
       <a class="kd-back" href="../../index.html">Кодислово</a>
       <h1>Информатика</h1>
-      <p>Теория, тренажеры и контрольные по школьной информатике для 7-9 классов, ВПР и ОГЭ.</p>
+      <p>Теория, тренажеры и контрольные по школьной информатике. Сейчас открыт тренажер ОГЭ задания 1.</p>
     </header>
+
+    <section class="kd-section" aria-labelledby="live-title">
+      <div class="kd-section-head">
+        <h2 id="live-title">Доступно сейчас</h2>
+        <p>Рабочие модули, которые можно использовать уже сегодня.</p>
+      </div>
+      <div class="kd-card-grid kd-card-grid-compact">
+        <a class="kd-card kd-card-live" href="./oge_task1.html">
+          <div class="kd-card-head">
+            <span class="kd-kicker">ОГЭ: задание 1</span>
+            <span class="kd-status kd-status-live">Доступно</span>
+          </div>
+          <strong>Количественные параметры объектов</strong>
+          <small>Тренажер по объему информации, скорости передачи и размеру файлов.</small>
+        </a>
+        <a class="kd-card kd-card-live" href="../../control/control.html?subject=informatics">
+          <div class="kd-card-head">
+            <span class="kd-kicker">Контрольные</span>
+            <span class="kd-status kd-status-live">Доступно</span>
+          </div>
+          <strong>Контрольная работа</strong>
+          <small>Общий модуль ученика с таймером и отправкой через backend.</small>
+        </a>
+      </div>
+    </section>
 
     <section class="kd-section" aria-labelledby="grades-title">
       <div class="kd-section-head">
         <h2 id="grades-title">Классы</h2>
-        <p>Материалы для регулярной работы по школьной программе.</p>
+        <p>Разделы школьной программы готовятся. Карточки показывают план наполнения.</p>
       </div>
       <div class="kd-card-grid">
-        <a class="kd-card" href="./trainer.html?section=grade-7">
-          <span class="kd-kicker">7 класс</span>
+        <div class="kd-card kd-card-soon" aria-disabled="true">
+          <div class="kd-card-head"><span class="kd-kicker">7 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Информация и данные</strong>
           <small>Кодирование, единицы измерения, таблицы, базовые алгоритмы.</small>
-        </a>
-        <a class="kd-card" href="./trainer.html?section=grade-8">
-          <span class="kd-kicker">8 класс</span>
+        </div>
+        <div class="kd-card kd-card-soon" aria-disabled="true">
+          <div class="kd-card-head"><span class="kd-kicker">8 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Логика и алгоритмы</strong>
           <small>Логические выражения, исполнители, ветвления и циклы.</small>
-        </a>
-        <a class="kd-card" href="./trainer.html?section=grade-9">
-          <span class="kd-kicker">9 класс</span>
+        </div>
+        <div class="kd-card kd-card-soon" aria-disabled="true">
+          <div class="kd-card-head"><span class="kd-kicker">9 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Повторение и ОГЭ</strong>
           <small>Системы счисления, анализ программ, таблицы и графы.</small>
-        </a>
+        </div>
       </div>
     </section>
 
     <section class="kd-section" aria-labelledby="exam-title">
       <div class="kd-section-head">
         <h2 id="exam-title">Проверочные форматы</h2>
-        <p>Отдельные маршруты для подготовки к ВПР и ОГЭ.</p>
+        <p>Дополнительные маршруты подготовки к ВПР и ОГЭ.</p>
       </div>
       <div class="kd-card-grid kd-card-grid-compact">
-        <a class="kd-card kd-card-accent" href="./trainer.html?section=vpr">
-          <span class="kd-kicker">ВПР</span>
+        <div class="kd-card kd-card-soon" aria-disabled="true">
+          <div class="kd-card-head"><span class="kd-kicker">ВПР</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Всероссийские проверочные работы</strong>
           <small>Типовые задания по данным, логике, алгоритмам и таблицам.</small>
-        </a>
-        <a class="kd-card kd-card-accent" href="./trainer.html?section=oge">
-          <span class="kd-kicker">ОГЭ</span>
+        </div>
+        <a class="kd-card kd-card-live" href="./oge_task1.html">
+          <div class="kd-card-head"><span class="kd-kicker">ОГЭ</span><span class="kd-status kd-status-live">Частично</span></div>
           <strong>Подготовка к ОГЭ</strong>
-          <small>Практика заданий ОГЭ, включая тренажер задания 1.</small>
+          <small>Задание 1 уже доступно. Остальные задания готовятся.</small>
         </a>
       </div>
     </section>
