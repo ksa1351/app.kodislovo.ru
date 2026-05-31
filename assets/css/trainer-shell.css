@@ -10,6 +10,16 @@
 
 body.trainer-body {
   padding-bottom: 0;
+  overflow-x: clip;
+}
+
+.trainer-page,
+.trainer-page .kd-panel,
+.trainer-page .reading-layout,
+.trainer-page .reading-main,
+.trainer-page .reading-side {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .trainer-page [id^="step-"] {
@@ -244,5 +254,86 @@ body.trainer-body {
 
   .reading-side-accordion .reading-side-panel {
     display: block;
+  }
+}
+
+/* Mobile: full-width action buttons, compact page */
+@media (max-width: 720px) {
+  .trainer-page.kd-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .trainer-stepper {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .trainer-stepper a {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .trainer-page .reading-actions,
+  .trainer-page .reading-mini-actions,
+  .trainer-page .kd-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trainer-page .reading-actions .kd-button,
+  .trainer-page .reading-mini-actions .kd-button,
+  .trainer-page .kd-actions .kd-button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .trainer-page .reading-panel {
+    padding: 16px;
+  }
+
+  .trainer-page .reading-text-wrap,
+  .trainer-page .reading-block {
+    padding: 14px;
+  }
+
+  .trainer-page .reading-text-box {
+    padding: 14px;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .trainer-page .reading-completion-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trainer-page .kd-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .trainer-page .kd-section-head p {
+    text-align: left;
+    max-width: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .trainer-stepper a {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .trainer-stepper-num {
+    display: none;
   }
 }
