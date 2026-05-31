@@ -38,13 +38,54 @@
 }
 
 .feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   min-height: 28px;
   margin-top: 12px;
-  font-weight: 700;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
-.feedback.ok { color: var(--success); }
-.feedback.bad { color: var(--danger); }
+.feedback::before {
+  flex: 0 0 auto;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.feedback.ok {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 36%, var(--border));
+  background: color-mix(in srgb, var(--success) 10%, var(--card));
+}
+
+.feedback.ok::before {
+  content: "✓";
+}
+
+.feedback.bad {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 36%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--card));
+}
+
+.feedback.bad::before {
+  content: "✗";
+}
+
+.feedback.neutral {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--card-soft) 88%, transparent);
+}
+
+.feedback.neutral::before {
+  content: "ℹ";
+  color: var(--primary);
+}
 
 .trainer-footer {
   display: flex;
