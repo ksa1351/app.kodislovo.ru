@@ -1,5 +1,14 @@
 .reading-page{
   padding-bottom:56px;
+  overflow-x:clip;
+}
+
+.reading-layout,
+.reading-main,
+.reading-side,
+.reading-panel{
+  min-width:0;
+  max-width:100%;
 }
 
 .reading-page .trainer-stepper{
@@ -126,6 +135,14 @@
   display:flex;
   flex-wrap:wrap;
   gap:10px;
+  max-width:100%;
+}
+
+.reading-actions .kd-button,
+.reading-mini-actions .kd-button{
+  flex:1 1 auto;
+  min-width:min(100%, 10rem);
+  max-width:100%;
 }
 
 .reading-actions{
@@ -464,6 +481,11 @@
     display:block;
   }
 
+  .reading-text-head .reading-text-stats{
+    white-space:normal;
+    margin-top:8px;
+  }
+
   .reading-step-badge{
     display:inline-flex;
     margin-bottom:10px;
@@ -472,9 +494,30 @@
   .reading-timer-card{
     margin-top:12px;
     min-width:0;
+    width:100%;
+    box-sizing:border-box;
   }
 
   .reading-timer-value{
     font-size:36px;
+  }
+
+  .reading-actions,
+  .reading-mini-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .reading-actions .kd-button,
+  .reading-mini-actions .kd-button{
+    width:100%;
+    min-width:0;
+    flex:1 1 auto;
+  }
+
+  .reading-report{
+    max-width:100%;
+    overflow-x:auto;
+    word-break:break-word;
   }
 }
