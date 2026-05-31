@@ -1,0 +1,40 @@
+{
+  "schema": "kodislovo.exam-spec.v1",
+  "source": "ФИПИ, проект демоверсии ОГЭ 2026, информатика (ИНФ-9 ОГЭ 2026_ДЕМО.pdf)",
+  "subject": "informatics",
+  "examFormat": "oge",
+  "gradeLevel": 9,
+  "year": 2026,
+  "structure": {
+    "parts": [
+      {
+        "id": "part1",
+        "title": "Часть 1",
+        "tasks": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "description": "Краткий ответ, бланк № 1",
+        "maxPrimary": 12,
+        "grading": "auto",
+        "pointsPerTask": { "default": 1 },
+        "timeHintMinutes": 30
+      },
+      {
+        "id": "part2",
+        "title": "Часть 2",
+        "tasks": [13, 14, 15, 16],
+        "description": "На компьютере: презентация, текст, таблица, программа (файлы ответов)",
+        "maxPrimary": 8,
+        "grading": "expert",
+        "pointsPerTask": { "default": 2 },
+        "timeHintMinutes": 120
+      }
+    ],
+    "totalTasks": 16,
+    "totalPrimaryMax": 20,
+    "timeMinutes": 150
+  },
+  "platform": {
+    "automatedPart": "part1",
+    "availableTaskIdsInBank": [],
+    "note": "Банк заданий информатики в репозитории пока пуст. Для ОГЭ нужны задания 1–12 + отдельный модуль для 13–16."
+  }
+}
