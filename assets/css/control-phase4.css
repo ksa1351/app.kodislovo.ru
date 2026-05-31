@@ -141,6 +141,11 @@
   background: color-mix(in srgb, var(--ks-success) 8%, var(--card));
 }
 
+.kd-variant-card.is-loading {
+  opacity: 0.85;
+  cursor: wait;
+}
+
 .kd-variant-card:disabled {
   opacity: 0.55;
   cursor: not-allowed;
