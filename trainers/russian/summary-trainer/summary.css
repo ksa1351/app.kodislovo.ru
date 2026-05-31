@@ -2,6 +2,12 @@
   padding-bottom: 56px;
 }
 
+.summary-student-bar.is-sticky-top {
+  position: sticky;
+  top: calc(var(--trainer-topbar-h, 64px) + 6px);
+  z-index: 12;
+}
+
 .summary-hero p {
   max-width: 860px;
 }
@@ -215,5 +221,31 @@ html[data-theme="light"] #textSelect option {
 
   .summary-workspace {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .summary-submit-row {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    margin: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--header-bg) 94%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 -8px 28px color-mix(in srgb, var(--ks-bg) 40%, transparent);
+  }
+
+  .summary-submit-row .kd-button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .summary-submit-status {
+    flex: 1 1 100%;
+    font-size: 12px;
   }
 }
