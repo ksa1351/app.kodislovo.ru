@@ -2,6 +2,10 @@
   padding-bottom:56px;
 }
 
+.reading-page .trainer-stepper{
+  margin-top:4px;
+}
+
 .reading-head{
   align-items:stretch;
   gap:16px;
@@ -429,6 +433,20 @@
 @media (max-width: 980px){
   .reading-layout{
     grid-template-columns:1fr;
+  }
+
+  .reading-side{
+    order:2;
+  }
+
+  .reading-main{
+    order:1;
+  }
+
+  .reading-head .reading-timer-card{
+    position:sticky;
+    top:calc(var(--trainer-topbar-h, 64px) + 8px);
+    z-index:11;
   }
 }
 
