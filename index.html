@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Кодислово</title>
-  <link rel="stylesheet" href="./assets/css/ui.css?v=2026-05-26-1" />
+  <link rel="stylesheet" href="./assets/css/ui.css?v=2026-05-31-1" />
 </head>
 <body>
   <div class="site-topbar">
@@ -27,29 +27,53 @@
   <main class="kd-page">
     <header class="kd-hero">
       <h1>Кодислово</h1>
-      <p>Тренажеры и контрольные для школы. Сейчас доступны русский язык и информатика.</p>
+      <p>Тренажеры и контрольные для школы. Открыты модули ОГЭ, итогового собеседования и контрольных работ.</p>
     </header>
+
+    <section class="kd-section" aria-labelledby="live-title">
+      <div class="kd-section-head">
+        <h2 id="live-title">Доступно сейчас</h2>
+        <p>Рабочие модули, которые можно открыть без ожидания.</p>
+      </div>
+      <div class="kd-card-grid kd-card-grid-compact">
+        <a class="kd-card kd-card-live kd-card-accent" href="./trainers/russian/summary-trainer/">
+          <div class="kd-card-head"><span class="kd-kicker">Русский язык</span><span class="kd-status kd-status-live">Доступно</span></div>
+          <strong>ОГЭ: сжатое изложение</strong>
+          <small>Исходный текст, микротемы, черновик и отправка работы.</small>
+        </a>
+        <a class="kd-card kd-card-live" href="./trainers/russian/reading/">
+          <div class="kd-card-head"><span class="kd-kicker">Русский язык</span><span class="kd-status kd-status-live">Доступно</span></div>
+          <strong>Итоговое собеседование: чтение</strong>
+          <small>Таймер, ошибки чтения, пересказ, монолог и итоговый отчет.</small>
+        </a>
+        <a class="kd-card kd-card-live" href="./trainers/informatics/oge_task1.html">
+          <div class="kd-card-head"><span class="kd-kicker">Информатика</span><span class="kd-status kd-status-live">Доступно</span></div>
+          <strong>ОГЭ: задание 1</strong>
+          <small>Количественные параметры информационных объектов.</small>
+        </a>
+        <a class="kd-card kd-card-live" href="./control/">
+          <div class="kd-card-head"><span class="kd-kicker">Контрольные</span><span class="kd-status kd-status-live">Доступно</span></div>
+          <strong>Контрольные работы</strong>
+          <small>Русский язык и информатика с таймером и отправкой.</small>
+        </a>
+      </div>
+    </section>
 
     <section class="kd-section" aria-labelledby="subjects-title">
       <div class="kd-section-head">
-        <h2 id="subjects-title">Разделы</h2>
-        <p>Выберите доступный учебный раздел или модуль контрольных.</p>
+        <h2 id="subjects-title">Разделы предметов</h2>
+        <p>Полная навигация по классам и форматам. Неготовые разделы помечены как «Скоро».</p>
       </div>
       <div class="kd-card-grid kd-card-grid-compact">
         <a class="kd-card kd-card-accent" href="./trainers/russian/">
           <span class="kd-kicker">Русский язык</span>
           <strong>Классы 5-11, ВПР, ОГЭ, ЕГЭ</strong>
-          <small>Теория, тренажеры и контрольные по разделам русского языка.</small>
+          <small>Изложение и чтение уже работают. Остальные разделы готовятся.</small>
         </a>
         <a class="kd-card" href="./trainers/informatics/">
           <span class="kd-kicker">Информатика</span>
           <strong>7-9 классы, ВПР, ОГЭ</strong>
-          <small>Алгоритмы, логика, кодирование, данные и практические задания.</small>
-        </a>
-        <a class="kd-card" href="./control/">
-          <span class="kd-kicker">Контрольные</span>
-          <strong>Выбор доступного предмета</strong>
-          <small>Единый модуль контрольных работ для ученика.</small>
+          <small>ОГЭ задание 1 уже доступно. Классовые темы готовятся.</small>
         </a>
       </div>
     </section>
