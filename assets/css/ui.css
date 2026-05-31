@@ -86,8 +86,8 @@ h1, h2, h3 {
   height: 40px;
   flex: 0 0 auto;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--ks-primary), var(--ks-accent));
-  box-shadow: 0 14px 26px color-mix(in srgb, var(--ks-primary) 26%, transparent);
+  background: url("../brand/logo-mark.svg") center / contain no-repeat;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--ks-primary) 22%, transparent);
 }
 
 .site-brand b {
