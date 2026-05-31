@@ -157,6 +157,39 @@
   background:var(--card);
 }
 
+.reading-flow-controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  max-width:100%;
+}
+
+.reading-flow-controls-start{
+  margin-bottom:14px;
+}
+
+.reading-flow-controls-finish{
+  margin-top:14px;
+}
+
+.reading-flow-controls .kd-button{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.reading-flow-controls-start .kd-button{
+  max-width:22rem;
+}
+
+@media (max-width: 720px){
+  .reading-flow-controls-start .kd-button,
+  .reading-flow-controls-finish .kd-button{
+    max-width:none;
+  }
+}
+
 .reading-block-soft{
   background:color-mix(in srgb,var(--card) 82%,var(--primary-soft));
 }
