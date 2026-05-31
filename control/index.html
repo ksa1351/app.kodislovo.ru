@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Контрольные — выбор предмета</title>
   <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-05-31-1" />
+  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-05-31-2" />
 </head>
 <body>
   <div class="site-topbar">
@@ -27,7 +27,12 @@
 
   <main class="kd-page">
     <header class="kd-hero">
-      <a class="kd-back" href="../index.html">Кодислово</a>
+      <nav aria-label="Навигация">
+        <ol class="kd-breadcrumbs">
+          <li><a href="../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><span aria-current="page">Контрольные</span></li>
+        </ol>
+      </nav>
       <h1>Контрольные работы</h1>
       <p>Выберите предмет. Дальше откроется общий модуль контрольной, который подтянет доступные варианты и настройки времени.</p>
     </header>
@@ -37,12 +42,12 @@
         <h2>Доступные предметы</h2>
         <p>Обе кнопки ведут в общий модуль <code>control/control.html</code>, но с разными параметрами предмета.</p>
         <div class="kd-card-grid kd-card-grid-compact">
-          <a class="kd-card kd-card-accent" href="control.html?subject=russian">
+          <a class="kd-card kd-card-accent kd-card-russian" href="control.html?subject=russian">
             <span class="kd-kicker">Русский язык</span>
             <strong>Варианты ОГЭ, изложения и смешанные контрольные</strong>
             <small>Тестовые задания, привязанные тексты изложений, таймер и отправка через backend.</small>
           </a>
-          <a class="kd-card" href="control.html?subject=informatics">
+          <a class="kd-card kd-card-informatics" href="control.html?subject=informatics">
             <span class="kd-kicker">Информатика</span>
             <strong>Контрольные и тренировочные варианты</strong>
             <small>Выбор предмета с тем же рабочим интерфейсом ученика и общим контуром отправки.</small>
@@ -52,6 +57,9 @@
     </section>
   </main>
 
+  <footer class="site-footer">
+    © Кодислово · контрольные · Обновлено май 2026
+  </footer>
   <script src="../assets/js/theme.js"></script>
 </body>
 </html>
