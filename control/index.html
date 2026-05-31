@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Контрольные — выбор предмета</title>
   <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-05-31-6" />
+  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-05-31-7" />
 </head>
 <body>
   <div class="site-topbar">
@@ -34,20 +34,32 @@
         </ol>
       </nav>
       <h1>Контрольные работы</h1>
-      <p>Выберите предмет. На следующем шаге откроется список вариантов с временем и баллами.</p>
+      <p>Выберите предмет и формат экзамена. ОГЭ и ЕГЭ отличаются числом заданий и шкалой перевода в отметку.</p>
     </header>
 
     <section class="kd-section">
+      <div class="kd-section-head"><h2>Русский язык</h2></div>
       <div class="kd-card-grid kd-card-grid-compact">
-        <a class="kd-card kd-card-accent kd-card-russian" href="control.html?subject=russian">
-          <div class="kd-card-head"><span class="kd-kicker">Русский язык</span><span class="kd-status kd-status-live">Доступно</span></div>
-          <strong>Варианты ОГЭ, изложения и смешанные контрольные</strong>
-          <small>Карточки вариантов, таймер с предупреждением, отправка и экран «Работа отправлена».</small>
+        <a class="kd-card kd-card-accent kd-card-russian" href="control.html?subject=russian&amp;format=oge">
+          <div class="kd-card-head"><span class="kd-kicker">ОГЭ</span><span class="kd-status kd-status-live">9 класс</span></div>
+          <strong>Тренировочные варианты ОГЭ</strong>
+          <small>Демо ФИПИ 2026: часть 2 — задания 2–12 (11 б.), автопроверка.</small>
         </a>
-        <a class="kd-card kd-card-informatics" href="control.html?subject=informatics">
-          <div class="kd-card-head"><span class="kd-kicker">Информатика</span><span class="kd-status kd-status-live">Доступно</span></div>
-          <strong>Контрольные и тренировочные варианты</strong>
-          <small>Тот же интерфейс ученика: варианты, задания по номерам, таймер и отправка.</small>
+        <a class="kd-card kd-card-accent kd-card-russian" href="control.html?subject=russian&amp;format=ege">
+          <div class="kd-card-head"><span class="kd-kicker">ЕГЭ</span><span class="kd-status kd-status-live">11 класс</span></div>
+          <strong>Тренировочные варианты ЕГЭ</strong>
+          <small>Демо ФИПИ 2026: часть 1 — задания 1–26 (28 перв. б.), автопроверка.</small>
+        </a>
+      </div>
+    </section>
+
+    <section class="kd-section">
+      <div class="kd-section-head"><h2>Другие предметы</h2></div>
+      <div class="kd-card-grid kd-card-grid-compact">
+        <a class="kd-card kd-card-informatics" href="../trainers/informatics/oge_task1.html">
+          <div class="kd-card-head"><span class="kd-kicker">Информатика</span><span class="kd-status">Скоро</span></div>
+          <strong>ОГЭ 2026 — контрольная (16 зад.)</strong>
+          <small>Демо ФИПИ: 12 зад. с кратким ответом + 4 на компьютере. Пока доступен тренажёр задания 1.</small>
         </a>
       </div>
     </section>
