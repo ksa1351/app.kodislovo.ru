@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Тренажёр итогового собеседования</title>
   <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-4" />
-  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-05-31-4" />
-  <link rel="stylesheet" href="./reading.css?v=2026-05-31-4" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-5" />
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-05-31-5" />
+  <link rel="stylesheet" href="./reading.css?v=2026-05-31-5" />
 </head>
 <body class="trainer-body">
   <div class="site-topbar">
@@ -89,9 +89,7 @@
               <select id="textSelect" class="reading-input"></select>
             </label>
 
-            <div class="reading-actions">
-              <button id="startBtn" class="kd-button" type="button">Начать чтение</button>
-              <button id="finishBtn" class="kd-button kd-button-secondary" type="button">Завершить чтение</button>
+            <div class="reading-actions reading-actions-tools">
               <button id="buildReportBtn" class="kd-button kd-button-secondary" type="button">Сформировать отчёт</button>
               <button id="downloadBtn" class="kd-button kd-button-secondary" type="button">Скачать JSON</button>
               <button id="resetBtn" class="kd-button kd-button-secondary" type="button">Сбросить всё</button>
@@ -103,7 +101,7 @@
               <span class="reading-step-badge">Шаг 1</span>
               <div>
                 <h2>Чтение</h2>
-                <p>Во время чтения запускайте таймер и отмечайте ошибки в правой колонке.</p>
+                <p>Нажмите «Начать чтение» перед текстом, отмечайте ошибки в боковой колонке, затем «Завершить чтение» после прочтения.</p>
               </div>
             </div>
 
@@ -117,7 +115,16 @@
                   <span id="wordsTotalLabel">Слов: 0</span>
                 </div>
               </div>
+
+              <div class="reading-flow-controls reading-flow-controls-start">
+                <button id="startBtn" class="kd-button" type="button">Начать чтение</button>
+              </div>
+
               <div id="readingText" class="reading-text-box"></div>
+
+              <div class="reading-flow-controls reading-flow-controls-finish">
+                <button id="finishBtn" class="kd-button kd-button-secondary" type="button">Завершить чтение</button>
+              </div>
             </div>
           </article>
 
@@ -355,7 +362,7 @@
   </main>
 
   <script src="../../../assets/js/theme.js"></script>
-  <script src="../../../assets/js/trainer-shell.js?v=2026-05-31-4"></script>
-  <script src="./reading.js?v=2026-05-31-4"></script>
+  <script src="../../../assets/js/trainer-shell.js?v=2026-05-31-5"></script>
+  <script src="./reading.js?v=2026-05-31-5"></script>
 </body>
 </html>
