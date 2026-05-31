@@ -1,0 +1,248 @@
+/*
+  Kodislovo trainer shell — shared layout for active trainers (phase 3).
+  Requires ui.css (theme tokens) loaded first.
+*/
+
+:root {
+  --trainer-topbar-h: 64px;
+  --trainer-mobile-bar-h: 76px;
+}
+
+body.trainer-body {
+  padding-bottom: 0;
+}
+
+.trainer-page [id^="step-"] {
+  scroll-margin-top: calc(var(--trainer-topbar-h) + 72px);
+}
+
+.trainer-page.kd-page {
+  padding-top: 20px;
+  padding-bottom: 48px;
+}
+
+.trainer-page .kd-hero {
+  padding-bottom: 12px;
+}
+
+.trainer-page .kd-hero h1 {
+  font-size: clamp(26px, 4vw, 42px);
+  margin-top: 6px;
+}
+
+.trainer-page .kd-hero p {
+  font-size: 16px;
+  max-width: 720px;
+}
+
+/* Horizontal stepper */
+.trainer-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.trainer-stepper li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trainer-stepper a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.trainer-stepper a:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.trainer-stepper a.is-active {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background: color-mix(in srgb, var(--primary-soft) 80%, var(--card));
+  color: var(--text);
+}
+
+.trainer-stepper-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 18%, var(--card));
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.trainer-stepper a.is-active .trainer-stepper-num {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: var(--white);
+}
+
+/* Score / progress strip (OGE, etc.) */
+.trainer-score-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary-soft) 56%, var(--card));
+}
+
+.trainer-score-bar strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.trainer-score-bar span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.trainer-score-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trainer-score-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.trainer-score-pill.ok {
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  color: var(--success);
+}
+
+/* Sticky mobile action bar */
+.trainer-mobile-bar {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  body.trainer-body.trainer-mobile-pad {
+    padding-bottom: calc(var(--trainer-mobile-bar-h) + 16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .trainer-mobile-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    min-height: var(--trainer-mobile-bar-h);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--header-bg) 94%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 -8px 28px color-mix(in srgb, var(--ks-bg) 40%, transparent);
+  }
+
+  .trainer-mobile-bar-status {
+    flex: 1;
+    min-width: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .trainer-mobile-bar .kd-button {
+    flex: 0 0 auto;
+    min-width: 140px;
+  }
+}
+
+/* Reading: sidebar as accordion on narrow screens */
+@media (max-width: 980px) {
+  .reading-side-accordion .reading-side-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    overflow: hidden;
+  }
+
+  .reading-side-accordion .reading-side-panel + .reading-side-panel {
+    margin-top: 10px;
+  }
+
+  .reading-side-accordion .reading-side-panel > summary {
+    cursor: pointer;
+    padding: 16px 18px;
+    font-family: var(--ks-font-serif);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    list-style: none;
+    user-select: none;
+  }
+
+  .reading-side-accordion .reading-side-panel > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .reading-side-accordion .reading-side-panel > summary::after {
+    content: "+";
+    float: right;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .reading-side-accordion .reading-side-panel[open] > summary::after {
+    content: "−";
+  }
+
+  .reading-side-accordion .reading-side-panel > .reading-panel {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-top: 0;
+  }
+
+  .reading-side-accordion .reading-side-panel > .reading-panel > h2:first-child {
+    display: none;
+  }
+}
+
+@media (min-width: 981px) {
+  .reading-side-accordion .reading-side-panel > summary {
+    display: none;
+  }
+
+  .reading-side-accordion .reading-side-panel {
+    display: block;
+  }
+}
