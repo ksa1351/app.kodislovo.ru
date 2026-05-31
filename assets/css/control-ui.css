@@ -287,34 +287,16 @@ a { color: inherit; }
   color: var(--text);
 }
 
-.kd-task-reading {
-  margin: 12px 0 16px;
+.kd-reading-panel-head {
+  margin-bottom: 10px;
 }
 
-.kd-task-reading-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 12px;
-  margin-bottom: 12px;
+.kd-reading-panel .kd-textbox {
+  margin-top: 0;
 }
 
-.kd-task-reading-head strong {
-  font-size: 17px;
-}
-
-.kd-task-reading-body {
-  line-height: 1.65;
-  color: var(--text);
-}
-
-.kd-task-reading-body h2 {
-  margin: 0 0 10px;
-  font-size: 18px;
-}
-
-.kd-task-reading-body p {
-  margin: 0 0 10px;
+.kd-reading-panel .kd-textbox.kd-hidden {
+  display: none !important;
 }
 
 .kd-textbox .muted { color: var(--muted); }
