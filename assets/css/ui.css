@@ -579,3 +579,11 @@ input:focus, select:focus, textarea:focus {
   .kd-section-head p { text-align: left; margin-top: 8px; }
   .kd-card { min-height: 158px; }
 }
+
+@media (max-width: 720px) {
+  .kd-page {
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+  }
+}
