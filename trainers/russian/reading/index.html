@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Тренажёр итогового собеседования</title>
   <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-2" />
-  <link rel="stylesheet" href="./reading.css?v=2026-05-31-2" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="./reading.css?v=2026-05-31-3" />
 </head>
-<body>
+<body class="trainer-body">
   <div class="site-topbar">
     <div class="site-topbar-inner">
       <a class="site-brand" href="../index.html">
         <span class="site-logo"></span>
         <span>
           <b>Кодислово</b>
-          <span>русский язык</span>
+          <span>русский язык · собеседование</span>
         </span>
       </a>
       <label class="theme-toggle">
@@ -26,7 +27,7 @@
     </div>
   </div>
 
-  <main class="kd-page reading-page">
+  <main class="kd-page trainer-page reading-page">
     <header class="kd-hero reading-hero">
       <nav aria-label="Навигация">
         <ol class="kd-breadcrumbs">
@@ -51,9 +52,19 @@
         </div>
       </div>
 
+      <nav aria-label="Этапы собеседования">
+        <ol class="trainer-stepper">
+          <li><a href="#step-setup" class="is-active"><span class="trainer-stepper-num">0</span> Данные</a></li>
+          <li><a href="#step-reading"><span class="trainer-stepper-num">1</span> Чтение</a></li>
+          <li><a href="#step-retelling"><span class="trainer-stepper-num">2</span> Пересказ</a></li>
+          <li><a href="#step-monologue"><span class="trainer-stepper-num">3</span> Монолог</a></li>
+          <li><a href="#step-dialog"><span class="trainer-stepper-num">4</span> Диалог</a></li>
+        </ol>
+      </nav>
+
       <div class="reading-layout">
         <section class="reading-main">
-          <article class="kd-panel reading-panel">
+          <article id="step-setup" class="kd-panel reading-panel">
             <div class="reading-step">
               <span class="reading-step-badge">Шаг 0</span>
               <div>
@@ -87,7 +98,7 @@
             </div>
           </article>
 
-          <article class="kd-panel reading-panel">
+          <article id="step-reading" class="kd-panel reading-panel">
             <div class="reading-step">
               <span class="reading-step-badge">Шаг 1</span>
               <div>
@@ -110,7 +121,7 @@
             </div>
           </article>
 
-          <article class="kd-panel reading-panel">
+          <article id="step-retelling" class="kd-panel reading-panel">
             <div class="reading-step">
               <span class="reading-step-badge">Шаг 2</span>
               <div>
@@ -135,7 +146,7 @@
             </label>
           </article>
 
-          <article class="kd-panel reading-panel">
+          <article id="step-monologue" class="kd-panel reading-panel">
             <div class="reading-step">
               <span class="reading-step-badge">Шаг 3</span>
               <div>
@@ -166,7 +177,7 @@
             </label>
           </article>
 
-          <article class="kd-panel reading-panel">
+          <article id="step-dialog" class="kd-panel reading-panel">
             <div class="reading-step">
               <span class="reading-step-badge">Шаг 4</span>
               <div>
@@ -184,7 +195,9 @@
           </article>
         </section>
 
-        <aside class="reading-side">
+        <aside class="reading-side reading-side-accordion">
+          <details class="reading-side-panel" open>
+            <summary>Ошибки чтения</summary>
           <article class="kd-panel reading-panel">
             <h2>Ошибки чтения</h2>
             <div class="reading-error-grid">
@@ -200,7 +213,10 @@
               <button id="clearErrorsBtn" class="kd-button kd-button-secondary" type="button">Очистить ошибки</button>
             </div>
           </article>
+          </details>
 
+          <details class="reading-side-panel">
+            <summary>Выразительность чтения</summary>
           <article class="kd-panel reading-panel">
             <h2>Выразительность чтения</h2>
             <label class="reading-check"><input id="exprPauses" type="checkbox" /> Соблюдает паузы</label>
@@ -208,7 +224,10 @@
             <label class="reading-check"><input id="exprPace" type="checkbox" /> Держит подходящий темп</label>
             <label class="reading-check"><input id="exprStress" type="checkbox" /> Выделяет важные слова</label>
           </article>
+          </details>
 
+          <details class="reading-side-panel" open>
+            <summary>Итог по чтению</summary>
           <article class="kd-panel reading-panel">
             <h2>Итог по чтению</h2>
             <div class="reading-stats-grid">
@@ -231,12 +250,18 @@
             </div>
             <div id="levelBadge" class="reading-level">Уровень пока не рассчитан</div>
           </article>
+          </details>
 
+          <details class="reading-side-panel">
+            <summary>Заметки учителя</summary>
           <article class="kd-panel reading-panel">
             <h2>Общие заметки учителя</h2>
             <textarea id="teacherNotes" class="reading-notes" placeholder="Здесь можно сохранить общие комментарии по всему собеседованию."></textarea>
           </article>
+          </details>
 
+          <details class="reading-side-panel">
+            <summary>Аудио и автоанализ</summary>
           <article class="kd-panel reading-panel">
             <h2>Аудио и автоанализ</h2>
             <p class="reading-prompt">Полуавтоматический режим: запись аудио, отправка на backend, распознавание через SpeechKit и черновая разметка расхождений по эталонному тексту.</p>
@@ -290,7 +315,10 @@
               <pre id="audioAnalysisBox" class="reading-report reading-report-compact">Результат аудиоанализа пока не получен.</pre>
             </details>
           </article>
+          </details>
 
+          <details class="reading-side-panel">
+            <summary>Готовность этапов</summary>
           <article class="kd-panel reading-panel">
             <h2>Готовность этапов</h2>
             <div class="reading-completion-list">
@@ -312,17 +340,22 @@
               </div>
             </div>
           </article>
+          </details>
 
+          <details class="reading-side-panel">
+            <summary>Отчёт</summary>
           <article class="kd-panel reading-panel">
             <h2>Отчёт</h2>
             <pre id="reportBox" class="reading-report">Отчёт появится после формирования.</pre>
           </article>
+          </details>
         </aside>
       </div>
     </section>
   </main>
 
   <script src="../../../assets/js/theme.js"></script>
-  <script src="./reading.js?v=2026-05-31-1"></script>
+  <script src="../../../assets/js/trainer-shell.js?v=2026-05-31-3"></script>
+  <script src="./reading.js?v=2026-05-31-3"></script>
 </body>
 </html>
