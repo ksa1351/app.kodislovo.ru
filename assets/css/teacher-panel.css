@@ -1,0 +1,266 @@
+/*
+  Teacher panel layout — extends ui.css / theme.css tokens.
+*/
+
+:root {
+  --bg0: var(--ks-bg);
+  --bg1: var(--ks-bg-soft);
+  --card: var(--ks-surface);
+  --text: var(--ks-text);
+  --muted: var(--ks-muted);
+  --line: var(--ks-border);
+  --btn: var(--ks-primary);
+  --btnHover: var(--ks-primary-hover);
+  --btn2: color-mix(in srgb, var(--ks-primary-soft) 76%, var(--ks-surface));
+  --btnText: #ffffff;
+  --ok: var(--ks-success);
+  --bad: var(--ks-danger);
+}
+
+body.teacher-panel {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--ks-accent) 14%, transparent), transparent 28rem),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ks-gold) 10%, transparent), transparent 24rem),
+    linear-gradient(180deg, var(--bg0), var(--bg1) 35%, var(--bg0));
+  font-family: var(--ks-font-sans);
+}
+
+.teacher-panel .wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(12px, 2vw, 24px);
+}
+
+.teacher-panel .top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.teacher-panel .tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teacher-panel .tabbtn {
+  height: 38px;
+  border-radius: 12px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: inherit;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 13px;
+  transition: background var(--ks-transition), border-color var(--ks-transition);
+}
+
+.teacher-panel .tabbtn[aria-selected="true"] {
+  background: color-mix(in srgb, var(--ks-primary-soft) 82%, var(--card));
+  border-color: color-mix(in srgb, var(--ks-primary) 28%, var(--line));
+}
+
+.teacher-panel .card {
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--ks-radius-lg);
+  padding: clamp(14px, 1.8vw, 20px);
+  box-shadow: var(--ks-shadow-sm);
+}
+
+.teacher-panel .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.teacher-panel .row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.teacher-panel .row > * { flex: 1 1 180px; }
+.teacher-panel .row > .pill { flex: 0 1 auto; }
+.teacher-panel .row > .sub { flex: 0 0 auto; }
+.teacher-panel .row > .kd-btn { flex: 0 1 auto; }
+
+.teacher-panel .right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.teacher-panel .pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+}
+
+.teacher-panel .kd-input {
+  min-width: 180px;
+  width: 100%;
+}
+
+.teacher-panel .kd-btn {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.teacher-panel .action-row { gap: 8px; }
+
+.teacher-panel .action-row > .kd-btn {
+  min-height: 34px;
+  padding: 7px 11px;
+  font-size: 12px;
+  border-radius: 11px;
+}
+
+.teacher-panel .table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 10px;
+}
+
+.teacher-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.teacher-panel th,
+.teacher-panel td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.teacher-panel th {
+  color: var(--muted);
+  text-align: left;
+  font-weight: 800;
+}
+
+.teacher-panel details {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.teacher-panel summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.teacher-panel code {
+  background: color-mix(in srgb, var(--ks-primary-soft) 60%, transparent);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.teacher-panel pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.teacher-panel .detail-grid { display: grid; gap: 12px; }
+.teacher-panel .detail-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+.teacher-panel .result-table td:first-child,
+.teacher-panel .result-table th:first-child { width: 44px; }
+.teacher-panel .tiny { font-size: 12px; color: var(--muted); }
+.teacher-panel .ok { color: var(--ok); font-weight: 800; }
+.teacher-panel .bad { color: var(--bad); font-weight: 800; }
+.teacher-panel .hidden { display: none !important; }
+
+.teacher-panel .overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ks-bg) 35%, rgba(0, 0, 0, 0.65));
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+}
+
+.teacher-panel .panel { width: min(440px, 92vw); }
+
+@media (max-width: 960px) {
+  .teacher-panel .grid { grid-template-columns: 1fr; }
+  .teacher-panel .top { align-items: flex-start; }
+  .teacher-panel .right { width: 100%; justify-content: flex-start; }
+  .teacher-panel .row > * { flex: 1 1 220px; }
+}
+
+@media (max-width: 720px) {
+  .teacher-panel .tabs { display: grid; grid-template-columns: 1fr 1fr; }
+  .teacher-panel .tabbtn { width: 100%; }
+  .teacher-panel .row { align-items: stretch; }
+  .teacher-panel .row > * { flex: 1 1 100%; }
+  .teacher-panel .row > .pill { width: 100%; justify-content: space-between; }
+  .teacher-panel .row > .kd-btn { width: 100%; }
+  .teacher-panel .action-row > .kd-btn { min-height: 38px; font-size: 13px; }
+  .teacher-panel .right { justify-content: stretch; }
+  .teacher-panel .right > * { width: 100%; }
+  .teacher-panel .detail-meta { flex-direction: column; }
+  .teacher-panel .result-table thead,
+  .teacher-panel .detail-table thead { display: none; }
+  .teacher-panel .result-table,
+  .teacher-panel .result-table tbody,
+  .teacher-panel .result-table tr,
+  .teacher-panel .result-table td,
+  .teacher-panel .detail-table,
+  .teacher-panel .detail-table tbody,
+  .teacher-panel .detail-table tr,
+  .teacher-panel .detail-table td { display: block; width: 100%; }
+  .teacher-panel .result-table tr,
+  .teacher-panel .detail-table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .teacher-panel .result-table td,
+  .teacher-panel .detail-table td {
+    padding: 6px 0;
+    border-bottom: none;
+  }
+
+  .teacher-panel .result-table td:first-child,
+  .teacher-panel .detail-table td:first-child { padding-top: 0; }
+
+  .teacher-panel .result-table td:last-child,
+  .teacher-panel .detail-table td:last-child { padding-bottom: 0; }
+
+  .teacher-panel .result-table td[data-label]::before,
+  .teacher-panel .detail-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+}
