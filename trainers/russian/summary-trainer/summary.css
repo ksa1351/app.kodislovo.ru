@@ -225,6 +225,18 @@ html[data-theme="light"] #textSelect option {
 }
 
 @media (max-width: 720px) {
+  .summary-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-actions .kd-button {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+
   .summary-submit-row {
     position: fixed;
     left: 0;
