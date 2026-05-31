@@ -339,3 +339,57 @@ body.teacher-panel {
     margin-bottom: 4px;
   }
 }
+
+/* Reset tab (ОГЭ / ЕГЭ variants) */
+.teacher-panel .kd-reset-variant-meta {
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.teacher-panel .kd-reset-class-hint {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.teacher-panel .kd-reset-link-hint code {
+  display: block;
+  margin-top: 6px;
+  word-break: break-all;
+}
+
+.teacher-panel .kd-reset-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid var(--line);
+}
+
+.teacher-panel .kd-reset-badge.oge {
+  color: color-mix(in srgb, var(--ks-russian) 88%, var(--text));
+  background: color-mix(in srgb, var(--ks-russian-soft) 55%, var(--card));
+}
+
+.teacher-panel .kd-reset-badge.ege {
+  color: color-mix(in srgb, var(--ks-gold) 88%, var(--text));
+  background: color-mix(in srgb, var(--ks-gold) 18%, var(--card));
+}
+
+.teacher-panel .kd-reset-history-item {
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.teacher-panel .kd-reset-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.teacher-panel .kd-reset-history-link code {
+  word-break: break-all;
+  font-size: 11px;
+}
