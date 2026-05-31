@@ -805,6 +805,23 @@
     return null;
   }
 
+  function refreshStickyBlocks() {
+    stickyBlocks = getTextRangesFromMeta();
+  }
+
+  function renderTaskReadingHtml(block) {
+    if (!block?.html) return "";
+    return `
+      <section class="kd-task-reading kd-textbox" aria-label="${escapeHtml(block.title || "Текст")}">
+        <header class="kd-task-reading-head">
+          <strong>${escapeHtml(block.title || "Текст для заданий")}</strong>
+          <span class="kd-subtitle">задания ${block.from}–${block.to}</span>
+        </header>
+        <div class="kd-task-reading-body">${block.html}</div>
+      </section>
+    `;
+  }
+
   // ========= render ONE task =========
   let stickyBlocks = [];
 
@@ -846,13 +863,19 @@
     currentTaskIndex = Math.max(0, Math.min(currentTaskIndex, tasks.length - 1));
     const task = tasks[currentTaskIndex];
 
+    refreshStickyBlocks();
     const block = findBlockForTask(stickyBlocks, Number(task.id));
     if (block) {
       setStickyVisible(true);
       setStickyContent(block);
+      const stickyWrap = $("stickyTextWrap");
+      if (stickyWrap?.classList.contains("kd-hidden")) {
+        stickyWrap.classList.remove("kd-hidden");
+      }
     } else {
       setStickyVisible(false);
     }
+    const readingHtml = renderTaskReadingHtml(block);
 
     const pills = tasks.map((item, index) => {
       const answered = safeText(answersMap[String(item.id)]).length > 0;
@@ -866,6 +889,7 @@
       <nav class="kd-task-pills" aria-label="Номера заданий">${pills}</nav>
       <section class="kd-task" data-task-id="${String(task.id)}">
         <h3>Задание ${task.id} <span class="kd-subtitle" style="display:inline;font-size:14px">(${currentTaskIndex + 1} из ${tasks.length})</span></h3>
+        ${readingHtml}
         ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
         <div class="q">${task.text || ""}</div>
 
@@ -1000,6 +1024,13 @@
       if (variantLoadError || !Array.isArray(variantData?.tasks) || !variantData.tasks.length) {
         renderTaskLoadState();
       } else {
+        refreshStickyBlocks();
+        if (variantMeta?.summary?.sourceText) {
+          setSummaryVisible(true);
+          setSummaryContent(variantMeta.summary);
+        } else {
+          setSummaryVisible(false);
+        }
         renderCurrentTask();
         applyFinishedState();
         startTimerIfNeeded();
@@ -1019,6 +1050,7 @@
     currentVariantEntry = entry;
     currentVariantId = entry.id || currentVariantId;
     currentVariantFile = entry.file || `compose:${currentVariantId}`;
+    stickyCollapsed = false;
 
     if (entry.compose) {
       variantData = await buildComposedVariant(entry);
@@ -1050,7 +1082,7 @@
 
     setHeader();
 
-    stickyBlocks = getTextRangesFromMeta();
+    refreshStickyBlocks();
     if (variantMeta?.summary?.sourceText) {
       setSummaryVisible(true);
       setSummaryContent(variantMeta.summary);
