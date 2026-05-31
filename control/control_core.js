@@ -122,15 +122,24 @@
     return backendServicesPromise;
   }
 
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Таймаут ${label} (${ms / 1000} с)`)), ms);
+      }),
+    ]);
+  }
+
   async function loadTimerConfig(variantId) {
     try {
-      const services = await loadBackendServices();
+      const services = await withTimeout(loadBackendServices(), 8000, "настроек API");
       if (!services.timerConfigUrl) return null;
 
       const url = new URL(services.timerConfigUrl);
       if (variantId) url.searchParams.set("variant", variantId);
 
-      return await fetchJson(url.toString());
+      return await withTimeout(fetchJson(url.toString()), 6000, "таймера");
     } catch (error) {
       console.warn("timer config load failed", error);
       return null;
@@ -990,6 +999,10 @@
       renderVariantCards();
       if (variantLoadError || !Array.isArray(variantData?.tasks) || !variantData.tasks.length) {
         renderTaskLoadState();
+      } else {
+        renderCurrentTask();
+        applyFinishedState();
+        startTimerIfNeeded();
       }
     }
   }
@@ -1057,10 +1070,7 @@
       });
     }
 
-    renderCurrentTask();
-    applyFinishedState();
-    startTimerIfNeeded();
-    renderVariantCards();
+    // Отрисовка — в selectVariant() после variantLoading = false (иначе остаётся «Загрузка заданий…»).
 
     const sn = $("studentName");
     const sc = $("studentClass");
@@ -1173,6 +1183,7 @@
       renderCurrentTask();
       applyFinishedState();
       startTimerIfNeeded();
+      renderVariantCards();
 
       alert("Сброс применён. Можно выполнять работу заново.");
     } catch (err) {
@@ -1282,6 +1293,11 @@
       await selectVariant(currentVariantEntry, { force: true });
     } else {
       throw new Error("Не выбран вариант в manifest.json.");
+    }
+
+    const resetFromUrl = safeText(getParam("reset")).toLowerCase();
+    if (resetFromUrl && $("resetCode")) {
+      $("resetCode").value = resetFromUrl;
     }
   }
 
