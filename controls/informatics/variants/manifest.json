@@ -1,12 +1,17 @@
 {
-  "subject": "russian",
-  "subjectTitle": "Русский язык (ЕГЭ)",
-  "variants": [
+  "schema": "kodislovo.manifest.v2",
+  "subject": "informatics",
+  "subjectTitle": "Информатика",
+  "examSpec": "../exam-specs/informatics-oge-2026-demo.json",
+  "variants": [],
+  "sections": [
     {
-      "id": "variant_01",
-      "title": "ЕГЭ Русский — Контрольная №1",
-      "file": "variant_01.json"
+      "id": "oge_training",
+      "title": "ОГЭ (9 класс) · демо 2026",
+      "examFormat": "oge",
+      "grade": 9,
+      "time": 150,
+      "max_score": 20
     }
   ]
 }
-
