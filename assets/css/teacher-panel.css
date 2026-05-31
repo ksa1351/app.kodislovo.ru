@@ -196,6 +196,75 @@ body.teacher-panel {
 .teacher-panel .bad { color: var(--bad); font-weight: 800; }
 .teacher-panel .hidden { display: none !important; }
 
+.teacher-panel .pill-subject-russian,
+.teacher-panel .work-kind-badge--summary {
+  border-color: color-mix(in srgb, var(--ks-russian) 36%, var(--line));
+  color: color-mix(in srgb, var(--ks-russian) 88%, var(--text));
+}
+
+.teacher-panel .pill-subject-test,
+.teacher-panel .work-kind-badge--test {
+  border-color: color-mix(in srgb, var(--ks-primary) 32%, var(--line));
+  color: var(--text);
+}
+
+.teacher-panel .work-kind-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+}
+
+.teacher-panel .teacher-summary-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.teacher-panel .teacher-summary-pane {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.teacher-panel .teacher-summary-pane-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.teacher-panel .teacher-summary-text {
+  margin: 0;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+
+.teacher-panel .teacher-summary-answers {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+}
+
+.teacher-panel .teacher-summary-answers > summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.teacher-panel .work-row--summary td:nth-child(3) .work-kind-badge {
+  background: color-mix(in srgb, var(--ks-russian-soft) 72%, var(--card));
+}
+
 .teacher-panel .overlay {
   position: fixed;
   inset: 0;
@@ -214,6 +283,12 @@ body.teacher-panel {
   .teacher-panel .top { align-items: flex-start; }
   .teacher-panel .right { width: 100%; justify-content: flex-start; }
   .teacher-panel .row > * { flex: 1 1 220px; }
+}
+
+@media (max-width: 900px) {
+  .teacher-panel .teacher-summary-split {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
