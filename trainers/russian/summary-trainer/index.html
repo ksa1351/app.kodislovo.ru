@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Тренажёр «Сжатое изложение по вопросам»</title>
   <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-2" />
-  <link rel="stylesheet" href="./summary.css" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="./summary.css?v=2026-05-31-3" />
 </head>
-<body>
+<body class="trainer-body trainer-mobile-pad">
   <div class="site-topbar">
     <div class="site-topbar-inner">
       <a class="site-brand" href="../index.html">
         <span class="site-logo"></span>
         <span>
           <b>Кодислово</b>
-          <span>русский язык</span>
+          <span>русский язык · изложение</span>
         </span>
       </a>
       <label class="theme-toggle">
@@ -26,7 +27,7 @@
     </div>
   </div>
 
-  <main class="kd-page summary-page">
+  <main class="kd-page trainer-page summary-page">
     <header class="kd-hero summary-hero">
       <nav aria-label="Навигация">
         <ol class="kd-breadcrumbs">
@@ -40,7 +41,15 @@
       <p>Прочитайте текст, ответьте на вопросы по микротемам, соберите черновик и отредактируйте итоговый вариант.</p>
     </header>
 
-    <section class="summary-student-bar kd-panel" aria-label="Данные ученика и отправка">
+    <nav aria-label="Этапы работы">
+      <ol class="trainer-stepper">
+        <li><a href="#step-student" class="is-active"><span class="trainer-stepper-num">1</span> Данные</a></li>
+        <li><a href="#step-workspace"><span class="trainer-stepper-num">2</span> Текст и черновик</a></li>
+        <li><a href="#step-questions"><span class="trainer-stepper-num">3</span> Вопросы</a></li>
+      </ol>
+    </nav>
+
+    <section id="step-student" class="summary-student-bar kd-panel is-sticky-top" aria-label="Данные ученика и отправка">
       <div class="summary-student-grid">
         <label class="field" for="studentName">
           <span class="label">ФИО ученика</span>
@@ -68,7 +77,7 @@
       </label>
     </section>
 
-    <section class="summary-workspace" aria-label="Рабочая область">
+    <section id="step-workspace" class="summary-workspace" aria-label="Рабочая область">
       <article class="kd-panel summary-panel summary-panel-source">
         <div class="summary-panel-head">
           <span class="summary-eyebrow">Исходный текст</span>
@@ -100,7 +109,7 @@
       </article>
     </section>
 
-    <section class="kd-section" aria-labelledby="questionsTitle">
+    <section id="step-questions" class="kd-section" aria-labelledby="questionsTitle">
       <div class="kd-section-head summary-section-head">
         <h2 id="questionsTitle">Вопросы по микротемам</h2>
         <p>Развёрнутые ответы помогут собрать связный черновик по абзацам.</p>
@@ -110,6 +119,7 @@
   </main>
 
   <script src="../../../assets/js/theme.js"></script>
+  <script src="../../../assets/js/trainer-shell.js?v=2026-05-31-3"></script>
   <script src="./summary.js"></script>
 </body>
 </html>
