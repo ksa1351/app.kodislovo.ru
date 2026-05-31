@@ -2,10 +2,11 @@
 <html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Контрольная — Кодислово</title>
   <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-1" />
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-6" />
+  <link rel="stylesheet" href="../assets/css/control-phase4.css?v=2026-05-31-6" />
 </head>
 
 <body>
@@ -31,12 +32,29 @@
   </div>
 
   <div class="kd-wrap">
+    <div class="kd-breadcrumb-bar">
+      <a class="kd-back-link" id="controlBackLink" href="./index.html">← К контрольным</a>
+    </div>
+
     <header class="kd-header">
       <h1 class="kd-title" id="uiMainTitle">Контрольная работа</h1>
       <p class="kd-subtitle" id="uiSubtitle">
-        Заполните данные, выполните задания, нажмите «Завершить», затем «Отправить».
+        Выберите вариант, заполните данные, выполните задания, нажмите «Завершить», затем «Отправить».
       </p>
     </header>
+
+    <section class="kd-panel kd-variant-section" aria-labelledby="variantPickerTitle">
+      <h2 id="variantPickerTitle">Вариант контрольной</h2>
+      <p>Выберите карточку варианта. Время и баллы подтягиваются из настроек работы.</p>
+      <label class="kd-select-hidden" for="variantSelect">Вариант</label>
+      <select class="kd-select kd-select-hidden" id="variantSelect" aria-hidden="true" tabindex="-1"></select>
+      <div id="variantCards" class="kd-variant-grid" role="listbox" aria-labelledby="variantPickerTitle"></div>
+    </section>
+
+    <div id="timerBar" class="kd-timer-bar kd-hidden" aria-live="polite">
+      <span class="kd-timer-bar-label">Осталось времени</span>
+      <strong id="timerBarValue" class="kd-timer-bar-value">00:00:00</strong>
+    </div>
 
     <section class="kd-panel" aria-label="Панель ученика">
       <div class="kd-grid">
@@ -48,11 +66,6 @@
         <div class="kd-field">
           <label for="studentClass">Класс</label>
           <input class="kd-input" id="studentClass" type="text" placeholder="Например: 10А" autocomplete="off">
-        </div>
-
-        <div class="kd-field" style="grid-column:1/-1">
-          <label for="variantSelect">Вариант</label>
-          <select class="kd-select" id="variantSelect"></select>
         </div>
       </div>
 
@@ -107,6 +120,26 @@
     <main id="taskOne"></main>
   </div>
 
-  <script src="./control_core.js?v=10"></script>
+  <div id="submitSuccessOverlay" class="kd-success-overlay kd-hidden" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="kd-success-card">
+      <div class="kd-success-icon" aria-hidden="true">✓</div>
+      <h2 id="successTitle">Работа отправлена</h2>
+      <p id="successMessage">Учитель увидит результат в панели. Можно закрыть страницу или вернуться к списку контрольных.</p>
+      <dl class="kd-success-meta">
+        <dt>Ученик</dt>
+        <dd id="successStudent">—</dd>
+        <dt>Вариант</dt>
+        <dd id="successVariant">—</dd>
+        <dt>Результат</dt>
+        <dd id="successScore">—</dd>
+      </dl>
+      <div class="kd-success-actions">
+        <a class="kd-btn" id="successBackBtn" href="./index.html">К контрольным</a>
+        <button class="kd-btn secondary" id="successCloseBtn" type="button">Закрыть окно</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./control_core.js?v=11"></script>
 </body>
 </html>
