@@ -5,18 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>ОГЭ информатика — задание 1</title>
   <link rel="icon" href="../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-2" />
-  <link rel="stylesheet" href="../../assets/css/oge-task1.css?v=2026-05-31-2" />
+  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="../../assets/css/trainer-shell.css?v=2026-05-31-3" />
+  <link rel="stylesheet" href="../../assets/css/oge-task1.css?v=2026-05-31-3" />
   <script src="./oge_task1_data.js"></script>
 </head>
-<body>
+<body class="trainer-body">
   <div class="site-topbar">
     <div class="site-topbar-inner">
       <a class="site-brand" href="./index.html">
         <span class="site-logo" aria-hidden="true"></span>
         <span>
           <b>Кодислово</b>
-          <span>ОГЭ по информатике</span>
+          <span>информатика · ОГЭ задание 1</span>
         </span>
       </a>
       <label class="theme-toggle">
@@ -27,7 +28,7 @@
     </div>
   </div>
 
-  <main class="kd-page trainer-shell">
+  <main class="kd-page trainer-page trainer-shell">
     <header class="kd-hero">
       <nav aria-label="Навигация">
         <ol class="kd-breadcrumbs">
@@ -41,11 +42,17 @@
       <p>Тренажер использует набор задач из Android-приложения: выберите задачу, введите ответ и сразу проверьте себя.</p>
     </header>
 
-    <section class="kd-section">
+    <section class="kd-section" id="step-task">
       <div class="kd-panel">
-        <div class="task-meta">
-          <span id="taskInfo">Задание загружается...</span>
-          <span id="taskCode"></span>
+        <div class="trainer-score-bar" aria-live="polite">
+          <div>
+            <strong id="taskProgress">Задача 1 из 1</strong>
+            <span id="taskCode"></span>
+          </div>
+          <div class="trainer-score-pills">
+            <span class="trainer-score-pill" id="scoreAttempts">Проверок: 0</span>
+            <span class="trainer-score-pill ok" id="scoreCorrect">Верно: 0</span>
+          </div>
         </div>
 
         <div id="taskText" class="task-text">Задание загружается...</div>
@@ -62,20 +69,19 @@
           <button class="kd-button kd-button-secondary" id="randomBtn" type="button">Случайное</button>
         </div>
 
-        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
 
         <div class="trainer-footer">
           <label class="jump" for="jumpSelect">
             Перейти к задаче:
             <select id="jumpSelect"></select>
           </label>
-          <div id="stats"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <script src="../../assets/js/theme.js?v=2026-05-31-1"></script>
+  <script src="../../assets/js/theme.js"></script>
   <script>
     if (typeof tasks === "undefined") {
       throw new Error("Не найден массив tasks из oge_task1_data.js");
@@ -85,12 +91,13 @@
     let correctCount = 0;
     let totalCount = 0;
 
-    const taskInfoEl = document.getElementById("taskInfo");
+    const taskProgressEl = document.getElementById("taskProgress");
     const taskCodeEl = document.getElementById("taskCode");
     const taskTextEl = document.getElementById("taskText");
     const answerInputEl = document.getElementById("answerInput");
     const feedbackEl = document.getElementById("feedback");
-    const statsEl = document.getElementById("stats");
+    const scoreAttemptsEl = document.getElementById("scoreAttempts");
+    const scoreCorrectEl = document.getElementById("scoreCorrect");
     const jumpSelectEl = document.getElementById("jumpSelect");
 
     function normalizeAnswer(value) {
@@ -102,28 +109,33 @@
         .trim();
     }
 
+    function updateStats() {
+      scoreAttemptsEl.textContent = `Проверок: ${totalCount}`;
+      scoreCorrectEl.textContent = `Верно: ${correctCount}`;
+      if (totalCount > 0) {
+        const percent = Math.round((correctCount / totalCount) * 100);
+        scoreCorrectEl.textContent = `Верно: ${correctCount} (${percent}%)`;
+      }
+    }
+
+    function setFeedback(message, type) {
+      feedbackEl.textContent = message;
+      feedbackEl.className = "feedback";
+      if (type) feedbackEl.classList.add(type);
+    }
+
     function loadTask(index) {
       if (!tasks.length) return;
       currentIndex = Math.max(0, Math.min(index, tasks.length - 1));
       const task = tasks[currentIndex];
 
-      taskInfoEl.textContent = `Задача ${task.num} из ${tasks.length}`;
+      taskProgressEl.textContent = `Задача ${task.num} из ${tasks.length}`;
       taskCodeEl.textContent = task.code ? `Код: ${task.code}` : "";
       taskTextEl.textContent = task.text || "";
       answerInputEl.value = "";
-      feedbackEl.textContent = "";
-      feedbackEl.className = "feedback";
+      setFeedback("", "");
       jumpSelectEl.value = String(currentIndex);
       answerInputEl.focus();
-    }
-
-    function updateStats() {
-      if (!totalCount) {
-        statsEl.textContent = "";
-        return;
-      }
-      const percent = Math.round((correctCount / totalCount) * 100);
-      statsEl.textContent = `Статистика: ${correctCount} из ${totalCount} (${percent}%)`;
     }
 
     function checkAnswer() {
@@ -132,27 +144,23 @@
       const correctAnswer = normalizeAnswer(task.answer);
 
       if (!userAnswer) {
-        feedbackEl.textContent = "Введите ответ.";
-        feedbackEl.className = "feedback bad";
+        setFeedback("Введите ответ, затем нажмите «Проверить».", "bad");
         return;
       }
 
       totalCount += 1;
       if (userAnswer === correctAnswer) {
         correctCount += 1;
-        feedbackEl.textContent = "Верно.";
-        feedbackEl.className = "feedback ok";
+        setFeedback("Верно! Можно перейти к следующей задаче.", "ok");
       } else {
-        feedbackEl.textContent = `Неверно. Правильный ответ: ${task.answer}.`;
-        feedbackEl.className = "feedback bad";
+        setFeedback(`Неверно. Правильный ответ: ${task.answer}.`, "bad");
       }
       updateStats();
     }
 
     function showAnswer() {
       const task = tasks[currentIndex];
-      feedbackEl.textContent = `Правильный ответ: ${task.answer}.`;
-      feedbackEl.className = "feedback";
+      setFeedback(`Правильный ответ: ${task.answer}.`, "neutral");
     }
 
     function fillJumpSelect() {
@@ -176,6 +184,7 @@
     });
 
     fillJumpSelect();
+    updateStats();
     loadTask(0);
   </script>
 </body>
