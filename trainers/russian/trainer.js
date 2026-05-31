@@ -69,6 +69,7 @@
 
   document.title = `${section.title} — Русский язык`;
   document.getElementById("sectionTitle").textContent = section.title;
+  document.getElementById("sectionCrumb").textContent = section.title;
   document.getElementById("sectionLead").textContent = section.lead;
 
   const sectionPrimaryLink = document.getElementById("sectionPrimaryLink");
