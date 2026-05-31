@@ -1,0 +1,49 @@
+{
+  "schema": "kodislovo.exam-spec.v1",
+  "source": "ФИПИ, демоверсия ЕГЭ 2026, русский язык (РУ-11 ЕГЭ 2026 ДЕМО.pdf)",
+  "subject": "russian",
+  "examFormat": "ege",
+  "gradeLevel": 11,
+  "year": 2026,
+  "structure": {
+    "parts": [
+      {
+        "id": "part1",
+        "title": "Часть 1",
+        "tasks": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+        "description": "Краткий ответ, бланк № 1",
+        "maxPrimary": 28,
+        "grading": "auto",
+        "pointsPerTask": {
+          "default": 1,
+          "8": 2,
+          "22": 2
+        }
+      },
+      {
+        "id": "part2",
+        "title": "Часть 2",
+        "tasks": [27],
+        "description": "Сочинение (бланк № 2), не менее 150 слов",
+        "maxPrimary": 22,
+        "grading": "expert"
+      }
+    ],
+    "totalTasks": 27,
+    "totalPrimaryMax": 50,
+    "timeMinutes": 210
+  },
+  "platform": {
+    "automatedPart": "part1",
+    "bankFile": "../bank/ege-demo-2026.json",
+    "availableTaskIdsInBank": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+    "missingInBank": [],
+    "trainingVariantTaskIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+    "trainingMaxPrimary": 28,
+    "trainingGrading": {
+      "type": "percent",
+      "scale": { "5": 87, "4": 67, "3": 42, "2": 0 },
+      "note": "Для выборки из 20 заданий (все по 1 б.) — тренировочный перевод по %; полный КИМ — 28+22 первичных."
+    }
+  }
+}
