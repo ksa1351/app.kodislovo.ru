@@ -1,24 +1,107 @@
 {
-  "schema": "kodislovo.manifest.v1",
+  "schema": "kodislovo.manifest.v2",
   "subject": "russian",
   "subjectTitle": "Русский язык",
+  "examSpec": "../exam-specs/russian-oge-2026-demo.json",
   "variants": [
     {
-      "id": "variant_01",
-      "title": "Вариант 1",
+      "id": "oge_variant_01",
+      "title": "ОГЭ 2026 — часть 2 (демо ФИПИ)",
+      "examFormat": "oge",
+      "gradeLevel": 9,
+      "sectionId": "oge_training",
       "compose": {
-        "subtitle": "Собран из уже существующих заданий варианта 1.",
-        "summaryTextId": "text_01",
+        "subtitle": "Часть 2 КИМ: задания 2–12 (11 б.), демоверсия ФИПИ 2026.",
+        "examFormat": "oge",
+        "gradeLevel": 9,
+        "time_limit_minutes": 50,
+        "grading": {
+          "type": "points",
+          "scale": [
+            { "from": 10, "to": 11, "mark": 5 },
+            { "from": 8, "to": 9, "mark": 4 },
+            { "from": 6, "to": 7, "mark": 3 },
+            { "from": 0, "to": 5, "mark": 2 }
+          ]
+        },
         "sources": [
           {
-            "file": "variant_01.json",
-            "taskIds": [1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 25]
+            "file": "../bank/oge-demo-2026.json",
+            "taskIds": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+          }
+        ]
+      }
+    },
+    {
+      "id": "ege_variant_01",
+      "title": "ЕГЭ 2026 — часть 1 (демо ФИПИ)",
+      "examFormat": "ege",
+      "gradeLevel": 11,
+      "sectionId": "ege_training",
+      "compose": {
+        "subtitle": "Часть 1 КИМ: задания 1–26 (28 перв. б.), демоверсия ФИПИ 2026. Задания 8 и 22 — по 2 б.",
+        "examFormat": "ege",
+        "gradeLevel": 11,
+        "time_limit_minutes": 120,
+        "grading": {
+          "type": "percent",
+          "scale": { "5": 87, "4": 67, "3": 42, "2": 0 }
+        },
+        "sources": [
+          {
+            "file": "../bank/ege-demo-2026.json",
+            "taskIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+          }
+        ]
+      }
+    },
+    {
+      "id": "oge_variant_02",
+      "title": "ОГЭ 2026 — часть 2 + изложение",
+      "examFormat": "oge",
+      "gradeLevel": 9,
+      "sectionId": "oge_training",
+      "compose": {
+        "subtitle": "Часть 2 (11 б.) + текст для изложения (часть 1 — тренажёр изложения).",
+        "examFormat": "oge",
+        "gradeLevel": 9,
+        "time_limit_minutes": 70,
+        "summaryTextId": "text_01",
+        "grading": {
+          "type": "points",
+          "scale": [
+            { "from": 10, "to": 11, "mark": 5 },
+            { "from": 8, "to": 9, "mark": 4 },
+            { "from": 6, "to": 7, "mark": 3 },
+            { "from": 0, "to": 5, "mark": 2 }
+          ]
+        },
+        "sources": [
+          {
+            "file": "../bank/oge-demo-2026.json",
+            "taskIds": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
           }
         ]
       }
     }
   ],
   "sections": [
+    {
+      "id": "oge_training",
+      "title": "ОГЭ (9 класс) · демо 2026",
+      "examFormat": "oge",
+      "grade": 9,
+      "time": 235,
+      "max_score": 37
+    },
+    {
+      "id": "ege_training",
+      "title": "ЕГЭ (11 класс) · демо 2026",
+      "examFormat": "ege",
+      "grade": 11,
+      "time": 210,
+      "max_score": 50
+    },
     {
       "id": "dvusostav_repeat_8",
       "title": "Двусоставное предложение. Повторение",
