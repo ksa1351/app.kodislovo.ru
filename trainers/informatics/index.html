@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Информатика — Кодислово</title>
   <link rel="icon" href="../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-1" />
+  <link rel="stylesheet" href="../../assets/css/ui.css?v=2026-05-31-2" />
 </head>
 <body>
   <div class="site-topbar">
@@ -27,18 +27,28 @@
 
   <main class="kd-page">
     <header class="kd-hero">
-      <a class="kd-back" href="../../index.html">Кодислово</a>
+      <nav aria-label="Навигация">
+        <ol class="kd-breadcrumbs">
+          <li><a href="../../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><span aria-current="page">Информатика</span></li>
+        </ol>
+      </nav>
       <h1>Информатика</h1>
       <p>Теория, тренажеры и контрольные по школьной информатике. Сейчас открыт тренажер ОГЭ задания 1.</p>
+      <nav class="kd-subnav" aria-label="Разделы страницы">
+        <a href="#live">Доступно сейчас</a>
+        <a href="#grades">Классы</a>
+        <a href="#exam">Форматы</a>
+      </nav>
     </header>
 
-    <section class="kd-section" aria-labelledby="live-title">
+    <section class="kd-section" id="live" aria-labelledby="live-title">
       <div class="kd-section-head">
         <h2 id="live-title">Доступно сейчас</h2>
         <p>Рабочие модули, которые можно использовать уже сегодня.</p>
       </div>
       <div class="kd-card-grid kd-card-grid-compact">
-        <a class="kd-card kd-card-live" href="./oge_task1.html">
+        <a class="kd-card kd-card-live kd-card-informatics" href="./oge_task1.html">
           <div class="kd-card-head">
             <span class="kd-kicker">ОГЭ: задание 1</span>
             <span class="kd-status kd-status-live">Доступно</span>
@@ -46,7 +56,7 @@
           <strong>Количественные параметры объектов</strong>
           <small>Тренажер по объему информации, скорости передачи и размеру файлов.</small>
         </a>
-        <a class="kd-card kd-card-live" href="../../control/control.html?subject=informatics">
+        <a class="kd-card kd-card-live kd-card-control" href="../../control/control.html?subject=informatics">
           <div class="kd-card-head">
             <span class="kd-kicker">Контрольные</span>
             <span class="kd-status kd-status-live">Доступно</span>
@@ -57,23 +67,24 @@
       </div>
     </section>
 
-    <section class="kd-section" aria-labelledby="grades-title">
+    <section class="kd-section" id="grades" aria-labelledby="grades-title">
       <div class="kd-section-head">
         <h2 id="grades-title">Классы</h2>
         <p>Разделы школьной программы готовятся. Карточки показывают план наполнения.</p>
       </div>
+      <p class="kd-soon-banner"><strong>Разделы в разработке.</strong> Карточки ниже показывают план наполнения — открыть их пока нельзя. Следите за обновлениями в блоке «Доступно сейчас».</p>
       <div class="kd-card-grid">
-        <div class="kd-card kd-card-soon" aria-disabled="true">
+        <div class="kd-card kd-card-soon kd-card-informatics" aria-disabled="true">
           <div class="kd-card-head"><span class="kd-kicker">7 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Информация и данные</strong>
           <small>Кодирование, единицы измерения, таблицы, базовые алгоритмы.</small>
         </div>
-        <div class="kd-card kd-card-soon" aria-disabled="true">
+        <div class="kd-card kd-card-soon kd-card-informatics" aria-disabled="true">
           <div class="kd-card-head"><span class="kd-kicker">8 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Логика и алгоритмы</strong>
           <small>Логические выражения, исполнители, ветвления и циклы.</small>
         </div>
-        <div class="kd-card kd-card-soon" aria-disabled="true">
+        <div class="kd-card kd-card-soon kd-card-informatics" aria-disabled="true">
           <div class="kd-card-head"><span class="kd-kicker">9 класс</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Повторение и ОГЭ</strong>
           <small>Системы счисления, анализ программ, таблицы и графы.</small>
@@ -81,18 +92,18 @@
       </div>
     </section>
 
-    <section class="kd-section" aria-labelledby="exam-title">
+    <section class="kd-section" id="exam" aria-labelledby="exam-title">
       <div class="kd-section-head">
         <h2 id="exam-title">Проверочные форматы</h2>
         <p>Дополнительные маршруты подготовки к ВПР и ОГЭ.</p>
       </div>
       <div class="kd-card-grid kd-card-grid-compact">
-        <div class="kd-card kd-card-soon" aria-disabled="true">
+        <div class="kd-card kd-card-soon kd-card-neutral" aria-disabled="true">
           <div class="kd-card-head"><span class="kd-kicker">ВПР</span><span class="kd-status kd-status-soon">Скоро</span></div>
           <strong>Всероссийские проверочные работы</strong>
           <small>Типовые задания по данным, логике, алгоритмам и таблицам.</small>
         </div>
-        <a class="kd-card kd-card-live" href="./oge_task1.html">
+        <a class="kd-card kd-card-live kd-card-informatics" href="./oge_task1.html">
           <div class="kd-card-head"><span class="kd-kicker">ОГЭ</span><span class="kd-status kd-status-live">Частично</span></div>
           <strong>Подготовка к ОГЭ</strong>
           <small>Задание 1 уже доступно. Остальные задания готовятся.</small>
@@ -100,6 +111,10 @@
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    © Кодислово · информатика · 2 модуля доступны · Обновлено май 2026
+  </footer>
   <script src="../../assets/js/theme.js"></script>
 </body>
 </html>
