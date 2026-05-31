@@ -1,0 +1,80 @@
+.trainer-shell {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.task-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.task-text {
+  background: color-mix(in srgb, var(--primary-soft) 72%, var(--card));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trainer-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.feedback {
+  min-height: 28px;
+  margin-top: 12px;
+  font-weight: 700;
+}
+
+.feedback.ok { color: var(--success); }
+.feedback.bad { color: var(--danger); }
+
+.trainer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  color: var(--muted);
+}
+
+.jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jump select {
+  width: auto;
+  min-width: 160px;
+}
+
+body > img,
+body > picture,
+body > video {
+  display: none !important;
+}
+
+@media (max-width: 620px) {
+  .answer-row { grid-template-columns: 1fr; }
+  .trainer-footer { align-items: flex-start; }
+}
