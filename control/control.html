@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Контрольная — Кодислово</title>
   <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-6" />
-  <link rel="stylesheet" href="../assets/css/control-phase4.css?v=2026-05-31-6" />
+  <link rel="stylesheet" href="../assets/css/control-ui.css?v=2026-05-31-7" />
+  <link rel="stylesheet" href="../assets/css/control-phase4.css?v=2026-05-31-7" />
 </head>
 
 <body>
@@ -36,6 +36,11 @@
       <a class="kd-back-link" id="controlBackLink" href="./index.html">← К контрольным</a>
     </div>
 
+    <nav id="controlFormatNav" class="kd-format-nav" aria-label="Формат экзамена">
+      <a class="kd-format-nav-link" data-format-nav="oge" href="control.html?subject=russian&amp;format=oge">ОГЭ · 9 класс</a>
+      <a class="kd-format-nav-link" data-format-nav="ege" href="control.html?subject=russian&amp;format=ege">ЕГЭ · 11 класс</a>
+    </nav>
+
     <header class="kd-header">
       <h1 class="kd-title" id="uiMainTitle">Контрольная работа</h1>
       <p class="kd-subtitle" id="uiSubtitle">
@@ -45,7 +50,7 @@
 
     <section class="kd-panel kd-variant-section" aria-labelledby="variantPickerTitle">
       <h2 id="variantPickerTitle">Вариант контрольной</h2>
-      <p>Выберите карточку варианта. Время и баллы подтягиваются из настроек работы.</p>
+      <p id="controlFormatTitle" class="kd-format-section-note">Выберите карточку варианта. Время и баллы подтягиваются из настроек работы.</p>
       <label class="kd-select-hidden" for="variantSelect">Вариант</label>
       <select class="kd-select kd-select-hidden" id="variantSelect" aria-hidden="true" tabindex="-1"></select>
       <div id="variantCards" class="kd-variant-grid" role="listbox" aria-labelledby="variantPickerTitle"></div>
@@ -140,6 +145,7 @@
     </div>
   </div>
 
-  <script src="./control_core.js?v=11"></script>
+  <script src="../assets/js/control-grading.js?v=2026-05-31-7"></script>
+  <script src="./control_core.js?v=13"></script>
 </body>
 </html>
