@@ -1,0 +1,165 @@
+{
+  "schema": "kodislovo.bank-plan.v1",
+  "title": "Банк заданий по демоверсиям ФИПИ 2026",
+  "storage": {
+    "russian": {
+      "sharedBank": "controls/russian/variants/variant_01.json",
+      "summaryBank": "controls/russian/summary-bank.json",
+      "oralBank": "controls/russian/oral-bank.json",
+      "plannedSplit": [
+        "controls/russian/bank/oge-positions.json",
+        "controls/russian/bank/ege-positions.json"
+      ]
+    },
+    "informatics": {
+      "part1Bank": "controls/informatics/bank/part1.json",
+      "part2Bank": "controls/informatics/bank/part2.json",
+      "assets": "controls/informatics/assets/DEMO-12,DEMO-13,...",
+      "trainerReuse": "trainers/informatics/oge_task1_data.js"
+    }
+  },
+  "exams": {
+    "russian_oge": {
+      "spec": "russian-oge-2026-demo.json",
+      "positions": [
+        { "no": 1, "part": 1, "type": "Сжатое изложение (аудио)", "answer": "текст ≥70 слов", "points": 6, "mode": "summary-trainer", "status": "partial", "asset": "summary-bank.json + аудио" },
+        { "no": 2, "part": 2, "type": "Грамматическая основа", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 2 },
+        { "no": 3, "part": 2, "type": "Характеристика предложений", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing", "bankId": null },
+        { "no": 4, "part": 2, "type": "Пунктуация (соответствие)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 4 },
+        { "no": 5, "part": 2, "type": "Пунктуация в тексте", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 5 },
+        { "no": 6, "part": 2, "type": "Лексическая ошибка / пароним", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 6 },
+        { "no": 7, "part": 2, "type": "Ошибка в форме слова", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 7 },
+        { "no": 8, "part": 2, "type": "Синтаксис / связь предложений", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing", "bankId": null },
+        { "no": 9, "part": 2, "type": "Орфография (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 9 },
+        { "no": 10, "part": 2, "type": "Орфография (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 10 },
+        { "no": 11, "part": 2, "type": "Орфография (пары)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 11 },
+        { "no": 12, "part": 2, "type": "Слово из текста", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 12 },
+        { "no": "13.1", "part": 3, "type": "Сочинение-рассуждение (тема 1)", "answer": "текст ≥70 слов", "points": 20, "mode": "essay-expert", "status": "missing" },
+        { "no": "13.2", "part": 3, "type": "Сочинение-рассуждение (тема 2)", "answer": "текст ≥70 слов", "points": 20, "mode": "essay-expert", "status": "missing" },
+        { "no": "13.3", "part": 3, "type": "Сочинение-рассуждение (тема 3)", "answer": "текст ≥70 слов", "points": 20, "mode": "essay-expert", "status": "missing" }
+      ],
+      "variants": [
+        { "id": "oge_demo_2026_full", "compose": "1 + 2-12 + 13.x", "priority": 3 },
+        { "id": "oge_demo_2026_part2", "compose": "2-12", "priority": 1, "note": "текущий oge_variant_01" },
+        { "id": "oge_demo_2026_part2_summary", "compose": "2-12 + summary", "priority": 2, "note": "oge_variant_02" }
+      ]
+    },
+    "russian_ege": {
+      "spec": "russian-ege-2026-demo.json",
+      "positions": [
+        { "no": 1, "part": 1, "type": "Местоимение по тексту", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 1 },
+        { "no": 2, "part": 1, "type": "Лексика (выделенные слова)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 2 },
+        { "no": 3, "part": 1, "type": "Средства выразительности / стиль", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing", "bankId": null },
+        { "no": 4, "part": 1, "type": "Ударение", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 4 },
+        { "no": 5, "part": 1, "type": "Пароним", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 5 },
+        { "no": 6, "part": 1, "type": "Лексическая ошибка", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 6 },
+        { "no": 7, "part": 1, "type": "Ошибка в форме", "answer": "слово", "points": 1, "mode": "auto", "status": "done", "bankId": 7 },
+        { "no": 8, "part": 1, "type": "Последовательность цифр", "answer": "цифры (порядок)", "points": 2, "mode": "auto-strict", "status": "missing", "bankId": null },
+        { "no": 9, "part": 1, "type": "Орфография (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 9 },
+        { "no": 10, "part": 1, "type": "Орфография (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 10 },
+        { "no": 11, "part": 1, "type": "Пунктуация (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 11 },
+        { "no": 12, "part": 1, "type": "Пунктуация (ряды)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 12 },
+        { "no": 13, "part": 1, "type": "По тексту (грамматика)", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 13, "textBlock": "A" },
+        { "no": 14, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 14, "textBlock": "A" },
+        { "no": 15, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 15, "textBlock": "A" },
+        { "no": 16, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 16, "textBlock": "A" },
+        { "no": 17, "part": 1, "type": "По тексту (синтаксис)", "answer": "цифра", "points": 1, "mode": "auto", "status": "done", "bankId": 17, "textBlock": "A" },
+        { "no": 18, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 18, "textBlock": "A" },
+        { "no": 19, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 19, "textBlock": "A" },
+        { "no": 20, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 20, "textBlock": "A" },
+        { "no": 21, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing", "bankId": null, "textBlock": "B" },
+        { "no": 22, "part": 1, "type": "Последовательность (строгий порядок)", "answer": "цифры", "points": 2, "mode": "auto-strict", "status": "missing", "bankId": null, "textBlock": "B" },
+        { "no": 23, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 23, "textBlock": "B" },
+        { "no": 24, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing", "bankId": null, "textBlock": "B" },
+        { "no": 25, "part": 1, "type": "По тексту", "answer": "цифры", "points": 1, "mode": "auto", "status": "done", "bankId": 25, "textBlock": "B" },
+        { "no": 26, "part": 1, "type": "Фразеологизм", "answer": "словосочетание", "points": 1, "mode": "auto", "status": "missing", "bankId": null, "textBlock": "B" },
+        { "no": 27, "part": 2, "type": "Сочинение по проблеме текста", "answer": "текст ≥150 слов", "points": 22, "mode": "essay-expert", "status": "missing" }
+      ],
+      "variants": [
+        { "id": "ege_demo_2026_part1", "compose": "1-26 (кроме пропусков)", "priority": 1, "note": "текущий ege_variant_01 — 20/26" },
+        { "id": "ege_demo_2026_part1_full", "compose": "1-26", "priority": 2 },
+        { "id": "ege_demo_2026_full", "compose": "1-26 + 27", "priority": 3 }
+      ]
+    },
+    "informatics_oge": {
+      "spec": "informatics-oge-2026-demo.json",
+      "positions": [
+        { "no": 1, "part": 1, "type": "Информация / размер в кодировке", "answer": "слово", "points": 1, "mode": "auto", "status": "trainer-only", "note": "oge_task1.html" },
+        { "no": 2, "part": 1, "type": "Кодирование (Морзе)", "answer": "слово", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 3, "part": 1, "type": "Логика (высказывание)", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 4, "part": 1, "type": "Граф / кратчайший путь", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 5, "part": 1, "type": "Исполнитель (Кумир)", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 6, "part": 1, "type": "Анализ программы", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 7, "part": 1, "type": "Адрес ресурса в сети", "answer": "цифры", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 8, "part": 1, "type": "Поисковый запрос", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 9, "part": 1, "type": "Подсчёт путей на графе", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 10, "part": 1, "type": "Системы счисления", "answer": "число", "points": 1, "mode": "auto", "status": "missing" },
+        { "no": 11, "part": 1, "type": "Файлы / поиск в каталоге", "answer": "слово", "points": 1, "mode": "auto", "status": "missing", "needsAssets": "DEMO-12" },
+        { "no": 12, "part": 1, "type": "Подсчёт файлов", "answer": "число", "points": 1, "mode": "auto", "status": "missing", "needsAssets": "DEMO-12" },
+        { "no": 13, "part": 2, "type": "Презентация .odp", "answer": "файл", "points": 2, "mode": "file-expert", "status": "missing", "needsAssets": "DEMO-13" },
+        { "no": 14, "part": 2, "type": "Текстовый документ .odt", "answer": "файл", "points": 2, "mode": "file-expert", "status": "missing" },
+        { "no": 15, "part": 2, "type": "Электронная таблица", "answer": "файл/число", "points": 2, "mode": "file-expert", "status": "missing", "needsAssets": "DEMO-15" },
+        { "no": 16, "part": 2, "type": "Программа / Робот", "answer": "файл/.py", "points": 2, "mode": "file-expert", "status": "missing" }
+      ],
+      "variants": [
+        { "id": "inf_oge_demo_2026_part1", "compose": "1-12", "priority": 1 },
+        { "id": "inf_oge_demo_2026_full", "compose": "1-16", "priority": 2 }
+      ]
+    }
+  },
+  "phases": [
+    {
+      "id": "P0",
+      "title": "Схема банка",
+      "tasks": [
+        "Поле kimNumber + examFormat у каждого задания",
+        "Разделить variant_01 на bank + manifest compose по номерам КИМ",
+        "Статусы в bank-plan-2026.json обновлять по мере готовности"
+      ]
+    },
+    {
+      "id": "P1",
+      "title": "Русский — закрыть пробелы части 2 ОГЭ и части 1 ЕГЭ",
+      "tasks": [
+        "ОГЭ: добавить №3, №8 (2 задания)",
+        "ЕГЭ: добавить №3,8,21,22,24,26 (6 заданий)",
+        "ЕГЭ: points=2 для №8 и №22 в control_core",
+        "Тексты: привязка T1/T2 к диапазонам как в демо"
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Информатика — часть 1",
+      "tasks": [
+        "part1.json: 12 заданий по демо (ответы из PDF)",
+        "Задание 1: перенести из oge_task1_data.js",
+        "Задания 11–12: пакет DEMO-12 в assets",
+        "manifest: inf_oge_demo_2026_part1"
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "Творческие части",
+      "tasks": [
+        "ОГЭ изложение: аудио + критерии ИК1–ИК3",
+        "ОГЭ/ЕГЭ сочинение: черновик + загрузка + панель учителя",
+        "Инф. 13–16: модуль сдачи файлов (не в control_core)"
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "Полные варианты и шкалы",
+      "tasks": [
+        "Варианты full в manifest",
+        "Таблица первичный→отметка из нормативов 2026",
+        "2+ варианта на формат (не только демо)"
+      ]
+    }
+  ],
+  "coverage": {
+    "russian_oge": { "done": 11, "missing": 0, "nonAuto": 4, "totalKim": 13, "bank": "../bank/oge-demo-2026.json" },
+    "russian_ege": { "done": 26, "missing": 0, "nonAuto": 1, "totalKim": 27, "bank": "../bank/ege-demo-2026.json", "part1MaxPrimary": 28 },
+    "informatics_oge": { "done": 0, "trainerOnly": 1, "missing": 15, "totalKim": 16 }
+  },
+  "phaseStatus": { "P1": "done" }
+}
