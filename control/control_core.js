@@ -409,6 +409,110 @@
     setText("uiTimer", text);
     const mirror = $("uiTimerMirror");
     if (mirror) mirror.value = text;
+    setText("timerBarValue", text);
+  }
+
+  function setTimerBarVisible(visible) {
+    const bar = $("timerBar");
+    if (!bar) return;
+    bar.classList.toggle("kd-hidden", !visible);
+  }
+
+  function setTimerWarning(active) {
+    const bar = $("timerBar");
+    if (bar) bar.classList.toggle("is-warning", Boolean(active));
+  }
+
+  function findManifestSection(entry) {
+    const sectionId = safeText(entry?.sectionId || entry?.section || variantMeta?.sectionId);
+    if (!sectionId) return null;
+    return (manifest?.sections || []).find((section) => section.id === sectionId) || null;
+  }
+
+  function getVariantCardBadges(entry, meta) {
+    const badges = [];
+    const section = findManifestSection(entry);
+    const minutes = Number(meta?.time_limit_minutes || section?.time || 0);
+    const maxPoints = Number(meta?.maxPoints || meta?.max_points || section?.max_score || 0);
+    const grade = section?.grade;
+
+    if (minutes > 0) badges.push({ className: "time", text: `${minutes} мин` });
+    if (maxPoints > 0) badges.push({ className: "score", text: `${maxPoints} б.` });
+    if (grade) badges.push({ className: "grade", text: `${grade} класс` });
+    if (entry?.compose?.summaryTextId) badges.push({ className: "score", text: "с изложением" });
+    return badges;
+  }
+
+  function renderVariantCards() {
+    const grid = $("variantCards");
+    const sel = $("variantSelect");
+    if (!grid || !manifest) return;
+
+    grid.innerHTML = "";
+    const variants = manifest.variants || [];
+    const metaForBadges = variantMeta || {};
+
+    variants.forEach((entry) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "kd-variant-card";
+      btn.setAttribute("role", "option");
+      btn.setAttribute("aria-selected", entry.id === currentVariantId ? "true" : "false");
+      if (entry.id === currentVariantId) btn.classList.add("is-active");
+      if (isFinished) btn.disabled = true;
+
+      const badges = getVariantCardBadges(
+        entry,
+        entry.id === currentVariantId ? metaForBadges : {}
+      );
+      const badgeHtml = badges.length
+        ? `<div class="kd-variant-badges">${badges.map((b) => `<span class="kd-variant-badge ${b.className}">${escapeHtml(b.text)}</span>`).join("")}</div>`
+        : `<div class="kd-variant-badges"><span class="kd-variant-badge">открыть вариант</span></div>`;
+
+      const subtitle = safeText(entry?.compose?.subtitle || entry?.subtitle);
+      btn.innerHTML = `
+        <strong>${escapeHtml(entry.title || entry.id)}</strong>
+        ${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}
+        ${badgeHtml}
+      `;
+
+      btn.addEventListener("click", async () => {
+        if (isFinished || entry.id === currentVariantId) return;
+        if (sel) sel.value = entry.id;
+        currentVariantId = entry.id;
+        currentVariantEntry = entry;
+        currentVariantFile = entry.file || `compose:${entry.id}`;
+        await loadVariant(entry);
+        renderVariantCards();
+      });
+
+      grid.appendChild(btn);
+    });
+  }
+
+  function showSubmitSuccessOverlay(score) {
+    const overlay = $("submitSuccessOverlay");
+    if (!overlay) {
+      alert("Работа успешно отправлена.");
+      return;
+    }
+
+    const payload = buildResultPayload();
+    setText("successStudent", `${safeText(payload.student?.name) || "—"} · ${safeText(payload.student?.class) || "—"}`);
+    setText("successVariant", payload.variant?.title || payload.variant?.id || "—");
+    setText(
+      "successScore",
+      score.max > 0 ? `${score.earned} из ${score.max} баллов (${score.percent}%)` : "Отправлено"
+    );
+
+    const back = $("successBackBtn");
+    if (back) back.href = "./index.html";
+
+    overlay.classList.remove("kd-hidden");
+  }
+
+  function hideSubmitSuccessOverlay() {
+    $("submitSuccessOverlay")?.classList.add("kd-hidden");
   }
 
   function startTimerIfNeeded() {
@@ -417,14 +521,18 @@
 
     if (!timeLimitSec || !startedAt) {
       setTimerUI("без лимита");
+      setTimerBarVisible(false);
+      setTimerWarning(false);
       return;
     }
 
+    setTimerBarVisible(true);
     const startMs = new Date(startedAt).getTime();
     timerTick = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startMs) / 1000);
       const left = timeLimitSec - elapsed;
       setTimerUI(formatTime(left));
+      setTimerWarning(!isFinished && left > 0 && left <= 300);
       if (!isFinished && left <= 0) finishNow(true);
     }, 250);
   }
@@ -591,9 +699,18 @@
       setStickyVisible(false);
     }
 
+    const pills = tasks.map((item, index) => {
+      const answered = safeText(answersMap[String(item.id)]).length > 0;
+      const classes = ["kd-task-pill"];
+      if (index === currentTaskIndex) classes.push("is-active");
+      if (answered) classes.push("is-answered");
+      return `<button type="button" class="${classes.join(" ")}" data-task-index="${index}" aria-label="Задание ${item.id}">${item.id}</button>`;
+    }).join("");
+
     cont.innerHTML = `
+      <nav class="kd-task-pills" aria-label="Номера заданий">${pills}</nav>
       <section class="kd-task" data-task-id="${String(task.id)}">
-        <h3>Задание ${task.id}</h3>
+        <h3>Задание ${task.id} <span class="kd-subtitle" style="display:inline;font-size:14px">(${currentTaskIndex + 1} из ${tasks.length})</span></h3>
         ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
         <div class="q">${task.text || ""}</div>
 
@@ -606,6 +723,17 @@
         </div>
       </section>
     `;
+
+    cont.querySelectorAll(".kd-task-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const index = Number(pill.getAttribute("data-task-index"));
+        if (!Number.isFinite(index) || index === currentTaskIndex) return;
+        currentTaskIndex = index;
+        saveProgress();
+        renderCurrentTask();
+        window.scrollTo({ top: cont.offsetTop - 80, behavior: "smooth" });
+      });
+    });
 
     const inp = $("answerInput");
     const saved = answersMap[String(task.id)];
@@ -745,6 +873,7 @@
     renderCurrentTask();
     applyFinishedState();
     startTimerIfNeeded();
+    renderVariantCards();
 
     const sn = $("studentName");
     const sc = $("studentClass");
@@ -780,7 +909,8 @@
       // оставляем экран в состоянии "завершено" (в памяти)
       applyFinishedState();
 
-      alert("Работа успешно отправлена.");
+      const score = calcScore();
+      showSubmitSuccessOverlay(score);
     } catch (err) {
       console.error(err);
       alert("Не удалось отправить работу. Проверьте интернет и попробуйте ещё раз.\n\n" + String(err.message || err));
@@ -924,7 +1054,16 @@
       });
     }
 
+    const backLink = $("controlBackLink");
+    if (backLink) backLink.href = "./index.html";
+
+    $("successCloseBtn")?.addEventListener("click", hideSubmitSuccessOverlay);
+    $("submitSuccessOverlay")?.addEventListener("click", (event) => {
+      if (event.target === $("submitSuccessOverlay")) hideSubmitSuccessOverlay();
+    });
+
     await loadManifest();
+    renderVariantCards();
     await loadVariant(currentVariantEntry || currentVariantFile);
   }
 
