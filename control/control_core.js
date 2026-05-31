@@ -5,6 +5,8 @@
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
   const $ = (id) => document.getElementById(id);
+  /** Браузер: globalThis/window; Node: global — не использовать голый global в браузере. */
+  const root = typeof globalThis !== "undefined" ? globalThis : window;
 
   function setText(id, text) {
     const el = $(id);
@@ -392,8 +394,8 @@
     const format = safeText(variantMeta?.examFormat || currentVariantEntry?.examFormat).toLowerCase();
     const formatPrefix = format === "oge" ? "ОГЭ · " : format === "ege" ? "ЕГЭ · " : "";
     setText("uiMainTitle", `${formatPrefix}${variantMeta?.title || "Контрольная работа"}`);
-    const gradingHint = global.KodislovoControlGrading
-      ? global.KodislovoControlGrading.formatGradingHint(variantMeta, currentVariantEntry)
+    const gradingHint = root.KodislovoControlGrading
+      ? root.KodislovoControlGrading.formatGradingHint(variantMeta, currentVariantEntry)
       : "";
     setText(
       "uiSubtitle",
@@ -459,8 +461,8 @@
     }
 
     const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
-    const mark = global.KodislovoControlGrading
-      ? global.KodislovoControlGrading.markFromScore(earned, max, variantMeta, currentVariantEntry)
+    const mark = root.KodislovoControlGrading
+      ? root.KodislovoControlGrading.markFromScore(earned, max, variantMeta, currentVariantEntry)
       : null;
     return { earned, max, percent, perTask, mark };
   }
