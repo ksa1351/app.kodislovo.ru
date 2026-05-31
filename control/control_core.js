@@ -733,6 +733,7 @@
 
   // ========= texts by range =========
   let stickyCollapsed = false;
+  let currentStickyBlockKey = "";
 
   function getTextRangesFromMeta() {
     const texts = variantMeta?.texts || {};
@@ -762,6 +763,25 @@
     wrap.classList.toggle("kd-hidden", !visible);
   }
 
+  function getStickyBlockKey(block) {
+    if (!block) return "";
+    const kim = Array.isArray(block.rangeKim) ? block.rangeKim.join("-") : "";
+    return `${block.title}|${kim || `${block.from}-${block.to}`}`;
+  }
+
+  function updateStickyToggleUi() {
+    const body = $("stickyTextBody");
+    const btn = $("stickyToggle");
+    if (body) {
+      body.classList.toggle("kd-hidden", stickyCollapsed);
+      body.setAttribute("aria-hidden", stickyCollapsed ? "true" : "false");
+    }
+    if (btn) {
+      btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+      btn.setAttribute("aria-expanded", stickyCollapsed ? "false" : "true");
+    }
+  }
+
   function setStickyContent(block) {
     const title = $("stickyTextTitle");
     const range = $("stickyTextRange");
@@ -771,10 +791,7 @@
     title.textContent = block.title;
     range.textContent = formatTaskRangeLabel(block);
     body.innerHTML = block.html;
-
-    body.style.display = stickyCollapsed ? "none" : "";
-    const btn = $("stickyToggle");
-    if (btn) btn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+    updateStickyToggleUi();
   }
 
   function setSummaryVisible(visible) {
@@ -849,19 +866,6 @@
     return `задания ${block.from}–${block.to}`;
   }
 
-  function renderTaskReadingHtml(block) {
-    if (!block?.html) return "";
-    return `
-      <section class="kd-task-reading kd-textbox" aria-label="${escapeHtml(block.title || "Текст")}">
-        <header class="kd-task-reading-head">
-          <strong>${escapeHtml(block.title || "Текст для заданий")}</strong>
-          <span class="kd-subtitle">${escapeHtml(formatTaskRangeLabel(block))}</span>
-        </header>
-        <div class="kd-task-reading-body">${block.html}</div>
-      </section>
-    `;
-  }
-
   // ========= render ONE task =========
   let stickyBlocks = [];
 
@@ -906,16 +910,17 @@
     refreshStickyBlocks();
     const block = findBlockForTask(stickyBlocks, task);
     if (block) {
+      const blockKey = getStickyBlockKey(block);
+      if (blockKey !== currentStickyBlockKey) {
+        currentStickyBlockKey = blockKey;
+        stickyCollapsed = false;
+      }
       setStickyVisible(true);
       setStickyContent(block);
-      const stickyWrap = $("stickyTextWrap");
-      if (stickyWrap?.classList.contains("kd-hidden")) {
-        stickyWrap.classList.remove("kd-hidden");
-      }
     } else {
+      currentStickyBlockKey = "";
       setStickyVisible(false);
     }
-    const readingHtml = renderTaskReadingHtml(block);
 
     const pills = tasks.map((item, index) => {
       const answered = safeText(answersMap[String(item.id)]).length > 0;
@@ -929,7 +934,6 @@
       <nav class="kd-task-pills" aria-label="Номера заданий">${pills}</nav>
       <section class="kd-task" data-task-id="${String(task.id)}">
         <h3>Задание ${task.id} <span class="kd-subtitle" style="display:inline;font-size:14px">(${currentTaskIndex + 1} из ${tasks.length})</span></h3>
-        ${readingHtml}
         ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
         <div class="q">${task.text || ""}</div>
 
@@ -1091,6 +1095,7 @@
     currentVariantId = entry.id || currentVariantId;
     currentVariantFile = entry.file || `compose:${currentVariantId}`;
     stickyCollapsed = false;
+    currentStickyBlockKey = "";
 
     if (entry.compose) {
       variantData = await buildComposedVariant(entry);
@@ -1136,9 +1141,7 @@
       stBtn._kdBound = true;
       stBtn.addEventListener("click", () => {
         stickyCollapsed = !stickyCollapsed;
-        const body = $("stickyTextBody");
-        if (body) body.style.display = stickyCollapsed ? "none" : "";
-        stBtn.textContent = stickyCollapsed ? "Показать" : "Скрыть";
+        updateStickyToggleUi();
       });
     }
 
