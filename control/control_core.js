@@ -115,6 +115,14 @@
           timerConfigUrl: services.timerConfigUrl
             ? new URL(services.timerConfigUrl, `${baseUrl}/`).toString()
             : "",
+          manifestUrl: services.manifestUrl
+            ? new URL(services.manifestUrl, `${baseUrl}/`).toString()
+            : "",
+          variantBaseUrl: services.variantBaseUrl
+            ? new URL(services.variantBaseUrl, `${baseUrl}/`).toString()
+            : "",
+          // "db" — задания и проверка идут с сервера (ответы скрыты); "static" — старый путь.
+          contentSource: safeText(services.contentSource) || "static",
         };
       });
     }
@@ -194,6 +202,29 @@
   let summaryBankPromise = null;
   let variantLoadError = null;
   let variantLoading = false;
+
+  // Режим контента: при contentSource === "db" задания и проверка идут с сервера,
+  // ответы ученику не отдаются. По умолчанию — статический путь (обратная совместимость).
+  const apiContent = { enabled: false, manifestUrl: "", variantBaseUrl: "" };
+
+  async function detectContentMode() {
+    try {
+      const services = await withTimeout(loadBackendServices(), 8000, "настроек API");
+      if (services && services.contentSource === "db" && services.manifestUrl && services.variantBaseUrl) {
+        apiContent.enabled = true;
+        apiContent.manifestUrl = services.manifestUrl;
+        apiContent.variantBaseUrl = services.variantBaseUrl;
+      }
+    } catch (error) {
+      console.warn("content mode detection failed, fallback to static", error);
+      apiContent.enabled = false;
+    }
+  }
+
+  async function loadVariantFromApi(variantId) {
+    const url = apiContent.variantBaseUrl + encodeURIComponent(variantId);
+    return await fetchJson(url);
+  }
 
   function lsKey() {
     return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
@@ -539,7 +570,7 @@
     const section = findManifestSection(entry);
     const examFormat = safeText(meta?.examFormat || entry?.examFormat).toLowerCase();
     const minutes = Number(
-      meta?.time_limit_minutes || entry?.compose?.time_limit_minutes || section?.time || 0
+      meta?.time_limit_minutes || entry?.compose?.time_limit_minutes || entry?.timeLimitMinutes || section?.time || 0
     );
     const maxPoints = Number(meta?.maxPoints || meta?.max_points || section?.max_score || 0);
     const gradeLevel = Number(meta?.gradeLevel || entry?.gradeLevel || section?.grade || 0);
@@ -554,7 +585,7 @@
     if (taskCount > 0) badges.push({ className: "score", text: `${taskCount} зад.` });
     else if (maxPoints > 0) badges.push({ className: "score", text: `${maxPoints} б.` });
     if (minutes > 0) badges.push({ className: "time", text: `${minutes} мин` });
-    if (entry?.compose?.summaryTextId) badges.push({ className: "summary", text: "+ изложение" });
+    if (entry?.compose?.summaryTextId || entry?.summaryTextId) badges.push({ className: "summary", text: "+ изложение" });
     return badges;
   }
 
@@ -687,7 +718,10 @@
   }
 
   function buildResultPayload() {
-    const score = calcScore();
+    // В API-режиме балл и perTask считает сервер (ответов у клиента нет).
+    const score = apiContent.enabled
+      ? { max: 0, earned: 0, percent: 0, mark: null, perTask: [] }
+      : calcScore();
     return {
       schema: "kodislovo.result.v1",
       createdAt: nowIso(),
@@ -995,7 +1029,9 @@
   }
 
   async function loadManifest() {
-    manifest = await fetchJson(base + "manifest.json");
+    manifest = apiContent.enabled
+      ? await fetchJson(apiContent.manifestUrl)
+      : await fetchJson(base + "manifest.json");
 
     const sel = $("variantSelect");
     if (!sel) throw new Error("В control.html нет <select id='variantSelect'>");
@@ -1097,7 +1133,10 @@
     stickyCollapsed = false;
     currentStickyBlockKey = "";
 
-    if (entry.compose) {
+    if (apiContent.enabled) {
+      // Сервер отдаёт собранный вариант БЕЗ правильных ответов; проверка — на сервере.
+      variantData = await loadVariantFromApi(currentVariantId);
+    } else if (entry.compose) {
       variantData = await buildComposedVariant(entry);
     } else if (entry.file) {
       variantData = await fetchJson(base + entry.file);
@@ -1173,7 +1212,7 @@
     try {
       const payload = buildResultPayload();
       const services = await loadBackendServices();
-      await postJson(services.submitUrl, payload);
+      const response = await postJson(services.submitUrl, payload);
 
       // ✅ после успешной отправки — удаляем временное автосохранение
       clearLocalProgress();
@@ -1181,7 +1220,16 @@
       // оставляем экран в состоянии "завершено" (в памяти)
       applyFinishedState();
 
-      const score = calcScore();
+      // В API-режиме балл приходит с сервера; иначе считаем локально (статика).
+      const serverGrading = response && response.gradedBy === "server" ? response.grading : null;
+      const score = serverGrading
+        ? {
+            earned: serverGrading.earnedPoints,
+            max: serverGrading.maxPoints,
+            percent: serverGrading.percent,
+            mark: serverGrading.mark,
+          }
+        : calcScore();
       showSubmitSuccessOverlay(score);
     } catch (err) {
       console.error(err);
@@ -1362,6 +1410,7 @@
       if (event.target === $("submitSuccessOverlay")) hideSubmitSuccessOverlay();
     });
 
+    await detectContentMode();
     await loadManifest();
     renderVariantCards();
     if (currentVariantEntry) {
