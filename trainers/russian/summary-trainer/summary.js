@@ -17,10 +17,9 @@
   const sourceTitle = document.getElementById("sourceTitle");
   const sourceText = document.getElementById("sourceText");
   const sourcePanel = document.getElementById("sourcePanel");
-  const rightPanel = document.getElementById("rightPanel");
+  const questionsPanel = document.getElementById("questionsPanel");
+  const editingPanel = document.getElementById("editingPanel");
   const workspace = document.getElementById("step-workspace");
-  const questionsView = document.getElementById("questionsView");
-  const editingView = document.getElementById("editingView");
   const questionsArea = document.getElementById("questionsArea");
   const questionsHeading = document.getElementById("questionsHeading");
   const questionsHint = document.getElementById("questionsHint");
@@ -424,9 +423,6 @@
     if (workspace) {
       workspace.dataset.phase = phase;
     }
-    if (rightPanel) {
-      rightPanel.dataset.phase = phase;
-    }
   }
 
   function applyPhase() {
@@ -445,8 +441,15 @@
       comparisonSection.hidden = true;
       setWorkspacePhase("questions");
       workspace.classList.remove("is-editing", "is-comparison");
-      questionsView.hidden = false;
-      editingView.hidden = true;
+      if (sourcePanel) {
+        sourcePanel.hidden = false;
+      }
+      if (questionsPanel) {
+        questionsPanel.hidden = false;
+      }
+      if (editingPanel) {
+        editingPanel.hidden = true;
+      }
       showQuestionGroup(currentGroupIndex);
       if (studentBar) {
         studentBar.hidden = true;
@@ -460,9 +463,16 @@
       setWorkspacePhase("editing");
       workspace.classList.add("is-editing");
       workspace.classList.remove("is-comparison");
-      questionsView.hidden = true;
-      editingView.hidden = false;
-      editingView.scrollTop = 0;
+      if (sourcePanel) {
+        sourcePanel.hidden = true;
+      }
+      if (questionsPanel) {
+        questionsPanel.hidden = true;
+      }
+      if (editingPanel) {
+        editingPanel.hidden = false;
+        editingPanel.scrollTop = 0;
+      }
       draftText.focus();
       if (studentBar) {
         studentBar.hidden = true;

@@ -6,7 +6,9 @@
 
   <meta charset="utf-8" />
 
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 
   <title>Тренажёр «Сжатое изложение по вопросам»</title>
 
@@ -16,7 +18,7 @@
 
   <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-06-10-1" />
 
-  <link rel="stylesheet" href="./summary.css?v=2026-06-10-4" />
+  <link rel="stylesheet" href="./summary.css?v=2026-06-10-5" />
 
 </head>
 
@@ -162,7 +164,7 @@
 
     <section id="step-workspace" class="summary-workspace" data-phase="questions" aria-label="Рабочая область">
 
-      <article class="kd-panel summary-panel summary-panel-source" id="sourcePanel">
+      <article class="kd-panel summary-panel summary-panel-source summary-workspace-panel" id="sourcePanel">
 
         <div class="summary-panel-head">
 
@@ -178,69 +180,65 @@
 
 
 
-      <article class="kd-panel summary-panel summary-panel-right" id="rightPanel" data-phase="questions">
+      <article class="kd-panel summary-panel summary-panel-right summary-workspace-panel" id="questionsPanel">
 
-        <div id="questionsView" class="summary-phase-view">
+        <div class="summary-panel-head">
 
-          <div class="summary-panel-head">
+          <span class="summary-eyebrow">Вопросы по абзацу</span>
 
-            <span class="summary-eyebrow">Вопросы по абзацу</span>
+          <h2 id="questionsHeading">Микротема 1</h2>
 
-            <h2 id="questionsHeading">Микротема 1</h2>
-
-            <p id="questionsHint" class="summary-view-hint">Ответьте на все вопросы по первому абзацу. Ответы сохраняются автоматически.</p>
-
-          </div>
-
-          <div id="questionsArea" class="summary-questions"></div>
-
-          <div class="kd-actions summary-actions">
-
-            <button id="stepSave" class="kd-button" type="button">Сохранить</button>
-
-          </div>
+          <p id="questionsHint" class="summary-view-hint">Ответьте на все вопросы по первому абзацу. Ответы сохраняются автоматически.</p>
 
         </div>
 
+        <div id="questionsArea" class="summary-questions"></div>
+
+        <div class="kd-actions summary-actions">
+
+          <button id="stepSave" class="kd-button" type="button">Сохранить</button>
+
+        </div>
+
+      </article>
 
 
-        <div id="editingView" class="summary-phase-view" hidden>
 
-          <div class="summary-panel-head">
+      <article class="kd-panel summary-panel summary-panel-editing summary-workspace-panel" id="editingPanel" hidden>
 
-            <span class="summary-eyebrow">Сжатое изложение</span>
+        <div class="summary-panel-head">
 
-            <h2>Черновик по вашим ответам</h2>
+          <span class="summary-eyebrow">Сжатое изложение</span>
 
-            <p class="summary-view-hint">Исходный текст скрыт. Отредактируйте черновик и составьте связное сжатое изложение.</p>
+          <h2>Черновик по вашим ответам</h2>
 
-          </div>
+          <p class="summary-view-hint">Исходный текст скрыт. Отредактируйте черновик и составьте связное сжатое изложение.</p>
 
-          <textarea
+        </div>
 
-            id="draftText"
+        <textarea
 
-            class="summary-draft"
+          id="draftText"
 
-            placeholder="Здесь появится черновик, собранный из ответов. Его можно редактировать вручную."
+          class="summary-draft"
 
-          ></textarea>
+          placeholder="Здесь появится черновик, собранный из ответов. Его можно редактировать вручную."
 
-          <div class="summary-draft-meta">
+        ></textarea>
 
-            <span id="wordCount">Слов: 0</span>
+        <div class="summary-draft-meta">
 
-            <span id="saveStatus" aria-live="polite">Изменения сохраняются автоматически</span>
+          <span id="wordCount">Слов: 0</span>
 
-          </div>
+          <span id="saveStatus" aria-live="polite">Изменения сохраняются автоматически</span>
 
-          <div class="kd-actions summary-actions">
+        </div>
 
-            <button id="saveDraft" class="kd-button" type="button">Сохранить и перейти к сравнению</button>
+        <div class="kd-actions summary-actions">
 
-            <button id="backToQuestions" class="kd-button kd-button-secondary" type="button">Вернуться к вопросам</button>
+          <button id="saveDraft" class="kd-button" type="button">Сохранить и перейти к сравнению</button>
 
-          </div>
+          <button id="backToQuestions" class="kd-button kd-button-secondary" type="button">Вернуться к вопросам</button>
 
         </div>
 
@@ -310,7 +308,7 @@
 
   <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
 
-  <script src="./summary.js?v=2026-06-10-4"></script>
+  <script src="./summary.js?v=2026-06-10-5"></script>
 
 </body>
 

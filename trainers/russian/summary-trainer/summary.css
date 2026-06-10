@@ -194,19 +194,26 @@ html[data-theme="light"] #textSelect option {
   gap: 16px;
 }
 
+.summary-workspace[data-phase="questions"] #editingPanel,
+.summary-workspace[data-phase="editing"] #sourcePanel,
+.summary-workspace[data-phase="editing"] #questionsPanel {
+  display: none !important;
+}
+
 .summary-workspace[data-phase="editing"] {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.summary-workspace[data-phase="editing"] #sourcePanel {
-  display: none !important;
+.summary-panel-editing,
+.summary-panel-right {
+  display: flex;
+  flex-direction: column;
 }
 
-#rightPanel[data-phase="editing"] #questionsView {
-  display: none !important;
-}
-
-#rightPanel[data-phase="questions"] #editingView {
+.summary-workspace-panel[hidden],
+.summary-comparison[hidden],
+.summary-student-bar[hidden],
+.summary-group[hidden] {
   display: none !important;
 }
 
@@ -219,43 +226,8 @@ html[data-theme="light"] #textSelect option {
 
 
 .summary-panel {
-
   min-height: 100%;
-
 }
-
-
-
-.summary-panel-right {
-
-  display: flex;
-
-  flex-direction: column;
-
-}
-
-
-
-.summary-phase-view[hidden],
-.summary-comparison[hidden],
-.summary-student-bar[hidden],
-.summary-group[hidden] {
-  display: none !important;
-}
-
-.summary-phase-view {
-
-  display: flex;
-
-  flex-direction: column;
-
-  flex: 1;
-
-  min-height: 0;
-
-}
-
-
 
 .summary-panel-head {
 
