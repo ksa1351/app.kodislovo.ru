@@ -226,6 +226,13 @@ html[data-theme="light"] #textSelect option {
 
 
 
+.summary-phase-view[hidden],
+.summary-comparison[hidden],
+.summary-student-bar[hidden],
+.summary-group[hidden] {
+  display: none !important;
+}
+
 .summary-phase-view {
 
   display: flex;
