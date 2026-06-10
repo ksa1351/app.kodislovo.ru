@@ -147,11 +147,12 @@
   }
 
   function getPersistedState() {
+    const phase = getSafePhase();
     return {
-      draft: draftText.value,
+      draft: canOpenDraft() ? draftText.value : "",
       answers: collectAnswers(),
       student: getStudentData(),
-      phase: currentPhase,
+      phase,
       groupIndex: currentGroupIndex
     };
   }
@@ -206,7 +207,6 @@
 
     try {
       const data = JSON.parse(raw);
-      draftText.value = data.draft || "";
 
       if (data.student) {
         if (studentName) {
@@ -223,6 +223,12 @@
       const savedGroup = Number.isFinite(data.groupIndex) ? data.groupIndex : 0;
       currentGroupIndex = Math.min(Math.max(savedGroup, 0), Math.max(groupCount - 1, 0));
       resolvePhaseAfterRestore(data.phase);
+
+      if (canOpenDraft() && (currentPhase === PHASE_EDITING || currentPhase === PHASE_COMPARISON)) {
+        draftText.value = data.draft || buildDraftFromAnswers();
+      } else {
+        draftText.value = "";
+      }
     } catch (error) {
       localStorage.removeItem(storageKey(currentText.id));
     }
@@ -314,6 +320,36 @@
     currentGroupIndex = getGroupCount() - 1;
   }
 
+  function getSafePhase() {
+    if (
+      (currentPhase === PHASE_EDITING || currentPhase === PHASE_COMPARISON) &&
+      !allGroupsComplete()
+    ) {
+      return PHASE_QUESTIONS;
+    }
+    return currentPhase;
+  }
+
+  function canOpenDraft() {
+    return allGroupsComplete();
+  }
+
+  function openDraftPhase() {
+    if (!canOpenDraft()) {
+      const incompleteGroup = findFirstIncompleteGroup();
+      window.alert("Черновик откроется только после ответов на все вопросы по всем микротемам.");
+      currentPhase = PHASE_QUESTIONS;
+      currentGroupIndex = incompleteGroup >= 0 ? incompleteGroup : 0;
+      applyPhase();
+      return false;
+    }
+
+    buildDraft();
+    currentPhase = PHASE_EDITING;
+    applyPhase();
+    return true;
+  }
+
   function validateCurrentGroupAnswers() {
     const emptyAnswers = getEmptyAnswersInGroup(currentGroupIndex);
 
@@ -370,7 +406,9 @@
     }`;
 
     const isLastGroup = groupIndex >= groupCount - 1;
-    stepSaveButton.textContent = isLastGroup ? "Сохранить и открыть черновик" : "Сохранить";
+    const readyForDraft = isLastGroup && canOpenDraft();
+    stepSaveButton.textContent = readyForDraft ? "Сохранить и открыть черновик" : "Сохранить";
+    stepSaveButton.disabled = false;
   }
 
   function updateComparisonView() {
@@ -382,6 +420,16 @@
   }
 
   function applyPhase() {
+    if (
+      (currentPhase === PHASE_EDITING || currentPhase === PHASE_COMPARISON) &&
+      !canOpenDraft()
+    ) {
+      const incompleteGroup = findFirstIncompleteGroup();
+      currentPhase = PHASE_QUESTIONS;
+      currentGroupIndex = incompleteGroup >= 0 ? incompleteGroup : 0;
+      draftText.value = "";
+    }
+
     if (currentPhase === PHASE_QUESTIONS) {
       workspace.hidden = false;
       comparisonSection.hidden = true;
@@ -461,9 +509,7 @@
       return;
     }
 
-    buildDraft();
-    currentPhase = PHASE_EDITING;
-    applyPhase();
+    openDraftPhase();
   }
 
   function advanceFromEditing() {
@@ -486,6 +532,10 @@
   }
 
   function goToEditing() {
+    if (!canOpenDraft()) {
+      goToQuestions();
+      return;
+    }
     currentPhase = PHASE_EDITING;
     applyPhase();
   }
