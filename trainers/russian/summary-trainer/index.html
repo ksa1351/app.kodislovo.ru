@@ -18,7 +18,7 @@
 
   <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-06-10-1" />
 
-  <link rel="stylesheet" href="./summary.css?v=2026-06-10-5" />
+  <link rel="stylesheet" href="./summary.css?v=2026-06-10-6" />
 
 </head>
 
@@ -104,7 +104,7 @@
 
 
 
-    <section id="step-student" class="summary-student-bar kd-panel" aria-label="Данные ученика и отправка" hidden>
+    <section id="step-student" class="summary-student-bar kd-panel" aria-label="Данные ученика">
 
       <div class="summary-student-grid">
 
@@ -112,7 +112,7 @@
 
           <span class="label">ФИО ученика</span>
 
-          <input id="studentName" class="input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
+          <input id="studentName" class="input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" required />
 
         </label>
 
@@ -120,19 +120,13 @@
 
           <span class="label">Класс</span>
 
-          <input id="studentClass" class="input" type="text" placeholder="Например: 9А" autocomplete="off" />
+          <input id="studentClass" class="input" type="text" placeholder="Например: 9А" autocomplete="off" required />
 
         </label>
 
       </div>
 
-      <div class="summary-submit-row">
-
-        <button id="submitCloud" class="kd-button" type="button" hidden>Отправить на проверку</button>
-
-        <span id="submitStatus" class="summary-submit-status" aria-live="polite">Работа не отправлена</span>
-
-      </div>
+      <p id="studentGateHint" class="summary-student-hint">Заполните ФИО и класс — без этого вопросы не откроются.</p>
 
     </section>
 
@@ -212,7 +206,7 @@
 
           <h2>Черновик по вашим ответам</h2>
 
-          <p class="summary-view-hint">Исходный текст скрыт. Отредактируйте черновик и составьте связное сжатое изложение.</p>
+          <p class="summary-view-hint">Слева исходный текст, справа — ваш черновик. Отредактируйте его и составьте связное сжатое изложение.</p>
 
         </div>
 
@@ -236,9 +230,7 @@
 
         <div class="kd-actions summary-actions">
 
-          <button id="saveDraft" class="kd-button" type="button">Сохранить и перейти к сравнению</button>
-
-          <button id="backToQuestions" class="kd-button kd-button-secondary" type="button">Вернуться к вопросам</button>
+          <button id="saveDraft" class="kd-button" type="button">Сохранить и отправить на проверку</button>
 
         </div>
 
@@ -249,6 +241,8 @@
 
 
     <section id="step-comparison" class="summary-comparison" aria-label="Сравнение текстов" hidden>
+
+      <p id="submitStatus" class="summary-comparison-status" aria-live="polite">Работа не отправлена</p>
 
       <article class="kd-panel summary-panel summary-panel-source">
 
@@ -286,18 +280,6 @@
 
       </article>
 
-
-
-      <div class="summary-comparison-actions kd-actions">
-
-        <button id="backToEdit" class="kd-button kd-button-secondary" type="button">Вернуться к редактированию</button>
-
-        <button id="downloadTxt" class="kd-button kd-button-secondary" type="button">Скачать .txt</button>
-
-        <button id="clearWork" class="kd-button kd-button-secondary summary-danger" type="button">Начать заново</button>
-
-      </div>
-
     </section>
 
   </main>
@@ -308,7 +290,7 @@
 
   <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
 
-  <script src="./summary.js?v=2026-06-10-5"></script>
+  <script src="./summary.js?v=2026-06-10-6"></script>
 
 </body>
 

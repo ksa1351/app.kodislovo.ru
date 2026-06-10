@@ -35,15 +35,11 @@
   const comparisonWordCount = document.getElementById("comparisonWordCount");
   const workflowStepper = document.getElementById("workflowStepper");
   const studentBar = document.getElementById("step-student");
+  const studentGateHint = document.getElementById("studentGateHint");
   const summaryPage = document.querySelector(".summary-page");
 
   const stepSaveButton = document.getElementById("stepSave");
   const saveDraftButton = document.getElementById("saveDraft");
-  const backToQuestionsButton = document.getElementById("backToQuestions");
-  const backToEditButton = document.getElementById("backToEdit");
-  const downloadTxtButton = document.getElementById("downloadTxt");
-  const clearWorkButton = document.getElementById("clearWork");
-  const submitCloudButton = document.getElementById("submitCloud");
 
   let currentText = null;
   let cloudConfigPromise = null;
@@ -127,6 +123,43 @@
       name: studentName ? studentName.value.trim() : "",
       className: studentClass ? studentClass.value.trim() : ""
     };
+  }
+
+  function isStudentProfileComplete() {
+    const student = getStudentData();
+    return Boolean(student.name && student.className);
+  }
+
+  function validateStudentProfile() {
+    if (isStudentProfileComplete()) {
+      return true;
+    }
+
+    window.alert("Заполните ФИО и класс перед началом работы над вопросами.");
+    if (studentName) {
+      studentName.focus();
+    }
+    return false;
+  }
+
+  function updateStudentGate() {
+    const complete = isStudentProfileComplete();
+
+    if (studentGateHint) {
+      studentGateHint.hidden = complete;
+    }
+
+    document.querySelectorAll(".summary-answer").forEach((input) => {
+      input.disabled = !complete;
+    });
+
+    if (stepSaveButton && currentPhase === PHASE_QUESTIONS) {
+      stepSaveButton.disabled = !complete;
+    }
+
+    if (questionsPanel) {
+      questionsPanel.classList.toggle("is-locked", !complete && currentPhase === PHASE_QUESTIONS);
+    }
   }
 
   function getGroupCount() {
@@ -299,6 +332,12 @@
   }
 
   function resolvePhaseAfterRestore(savedPhase) {
+    if (!isStudentProfileComplete()) {
+      currentPhase = PHASE_QUESTIONS;
+      currentGroupIndex = 0;
+      return;
+    }
+
     if (!allGroupsComplete()) {
       const incompleteGroup = findFirstIncompleteGroup();
       currentPhase = PHASE_QUESTIONS;
@@ -368,16 +407,18 @@
     const groupCount = getGroupCount();
 
     if (currentPhase === PHASE_QUESTIONS) {
-      phaseHint.textContent = `Абзац ${currentGroupIndex + 1} из ${groupCount} — ответьте на вопросы и нажмите «Сохранить»`;
+      phaseHint.textContent = isStudentProfileComplete()
+        ? `Абзац ${currentGroupIndex + 1} из ${groupCount} — ответьте на вопросы и нажмите «Сохранить»`
+        : "Сначала заполните ФИО и класс ученика";
       return;
     }
 
     if (currentPhase === PHASE_EDITING) {
-      phaseHint.textContent = "Отредактируйте черновик изложения и нажмите «Сохранить и перейти к сравнению»";
+      phaseHint.textContent = "Сравните исходный текст с черновиком, отредактируйте изложение и отправьте на проверку";
       return;
     }
 
-    phaseHint.textContent = "Сравните исходный текст и своё изложение, затем отправьте работу на проверку";
+    phaseHint.textContent = "Сравните исходный текст и своё изложение";
   }
 
   function updateStepper() {
@@ -387,7 +428,16 @@
 
     workflowStepper.querySelectorAll("a").forEach((link) => {
       const linkPhase = link.dataset.phase;
-      const isActive = linkPhase === currentPhase;
+      let isActive = linkPhase === currentPhase;
+
+      if (
+        linkPhase === "student" &&
+        !isStudentProfileComplete() &&
+        currentPhase === PHASE_QUESTIONS
+      ) {
+        isActive = true;
+      }
+
       link.classList.toggle("is-active", isActive);
     });
   }
@@ -451,12 +501,6 @@
         editingPanel.hidden = true;
       }
       showQuestionGroup(currentGroupIndex);
-      if (studentBar) {
-        studentBar.hidden = true;
-      }
-      if (submitCloudButton) {
-        submitCloudButton.hidden = true;
-      }
     } else if (currentPhase === PHASE_EDITING) {
       workspace.hidden = false;
       comparisonSection.hidden = true;
@@ -464,7 +508,7 @@
       workspace.classList.add("is-editing");
       workspace.classList.remove("is-comparison");
       if (sourcePanel) {
-        sourcePanel.hidden = true;
+        sourcePanel.hidden = false;
       }
       if (questionsPanel) {
         questionsPanel.hidden = true;
@@ -474,25 +518,13 @@
         editingPanel.scrollTop = 0;
       }
       draftText.focus();
-      if (studentBar) {
-        studentBar.hidden = true;
-      }
-      if (submitCloudButton) {
-        submitCloudButton.hidden = true;
-      }
     } else if (currentPhase === PHASE_COMPARISON) {
       workspace.hidden = true;
       comparisonSection.hidden = false;
       setWorkspacePhase("comparison");
       updateComparisonView();
-      if (studentBar) {
-        studentBar.hidden = false;
-      }
       if (summaryPage) {
         summaryPage.classList.add("is-comparison-ready");
-      }
-      if (submitCloudButton) {
-        submitCloudButton.hidden = false;
       }
     }
 
@@ -502,10 +534,15 @@
 
     updatePhaseHint();
     updateStepper();
+    updateStudentGate();
     saveWork();
   }
 
   function advanceFromQuestions() {
+    if (!validateStudentProfile()) {
+      return;
+    }
+
     if (!validateCurrentGroupAnswers()) {
       return;
     }
@@ -535,7 +572,7 @@
     openDraftPhase();
   }
 
-  function advanceFromEditing() {
+  async function advanceFromEditing() {
     const draft = draftText.value.trim();
 
     if (!draft) {
@@ -543,62 +580,23 @@
       return;
     }
 
+    if (!validateStudentProfile()) {
+      return;
+    }
+
     saveWork({ manual: true });
+    saveDraftButton.disabled = true;
+    setSubmitStatus("Идёт отправка на проверку...");
+
+    const submitted = await submitToCloud({ quietSuccess: true });
+
+    saveDraftButton.disabled = false;
+
+    if (!submitted) {
+      return;
+    }
+
     currentPhase = PHASE_COMPARISON;
-    applyPhase();
-  }
-
-  function goToQuestions() {
-    currentPhase = PHASE_QUESTIONS;
-    currentGroupIndex = 0;
-    applyPhase();
-  }
-
-  function goToEditing() {
-    if (!canOpenDraft()) {
-      goToQuestions();
-      return;
-    }
-    currentPhase = PHASE_EDITING;
-    applyPhase();
-  }
-
-  function downloadTxt() {
-    const text = draftText.value.trim();
-
-    if (!text) {
-      window.alert("Итоговый текст пуст.");
-      return;
-    }
-
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${currentText.title}.txt`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
-  function clearWork() {
-    if (!currentText) {
-      return;
-    }
-
-    const confirmed = window.confirm("Очистить ответы и черновик для текущего текста и начать заново?");
-    if (!confirmed) {
-      return;
-    }
-
-    localStorage.removeItem(storageKey(currentText.id));
-    document.querySelectorAll(".summary-answer").forEach((input) => {
-      input.value = "";
-    });
-    draftText.value = "";
-    currentPhase = PHASE_QUESTIONS;
-    currentGroupIndex = 0;
-    updateWordCount();
-    setSaveStatus(AUTOSAVE_MESSAGE);
-    setSubmitStatus("Работа не отправлена");
     applyPhase();
   }
 
@@ -650,9 +648,11 @@
     };
   }
 
-  async function submitToCloud() {
+  async function submitToCloud(options) {
+    const settings = options || {};
+
     if (!currentText) {
-      return;
+      return false;
     }
 
     const student = getStudentData();
@@ -660,16 +660,15 @@
 
     if (!student.name || !student.className) {
       window.alert("Заполните ФИО и класс перед отправкой.");
-      return;
+      return false;
     }
 
     if (!draft) {
       window.alert("Сначала составьте готовое изложение.");
-      return;
+      return false;
     }
 
-    submitCloudButton.disabled = true;
-    setSubmitStatus("Идёт отправка...");
+    setSubmitStatus("Идёт отправка на проверку...");
 
     try {
       const config = await loadCloudConfig();
@@ -680,13 +679,17 @@
       await postJson(config.submitUrl, buildSubmissionPayload());
 
       saveWork({ manual: true });
-      setSubmitStatus(`Отправлено: ${new Date().toLocaleString("ru-RU")}`);
-      window.alert("Изложение успешно отправлено на проверку.");
+      setSubmitStatus(`Отправлено на проверку: ${new Date().toLocaleString("ru-RU")}`);
+
+      if (!settings.quietSuccess) {
+        window.alert("Изложение успешно отправлено на проверку.");
+      }
+
+      return true;
     } catch (error) {
       setSubmitStatus("Ошибка отправки");
       window.alert(`Не удалось отправить работу.\n\n${error.message || error}`);
-    } finally {
-      submitCloudButton.disabled = false;
+      return false;
     }
   }
 
@@ -706,6 +709,9 @@
     input.dataset.questionIndex = String(questionIndex);
     input.placeholder = "Введите развёрнутый ответ";
     input.addEventListener("input", function () {
+      if (!isStudentProfileComplete()) {
+        return;
+      }
       saveWork();
     });
 
@@ -732,6 +738,8 @@
       section.appendChild(list);
       questionsArea.appendChild(section);
     });
+
+    updateStudentGate();
   }
 
   function loadText(id) {
@@ -766,27 +774,23 @@
     if (studentName) {
       studentName.addEventListener("input", function () {
         saveWork();
+        updateStudentGate();
+        updatePhaseHint();
       });
     }
 
     if (studentClass) {
       studentClass.addEventListener("input", function () {
         saveWork();
+        updateStudentGate();
+        updatePhaseHint();
       });
     }
 
     stepSaveButton.addEventListener("click", advanceFromQuestions);
-    saveDraftButton.addEventListener("click", advanceFromEditing);
-    backToQuestionsButton.addEventListener("click", goToQuestions);
-    backToEditButton.addEventListener("click", goToEditing);
-    downloadTxtButton.addEventListener("click", downloadTxt);
-    clearWorkButton.addEventListener("click", clearWork);
-
-    if (submitCloudButton) {
-      submitCloudButton.addEventListener("click", function () {
-        submitToCloud();
-      });
-    }
+    saveDraftButton.addEventListener("click", function () {
+      advanceFromEditing();
+    });
 
     draftText.addEventListener("input", function () {
       updateWordCount();
