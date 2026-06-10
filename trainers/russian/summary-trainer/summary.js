@@ -34,6 +34,8 @@
   const comparisonDraft = document.getElementById("comparisonDraft");
   const comparisonWordCount = document.getElementById("comparisonWordCount");
   const workflowStepper = document.getElementById("workflowStepper");
+  const studentBar = document.getElementById("step-student");
+  const summaryPage = document.querySelector(".summary-page");
 
   const stepSaveButton = document.getElementById("stepSave");
   const saveDraftButton = document.getElementById("saveDraft");
@@ -220,14 +222,7 @@
       const groupCount = getGroupCount();
       const savedGroup = Number.isFinite(data.groupIndex) ? data.groupIndex : 0;
       currentGroupIndex = Math.min(Math.max(savedGroup, 0), Math.max(groupCount - 1, 0));
-
-      if (data.phase === PHASE_COMPARISON) {
-        currentPhase = PHASE_COMPARISON;
-      } else if (data.phase === PHASE_EDITING) {
-        currentPhase = PHASE_EDITING;
-      } else {
-        currentPhase = PHASE_QUESTIONS;
-      }
+      resolvePhaseAfterRestore(data.phase);
     } catch (error) {
       localStorage.removeItem(storageKey(currentText.id));
     }
@@ -263,20 +258,74 @@
     saveWork();
   }
 
-  function groupHasAnswers(groupIndex) {
+  function getGroupInputs(groupIndex) {
     return Array.from(
       document.querySelectorAll(`.summary-answer[data-group-index="${groupIndex}"]`)
-    ).some((input) => input.value.trim());
+    );
+  }
+
+  function getEmptyAnswersInGroup(groupIndex) {
+    return getGroupInputs(groupIndex).filter((input) => !input.value.trim());
+  }
+
+  function groupIsComplete(groupIndex) {
+    return getEmptyAnswersInGroup(groupIndex).length === 0;
+  }
+
+  function allGroupsComplete() {
+    const groupCount = getGroupCount();
+    for (let index = 0; index < groupCount; index += 1) {
+      if (!groupIsComplete(index)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function findFirstIncompleteGroup() {
+    const groupCount = getGroupCount();
+    for (let index = 0; index < groupCount; index += 1) {
+      if (!groupIsComplete(index)) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  function resolvePhaseAfterRestore(savedPhase) {
+    if (!allGroupsComplete()) {
+      const incompleteGroup = findFirstIncompleteGroup();
+      currentPhase = PHASE_QUESTIONS;
+      currentGroupIndex = incompleteGroup >= 0 ? incompleteGroup : 0;
+      return;
+    }
+
+    if (savedPhase === PHASE_COMPARISON) {
+      currentPhase = PHASE_COMPARISON;
+      return;
+    }
+
+    if (savedPhase === PHASE_EDITING) {
+      currentPhase = PHASE_EDITING;
+      return;
+    }
+
+    currentPhase = PHASE_QUESTIONS;
+    currentGroupIndex = getGroupCount() - 1;
   }
 
   function validateCurrentGroupAnswers() {
-    if (groupHasAnswers(currentGroupIndex)) {
+    const emptyAnswers = getEmptyAnswersInGroup(currentGroupIndex);
+
+    if (!emptyAnswers.length) {
       return true;
     }
 
-    return window.confirm(
-      "Вы не ответили ни на один вопрос по этому абзацу. Всё равно перейти дальше?"
+    window.alert(
+      `Ответьте на все вопросы по ${currentGroupIndex + 1}-му абзацу. Осталось: ${emptyAnswers.length}.`
     );
+    emptyAnswers[0].focus();
+    return false;
   }
 
   function updatePhaseHint() {
@@ -314,12 +363,14 @@
 
     const groupCount = getGroupCount();
     questionsHeading.textContent = `Микротема ${groupIndex + 1}`;
-    questionsHint.textContent = `Ответьте на все вопросы по ${groupIndex + 1}-му абзацу. После сохранения ${
-      groupIndex < groupCount - 1 ? "появятся вопросы по следующему абзацу" : "вы перейдёте к редактированию изложения"
-    }.`;
+    questionsHint.textContent = `Ответьте на все вопросы по ${groupIndex + 1}-му абзацу. ${
+      groupIndex < groupCount - 1
+        ? "После сохранения появятся вопросы по следующему абзацу."
+        : "Когда будут заполнены все вопросы по всем микротемам, откроется черновик изложения."
+    }`;
 
     const isLastGroup = groupIndex >= groupCount - 1;
-    stepSaveButton.textContent = isLastGroup ? "Сохранить и перейти к изложению" : "Сохранить";
+    stepSaveButton.textContent = isLastGroup ? "Сохранить и открыть черновик" : "Сохранить";
   }
 
   function updateComparisonView() {
@@ -331,8 +382,6 @@
   }
 
   function applyPhase() {
-    const groupCount = getGroupCount();
-
     if (currentPhase === PHASE_QUESTIONS) {
       workspace.hidden = false;
       comparisonSection.hidden = true;
@@ -341,6 +390,9 @@
       questionsView.hidden = false;
       editingView.hidden = true;
       showQuestionGroup(currentGroupIndex);
+      if (studentBar) {
+        studentBar.hidden = true;
+      }
       if (submitCloudButton) {
         submitCloudButton.hidden = true;
       }
@@ -352,6 +404,9 @@
       workspace.classList.remove("is-comparison");
       questionsView.hidden = true;
       editingView.hidden = false;
+      if (studentBar) {
+        studentBar.hidden = true;
+      }
       if (submitCloudButton) {
         submitCloudButton.hidden = true;
       }
@@ -359,9 +414,19 @@
       workspace.hidden = true;
       comparisonSection.hidden = false;
       updateComparisonView();
+      if (studentBar) {
+        studentBar.hidden = false;
+      }
+      if (summaryPage) {
+        summaryPage.classList.add("is-comparison-ready");
+      }
       if (submitCloudButton) {
         submitCloudButton.hidden = false;
       }
+    }
+
+    if (currentPhase !== PHASE_COMPARISON && summaryPage) {
+      summaryPage.classList.remove("is-comparison-ready");
     }
 
     updatePhaseHint();
@@ -382,6 +447,17 @@
       currentGroupIndex += 1;
       currentPhase = PHASE_QUESTIONS;
       applyPhase();
+      return;
+    }
+
+    if (!allGroupsComplete()) {
+      const incompleteGroup = findFirstIncompleteGroup();
+      window.alert("Ответьте на все вопросы по всем микротемам — только после этого откроется черновик.");
+      if (incompleteGroup >= 0) {
+        currentGroupIndex = incompleteGroup;
+        currentPhase = PHASE_QUESTIONS;
+        applyPhase();
+      }
       return;
     }
 
