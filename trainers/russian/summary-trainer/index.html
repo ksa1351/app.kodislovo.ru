@@ -1,159 +1,318 @@
-<!doctype html>
-<html lang="ru" data-theme="dark">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Тренажёр «Сжатое изложение по вопросам»</title>
-  <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-06-10-1" />
-  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-06-10-1" />
-  <link rel="stylesheet" href="./summary.css?v=2026-06-10-1" />
-</head>
-<body class="trainer-body trainer-mobile-pad">
-  <div class="site-topbar">
-    <div class="site-topbar-inner">
-      <a class="site-brand" href="../index.html">
-        <span class="site-logo"></span>
-        <span>
-          <b>Кодислово</b>
-          <span>русский язык · изложение</span>
-        </span>
-      </a>
-      <label class="theme-toggle">
-        <span>Тема</span>
-        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
-        <span class="theme-switch"><span class="theme-knob"></span></span>
-      </label>
-    </div>
-  </div>
-
-  <main class="kd-page trainer-page summary-page">
-    <header class="kd-hero summary-hero">
-      <nav aria-label="Навигация">
-        <ol class="kd-breadcrumbs">
-          <li><a href="../../../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
-          <li><a href="../index.html">Русский язык</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
-          <li><a href="../trainer.html?section=oge">ОГЭ</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
-          <li><span aria-current="page">Сжатое изложение</span></li>
-        </ol>
-      </nav>
-      <h1>Тренажёр «Сжатое изложение по вопросам»</h1>
-      <p>Ответьте на вопросы по абзацам, соберите и отредактируйте изложение, затем сравните его с исходным текстом.</p>
-    </header>
-
-    <nav aria-label="Этапы работы">
-      <ol class="trainer-stepper" id="workflowStepper">
-        <li><a href="#step-student" data-phase="student"><span class="trainer-stepper-num">1</span> Данные</a></li>
-        <li><a href="#step-workspace" data-phase="questions"><span class="trainer-stepper-num">2</span> Вопросы</a></li>
-        <li><a href="#step-workspace" data-phase="editing"><span class="trainer-stepper-num">3</span> Изложение</a></li>
-        <li><a href="#step-comparison" data-phase="comparison"><span class="trainer-stepper-num">4</span> Сравнение</a></li>
-      </ol>
-    </nav>
-
-    <section id="step-student" class="summary-student-bar kd-panel is-sticky-top" aria-label="Данные ученика и отправка">
-      <div class="summary-student-grid">
-        <label class="field" for="studentName">
-          <span class="label">ФИО ученика</span>
-          <input id="studentName" class="input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
-        </label>
-        <label class="field" for="studentClass">
-          <span class="label">Класс</span>
-          <input id="studentClass" class="input" type="text" placeholder="Например: 9А" autocomplete="off" />
-        </label>
-      </div>
-      <div class="summary-submit-row">
-        <button id="submitCloud" class="kd-button" type="button" hidden>Отправить на проверку</button>
-        <span id="submitStatus" class="summary-submit-status" aria-live="polite">Работа не отправлена</span>
-      </div>
-    </section>
-
-    <section class="summary-toolbar">
-      <div class="summary-toolbar-copy">
-        <span class="kd-kicker">Подготовка к ОГЭ</span>
-        <strong>Работа по микротемам с автосохранением</strong>
-        <span id="phaseHint" class="summary-phase-hint" aria-live="polite">Абзац 1 из 3 — ответьте на вопросы и нажмите «Сохранить»</span>
-      </div>
-      <label class="summary-select field" for="textSelect">
-        <span class="label">Выберите текст</span>
-        <select id="textSelect" aria-label="Выберите текст для тренировки"></select>
-      </label>
-    </section>
-
-    <section id="step-workspace" class="summary-workspace" aria-label="Рабочая область">
-      <article class="kd-panel summary-panel summary-panel-source" id="sourcePanel">
-        <div class="summary-panel-head">
-          <span class="summary-eyebrow">Исходный текст</span>
-          <h2 id="sourceTitle">Текст</h2>
-        </div>
-        <div id="sourceText" class="summary-source-text"></div>
-      </article>
-
-      <article class="kd-panel summary-panel summary-panel-right" id="rightPanel">
-        <div id="questionsView" class="summary-phase-view">
-          <div class="summary-panel-head">
-            <span class="summary-eyebrow">Вопросы по абзацу</span>
-            <h2 id="questionsHeading">Микротема 1</h2>
-            <p id="questionsHint" class="summary-view-hint">Ответьте на все вопросы по первому абзацу. Ответы сохраняются автоматически.</p>
-          </div>
-          <div id="questionsArea" class="summary-questions"></div>
-          <div class="kd-actions summary-actions">
-            <button id="stepSave" class="kd-button" type="button">Сохранить</button>
-          </div>
-        </div>
-
-        <div id="editingView" class="summary-phase-view" hidden>
-          <div class="summary-panel-head">
-            <span class="summary-eyebrow">Сжатое изложение</span>
-            <h2>Черновик по вашим ответам</h2>
-            <p class="summary-view-hint">Исходный текст скрыт. Отредактируйте черновик и составьте связное сжатое изложение.</p>
-          </div>
-          <textarea
-            id="draftText"
-            class="summary-draft"
-            placeholder="Здесь появится черновик, собранный из ответов. Его можно редактировать вручную."
-          ></textarea>
-          <div class="summary-draft-meta">
-            <span id="wordCount">Слов: 0</span>
-            <span id="saveStatus" aria-live="polite">Изменения сохраняются автоматически</span>
-          </div>
-          <div class="kd-actions summary-actions">
-            <button id="saveDraft" class="kd-button" type="button">Сохранить и перейти к сравнению</button>
-            <button id="backToQuestions" class="kd-button kd-button-secondary" type="button">Вернуться к вопросам</button>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <section id="step-comparison" class="summary-comparison" aria-label="Сравнение текстов" hidden>
-      <article class="kd-panel summary-panel summary-panel-source">
-        <div class="summary-panel-head">
-          <span class="summary-eyebrow">Исходный текст</span>
-          <h2 id="comparisonSourceTitle">Текст</h2>
-        </div>
-        <div id="comparisonSource" class="summary-source-text"></div>
-      </article>
-
-      <article class="kd-panel summary-panel">
-        <div class="summary-panel-head">
-          <span class="summary-eyebrow">Ваше изложение</span>
-          <h2>Сжатое изложение ученика</h2>
-        </div>
-        <div id="comparisonDraft" class="summary-source-text summary-comparison-draft"></div>
-        <div class="summary-draft-meta">
-          <span id="comparisonWordCount">Слов: 0</span>
-        </div>
-      </article>
-
-      <div class="summary-comparison-actions kd-actions">
-        <button id="backToEdit" class="kd-button kd-button-secondary" type="button">Вернуться к редактированию</button>
-        <button id="downloadTxt" class="kd-button kd-button-secondary" type="button">Скачать .txt</button>
-        <button id="clearWork" class="kd-button kd-button-secondary summary-danger" type="button">Начать заново</button>
-      </div>
-    </section>
-  </main>
-
-  <script src="../../../assets/js/theme.js"></script>
-  <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
-  <script src="./summary.js"></script>
-</body>
-</html>
+<!doctype html>
+
+<html lang="ru" data-theme="dark">
+
+<head>
+
+  <meta charset="utf-8" />
+
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+
+  <title>Тренажёр «Сжатое изложение по вопросам»</title>
+
+  <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
+
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-06-10-1" />
+
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-06-10-1" />
+
+  <link rel="stylesheet" href="./summary.css?v=2026-06-10-1" />
+
+</head>
+
+<body class="trainer-body trainer-mobile-pad">
+
+  <div class="site-topbar">
+
+    <div class="site-topbar-inner">
+
+      <a class="site-brand" href="../index.html">
+
+        <span class="site-logo"></span>
+
+        <span>
+
+          <b>Кодислово</b>
+
+          <span>русский язык · изложение</span>
+
+        </span>
+
+      </a>
+
+      <label class="theme-toggle">
+
+        <span>Тема</span>
+
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+
+      </label>
+
+    </div>
+
+  </div>
+
+
+
+  <main class="kd-page trainer-page summary-page">
+
+    <header class="kd-hero summary-hero">
+
+      <nav aria-label="Навигация">
+
+        <ol class="kd-breadcrumbs">
+
+          <li><a href="../../../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+
+          <li><a href="../index.html">Русский язык</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+
+          <li><a href="../trainer.html?section=oge">ОГЭ</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+
+          <li><span aria-current="page">Сжатое изложение</span></li>
+
+        </ol>
+
+      </nav>
+
+      <h1>Тренажёр «Сжатое изложение по вопросам»</h1>
+
+      <p>Ответьте на вопросы по абзацам, соберите и отредактируйте изложение, затем сравните его с исходным текстом.</p>
+
+    </header>
+
+
+
+    <nav aria-label="Этапы работы">
+
+      <ol class="trainer-stepper" id="workflowStepper">
+
+        <li><a href="#step-student" data-phase="student"><span class="trainer-stepper-num">1</span> Данные</a></li>
+
+        <li><a href="#step-workspace" data-phase="questions"><span class="trainer-stepper-num">2</span> Вопросы</a></li>
+
+        <li><a href="#step-workspace" data-phase="editing"><span class="trainer-stepper-num">3</span> Изложение</a></li>
+
+        <li><a href="#step-comparison" data-phase="comparison"><span class="trainer-stepper-num">4</span> Сравнение</a></li>
+
+      </ol>
+
+    </nav>
+
+
+
+    <section id="step-student" class="summary-student-bar kd-panel" aria-label="Данные ученика и отправка" hidden>
+
+      <div class="summary-student-grid">
+
+        <label class="field" for="studentName">
+
+          <span class="label">ФИО ученика</span>
+
+          <input id="studentName" class="input" type="text" placeholder="Например: Иванов Иван" autocomplete="name" />
+
+        </label>
+
+        <label class="field" for="studentClass">
+
+          <span class="label">Класс</span>
+
+          <input id="studentClass" class="input" type="text" placeholder="Например: 9А" autocomplete="off" />
+
+        </label>
+
+      </div>
+
+      <div class="summary-submit-row">
+
+        <button id="submitCloud" class="kd-button" type="button" hidden>Отправить на проверку</button>
+
+        <span id="submitStatus" class="summary-submit-status" aria-live="polite">Работа не отправлена</span>
+
+      </div>
+
+    </section>
+
+
+
+    <section class="summary-toolbar">
+
+      <div class="summary-toolbar-copy">
+
+        <span class="kd-kicker">Подготовка к ОГЭ</span>
+
+        <strong>Работа по микротемам с автосохранением</strong>
+
+        <span id="phaseHint" class="summary-phase-hint" aria-live="polite">Абзац 1 из 3 — ответьте на вопросы и нажмите «Сохранить»</span>
+
+      </div>
+
+      <label class="summary-select field" for="textSelect">
+
+        <span class="label">Выберите текст</span>
+
+        <select id="textSelect" aria-label="Выберите текст для тренировки"></select>
+
+      </label>
+
+    </section>
+
+
+
+    <section id="step-workspace" class="summary-workspace" aria-label="Рабочая область">
+
+      <article class="kd-panel summary-panel summary-panel-source" id="sourcePanel">
+
+        <div class="summary-panel-head">
+
+          <span class="summary-eyebrow">Исходный текст</span>
+
+          <h2 id="sourceTitle">Текст</h2>
+
+        </div>
+
+        <div id="sourceText" class="summary-source-text"></div>
+
+      </article>
+
+
+
+      <article class="kd-panel summary-panel summary-panel-right" id="rightPanel">
+
+        <div id="questionsView" class="summary-phase-view">
+
+          <div class="summary-panel-head">
+
+            <span class="summary-eyebrow">Вопросы по абзацу</span>
+
+            <h2 id="questionsHeading">Микротема 1</h2>
+
+            <p id="questionsHint" class="summary-view-hint">Ответьте на все вопросы по первому абзацу. Ответы сохраняются автоматически.</p>
+
+          </div>
+
+          <div id="questionsArea" class="summary-questions"></div>
+
+          <div class="kd-actions summary-actions">
+
+            <button id="stepSave" class="kd-button" type="button">Сохранить</button>
+
+          </div>
+
+        </div>
+
+
+
+        <div id="editingView" class="summary-phase-view" hidden>
+
+          <div class="summary-panel-head">
+
+            <span class="summary-eyebrow">Сжатое изложение</span>
+
+            <h2>Черновик по вашим ответам</h2>
+
+            <p class="summary-view-hint">Исходный текст скрыт. Отредактируйте черновик и составьте связное сжатое изложение.</p>
+
+          </div>
+
+          <textarea
+
+            id="draftText"
+
+            class="summary-draft"
+
+            placeholder="Здесь появится черновик, собранный из ответов. Его можно редактировать вручную."
+
+          ></textarea>
+
+          <div class="summary-draft-meta">
+
+            <span id="wordCount">Слов: 0</span>
+
+            <span id="saveStatus" aria-live="polite">Изменения сохраняются автоматически</span>
+
+          </div>
+
+          <div class="kd-actions summary-actions">
+
+            <button id="saveDraft" class="kd-button" type="button">Сохранить и перейти к сравнению</button>
+
+            <button id="backToQuestions" class="kd-button kd-button-secondary" type="button">Вернуться к вопросам</button>
+
+          </div>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+
+    <section id="step-comparison" class="summary-comparison" aria-label="Сравнение текстов" hidden>
+
+      <article class="kd-panel summary-panel summary-panel-source">
+
+        <div class="summary-panel-head">
+
+          <span class="summary-eyebrow">Исходный текст</span>
+
+          <h2 id="comparisonSourceTitle">Текст</h2>
+
+        </div>
+
+        <div id="comparisonSource" class="summary-source-text"></div>
+
+      </article>
+
+
+
+      <article class="kd-panel summary-panel">
+
+        <div class="summary-panel-head">
+
+          <span class="summary-eyebrow">Ваше изложение</span>
+
+          <h2>Сжатое изложение ученика</h2>
+
+        </div>
+
+        <div id="comparisonDraft" class="summary-source-text summary-comparison-draft"></div>
+
+        <div class="summary-draft-meta">
+
+          <span id="comparisonWordCount">Слов: 0</span>
+
+        </div>
+
+      </article>
+
+
+
+      <div class="summary-comparison-actions kd-actions">
+
+        <button id="backToEdit" class="kd-button kd-button-secondary" type="button">Вернуться к редактированию</button>
+
+        <button id="downloadTxt" class="kd-button kd-button-secondary" type="button">Скачать .txt</button>
+
+        <button id="clearWork" class="kd-button kd-button-secondary summary-danger" type="button">Начать заново</button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+
+  <script src="../../../assets/js/theme.js"></script>
+
+  <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
+
+  <script src="./summary.js"></script>
+
+</body>
+
+</html>
+
