@@ -189,16 +189,26 @@ html[data-theme="light"] #textSelect option {
 
 
 .summary-workspace {
-
   display: grid;
-
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
   gap: 16px;
-
 }
 
+.summary-workspace[data-phase="editing"] {
+  grid-template-columns: minmax(0, 1fr);
+}
 
+.summary-workspace[data-phase="editing"] #sourcePanel {
+  display: none !important;
+}
+
+#rightPanel[data-phase="editing"] #questionsView {
+  display: none !important;
+}
+
+#rightPanel[data-phase="questions"] #editingView {
+  display: none !important;
+}
 
 .summary-workspace.is-editing {
 

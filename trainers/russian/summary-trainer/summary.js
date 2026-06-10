@@ -17,6 +17,7 @@
   const sourceTitle = document.getElementById("sourceTitle");
   const sourceText = document.getElementById("sourceText");
   const sourcePanel = document.getElementById("sourcePanel");
+  const rightPanel = document.getElementById("rightPanel");
   const workspace = document.getElementById("step-workspace");
   const questionsView = document.getElementById("questionsView");
   const editingView = document.getElementById("editingView");
@@ -419,6 +420,15 @@
     comparisonWordCount.textContent = `Слов: ${countWords(draft)}`;
   }
 
+  function setWorkspacePhase(phase) {
+    if (workspace) {
+      workspace.dataset.phase = phase;
+    }
+    if (rightPanel) {
+      rightPanel.dataset.phase = phase;
+    }
+  }
+
   function applyPhase() {
     if (
       (currentPhase === PHASE_EDITING || currentPhase === PHASE_COMPARISON) &&
@@ -433,7 +443,7 @@
     if (currentPhase === PHASE_QUESTIONS) {
       workspace.hidden = false;
       comparisonSection.hidden = true;
-      sourcePanel.hidden = false;
+      setWorkspacePhase("questions");
       workspace.classList.remove("is-editing", "is-comparison");
       questionsView.hidden = false;
       editingView.hidden = true;
@@ -447,11 +457,13 @@
     } else if (currentPhase === PHASE_EDITING) {
       workspace.hidden = false;
       comparisonSection.hidden = true;
-      sourcePanel.hidden = true;
+      setWorkspacePhase("editing");
       workspace.classList.add("is-editing");
       workspace.classList.remove("is-comparison");
       questionsView.hidden = true;
       editingView.hidden = false;
+      editingView.scrollTop = 0;
+      draftText.focus();
       if (studentBar) {
         studentBar.hidden = true;
       }
@@ -461,6 +473,7 @@
     } else if (currentPhase === PHASE_COMPARISON) {
       workspace.hidden = true;
       comparisonSection.hidden = false;
+      setWorkspacePhase("comparison");
       updateComparisonView();
       if (studentBar) {
         studentBar.hidden = false;
