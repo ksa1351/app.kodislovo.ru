@@ -508,7 +508,7 @@
       workspace.classList.add("is-editing");
       workspace.classList.remove("is-comparison");
       if (sourcePanel) {
-        sourcePanel.hidden = false;
+        sourcePanel.hidden = true;
       }
       if (questionsPanel) {
         questionsPanel.hidden = true;
