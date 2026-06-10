@@ -4,6 +4,10 @@
   const AUTOSAVE_MESSAGE = "Изменения сохраняются автоматически";
   const MANUAL_SAVE_MESSAGE = "Сохранено";
 
+  const PHASE_QUESTIONS = "questions";
+  const PHASE_EDITING = "editing";
+  const PHASE_COMPARISON = "comparison";
+
   const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
   const SUMMARY_BANK_URL = "../../../controls/russian/summary-bank.json";
 
@@ -12,14 +16,29 @@
   const studentClass = document.getElementById("studentClass");
   const sourceTitle = document.getElementById("sourceTitle");
   const sourceText = document.getElementById("sourceText");
+  const sourcePanel = document.getElementById("sourcePanel");
+  const workspace = document.getElementById("step-workspace");
+  const questionsView = document.getElementById("questionsView");
+  const editingView = document.getElementById("editingView");
   const questionsArea = document.getElementById("questionsArea");
+  const questionsHeading = document.getElementById("questionsHeading");
+  const questionsHint = document.getElementById("questionsHint");
+  const phaseHint = document.getElementById("phaseHint");
   const draftText = document.getElementById("draftText");
   const wordCount = document.getElementById("wordCount");
   const saveStatus = document.getElementById("saveStatus");
   const submitStatus = document.getElementById("submitStatus");
+  const comparisonSection = document.getElementById("step-comparison");
+  const comparisonSourceTitle = document.getElementById("comparisonSourceTitle");
+  const comparisonSource = document.getElementById("comparisonSource");
+  const comparisonDraft = document.getElementById("comparisonDraft");
+  const comparisonWordCount = document.getElementById("comparisonWordCount");
+  const workflowStepper = document.getElementById("workflowStepper");
 
-  const buildDraftButton = document.getElementById("buildDraft");
-  const saveWorkButton = document.getElementById("saveWork");
+  const stepSaveButton = document.getElementById("stepSave");
+  const saveDraftButton = document.getElementById("saveDraft");
+  const backToQuestionsButton = document.getElementById("backToQuestions");
+  const backToEditButton = document.getElementById("backToEdit");
   const downloadTxtButton = document.getElementById("downloadTxt");
   const clearWorkButton = document.getElementById("clearWork");
   const submitCloudButton = document.getElementById("submitCloud");
@@ -27,13 +46,17 @@
   let currentText = null;
   let cloudConfigPromise = null;
   let summaryTexts = [];
+  let currentPhase = PHASE_QUESTIONS;
+  let currentGroupIndex = 0;
 
   function storageKey(id) {
     return `${STORAGE_PREFIX}:${id}`;
   }
 
   function setSaveStatus(message) {
-    saveStatus.textContent = message;
+    if (saveStatus) {
+      saveStatus.textContent = message;
+    }
   }
 
   function setSubmitStatus(message) {
@@ -44,6 +67,11 @@
 
   function nowIso() {
     return new Date().toISOString();
+  }
+
+  function countWords(text) {
+    const trimmed = (text || "").trim();
+    return trimmed ? trimmed.split(/\s+/).length : 0;
   }
 
   async function fetchJson(url) {
@@ -99,9 +127,12 @@
     };
   }
 
+  function getGroupCount() {
+    return currentText && Array.isArray(currentText.groups) ? currentText.groups.length : 0;
+  }
+
   function updateWordCount() {
-    const trimmed = draftText.value.trim();
-    const total = trimmed ? trimmed.split(/\s+/).length : 0;
+    const total = countWords(draftText.value);
     wordCount.textContent = `Слов: ${total}`;
   }
 
@@ -113,22 +144,39 @@
     }));
   }
 
+  function getPersistedState() {
+    return {
+      draft: draftText.value,
+      answers: collectAnswers(),
+      student: getStudentData(),
+      phase: currentPhase,
+      groupIndex: currentGroupIndex
+    };
+  }
+
   function saveWork(options) {
     if (!currentText) {
       return;
     }
 
     const settings = options || {};
-    const student = getStudentData();
-    const data = {
-      draft: draftText.value,
-      answers: collectAnswers(),
-      student
-    };
-
-    localStorage.setItem(storageKey(currentText.id), JSON.stringify(data));
+    localStorage.setItem(storageKey(currentText.id), JSON.stringify(getPersistedState()));
     localStorage.setItem(LAST_TEXT_KEY, currentText.id);
     setSaveStatus(settings.manual ? MANUAL_SAVE_MESSAGE : AUTOSAVE_MESSAGE);
+  }
+
+  function restoreAnswers(data) {
+    if (!Array.isArray(data.answers)) {
+      return;
+    }
+
+    data.answers.forEach((answer) => {
+      const selector = `.summary-answer[data-group-index="${answer.groupIndex}"][data-question-index="${answer.questionIndex}"]`;
+      const input = document.querySelector(selector);
+      if (input) {
+        input.value = answer.value || "";
+      }
+    });
   }
 
   function restoreWork() {
@@ -138,6 +186,8 @@
     document.querySelectorAll(".summary-answer").forEach((input) => {
       input.value = "";
     });
+    currentPhase = PHASE_QUESTIONS;
+    currentGroupIndex = 0;
 
     if (!raw) {
       if (studentName) {
@@ -148,6 +198,7 @@
       }
       updateWordCount();
       setSaveStatus(AUTOSAVE_MESSAGE);
+      applyPhase();
       return;
     }
 
@@ -164,15 +215,18 @@
         }
       }
 
-      if (Array.isArray(data.answers)) {
-        data.answers.forEach((answer) => {
-          const selector = `.summary-answer[data-group-index="${answer.groupIndex}"][data-question-index="${answer.questionIndex}"]`;
-          const input = document.querySelector(selector);
+      restoreAnswers(data);
 
-          if (input) {
-            input.value = answer.value || "";
-          }
-        });
+      const groupCount = getGroupCount();
+      const savedGroup = Number.isFinite(data.groupIndex) ? data.groupIndex : 0;
+      currentGroupIndex = Math.min(Math.max(savedGroup, 0), Math.max(groupCount - 1, 0));
+
+      if (data.phase === PHASE_COMPARISON) {
+        currentPhase = PHASE_COMPARISON;
+      } else if (data.phase === PHASE_EDITING) {
+        currentPhase = PHASE_EDITING;
+      } else {
+        currentPhase = PHASE_QUESTIONS;
       }
     } catch (error) {
       localStorage.removeItem(storageKey(currentText.id));
@@ -180,11 +234,12 @@
 
     updateWordCount();
     setSaveStatus(AUTOSAVE_MESSAGE);
+    applyPhase();
   }
 
-  function buildDraft() {
+  function buildDraftFromAnswers() {
     if (!currentText) {
-      return;
+      return "";
     }
 
     const paragraphs = currentText.groups
@@ -199,9 +254,164 @@
       })
       .filter(Boolean);
 
-    draftText.value = paragraphs.join("\n\n");
+    return paragraphs.join("\n\n");
+  }
+
+  function buildDraft() {
+    draftText.value = buildDraftFromAnswers();
     updateWordCount();
     saveWork();
+  }
+
+  function groupHasAnswers(groupIndex) {
+    return Array.from(
+      document.querySelectorAll(`.summary-answer[data-group-index="${groupIndex}"]`)
+    ).some((input) => input.value.trim());
+  }
+
+  function validateCurrentGroupAnswers() {
+    if (groupHasAnswers(currentGroupIndex)) {
+      return true;
+    }
+
+    return window.confirm(
+      "Вы не ответили ни на один вопрос по этому абзацу. Всё равно перейти дальше?"
+    );
+  }
+
+  function updatePhaseHint() {
+    const groupCount = getGroupCount();
+
+    if (currentPhase === PHASE_QUESTIONS) {
+      phaseHint.textContent = `Абзац ${currentGroupIndex + 1} из ${groupCount} — ответьте на вопросы и нажмите «Сохранить»`;
+      return;
+    }
+
+    if (currentPhase === PHASE_EDITING) {
+      phaseHint.textContent = "Отредактируйте черновик изложения и нажмите «Сохранить и перейти к сравнению»";
+      return;
+    }
+
+    phaseHint.textContent = "Сравните исходный текст и своё изложение, затем отправьте работу на проверку";
+  }
+
+  function updateStepper() {
+    if (!workflowStepper) {
+      return;
+    }
+
+    workflowStepper.querySelectorAll("a").forEach((link) => {
+      const linkPhase = link.dataset.phase;
+      const isActive = linkPhase === currentPhase;
+      link.classList.toggle("is-active", isActive);
+    });
+  }
+
+  function showQuestionGroup(groupIndex) {
+    document.querySelectorAll(".summary-group").forEach((section) => {
+      section.hidden = Number(section.dataset.groupIndex) !== groupIndex;
+    });
+
+    const groupCount = getGroupCount();
+    questionsHeading.textContent = `Микротема ${groupIndex + 1}`;
+    questionsHint.textContent = `Ответьте на все вопросы по ${groupIndex + 1}-му абзацу. После сохранения ${
+      groupIndex < groupCount - 1 ? "появятся вопросы по следующему абзацу" : "вы перейдёте к редактированию изложения"
+    }.`;
+
+    const isLastGroup = groupIndex >= groupCount - 1;
+    stepSaveButton.textContent = isLastGroup ? "Сохранить и перейти к изложению" : "Сохранить";
+  }
+
+  function updateComparisonView() {
+    const draft = draftText.value.trim();
+    comparisonSourceTitle.textContent = currentText.title;
+    comparisonSource.textContent = currentText.sourceText;
+    comparisonDraft.textContent = draft;
+    comparisonWordCount.textContent = `Слов: ${countWords(draft)}`;
+  }
+
+  function applyPhase() {
+    const groupCount = getGroupCount();
+
+    if (currentPhase === PHASE_QUESTIONS) {
+      workspace.hidden = false;
+      comparisonSection.hidden = true;
+      sourcePanel.hidden = false;
+      workspace.classList.remove("is-editing", "is-comparison");
+      questionsView.hidden = false;
+      editingView.hidden = true;
+      showQuestionGroup(currentGroupIndex);
+      if (submitCloudButton) {
+        submitCloudButton.hidden = true;
+      }
+    } else if (currentPhase === PHASE_EDITING) {
+      workspace.hidden = false;
+      comparisonSection.hidden = true;
+      sourcePanel.hidden = true;
+      workspace.classList.add("is-editing");
+      workspace.classList.remove("is-comparison");
+      questionsView.hidden = true;
+      editingView.hidden = false;
+      if (submitCloudButton) {
+        submitCloudButton.hidden = true;
+      }
+    } else if (currentPhase === PHASE_COMPARISON) {
+      workspace.hidden = true;
+      comparisonSection.hidden = false;
+      updateComparisonView();
+      if (submitCloudButton) {
+        submitCloudButton.hidden = false;
+      }
+    }
+
+    updatePhaseHint();
+    updateStepper();
+    saveWork();
+  }
+
+  function advanceFromQuestions() {
+    if (!validateCurrentGroupAnswers()) {
+      return;
+    }
+
+    saveWork({ manual: true });
+
+    const lastGroupIndex = getGroupCount() - 1;
+
+    if (currentGroupIndex < lastGroupIndex) {
+      currentGroupIndex += 1;
+      currentPhase = PHASE_QUESTIONS;
+      applyPhase();
+      return;
+    }
+
+    buildDraft();
+    currentPhase = PHASE_EDITING;
+    applyPhase();
+  }
+
+  function advanceFromEditing() {
+    const draft = draftText.value.trim();
+
+    if (!draft) {
+      window.alert("Сначала составьте или отредактируйте текст изложения.");
+      return;
+    }
+
+    saveWork({ manual: true });
+    currentPhase = PHASE_COMPARISON;
+    applyPhase();
+  }
+
+  function goToQuestions() {
+    currentPhase = PHASE_QUESTIONS;
+    currentGroupIndex = 0;
+    applyPhase();
+  }
+
+  function goToEditing() {
+    currentPhase = PHASE_EDITING;
+    applyPhase();
   }
 
   function downloadTxt() {
@@ -225,7 +435,7 @@
       return;
     }
 
-    const confirmed = window.confirm("Очистить ответы и черновик для текущего текста?");
+    const confirmed = window.confirm("Очистить ответы и черновик для текущего текста и начать заново?");
     if (!confirmed) {
       return;
     }
@@ -235,8 +445,12 @@
       input.value = "";
     });
     draftText.value = "";
+    currentPhase = PHASE_QUESTIONS;
+    currentGroupIndex = 0;
     updateWordCount();
     setSaveStatus(AUTOSAVE_MESSAGE);
+    setSubmitStatus("Работа не отправлена");
+    applyPhase();
   }
 
   async function loadCloudConfig() {
@@ -301,7 +515,7 @@
     }
 
     if (!draft) {
-      window.alert("Сначала соберите или введите готовое изложение.");
+      window.alert("Сначала составьте готовое изложение.");
       return;
     }
 
@@ -318,7 +532,7 @@
 
       saveWork({ manual: true });
       setSubmitStatus(`Отправлено: ${new Date().toLocaleString("ru-RU")}`);
-      window.alert("Изложение успешно отправлено.");
+      window.alert("Изложение успешно отправлено на проверку.");
     } catch (error) {
       setSubmitStatus("Ошибка отправки");
       window.alert(`Не удалось отправить работу.\n\n${error.message || error}`);
@@ -338,7 +552,7 @@
 
     const input = document.createElement("textarea");
     input.id = label.htmlFor;
-    input.className = "summary-answer";
+    input.className = "summary-answer input";
     input.dataset.groupIndex = String(groupIndex);
     input.dataset.questionIndex = String(questionIndex);
     input.placeholder = "Введите развёрнутый ответ";
@@ -356,16 +570,8 @@
 
     currentText.groups.forEach((group, groupIndex) => {
       const section = document.createElement("section");
-      section.className = "kd-panel summary-group";
-
-      const inner = document.createElement("div");
-      inner.className = "summary-group-inner";
-
-      const heading = document.createElement("h3");
-      heading.textContent = `Микротема ${groupIndex + 1}`;
-
-      const description = document.createElement("p");
-      description.textContent = "Ответьте на вопросы полно, а затем соберите абзац для этой микротемы.";
+      section.className = "summary-group";
+      section.dataset.groupIndex = String(groupIndex);
 
       const list = document.createElement("div");
       list.className = "summary-question-list";
@@ -374,10 +580,7 @@
         list.appendChild(createQuestion(groupIndex, questionIndex, question));
       });
 
-      inner.appendChild(heading);
-      inner.appendChild(description);
-      inner.appendChild(list);
-      section.appendChild(inner);
+      section.appendChild(list);
       questionsArea.appendChild(section);
     });
   }
@@ -397,6 +600,7 @@
   }
 
   function populateSelect() {
+    textSelect.innerHTML = "";
     summaryTexts.forEach((item) => {
       const option = document.createElement("option");
       option.value = item.id;
@@ -422,17 +626,19 @@
       });
     }
 
-    buildDraftButton.addEventListener("click", buildDraft);
-    saveWorkButton.addEventListener("click", function () {
-      saveWork({ manual: true });
-    });
+    stepSaveButton.addEventListener("click", advanceFromQuestions);
+    saveDraftButton.addEventListener("click", advanceFromEditing);
+    backToQuestionsButton.addEventListener("click", goToQuestions);
+    backToEditButton.addEventListener("click", goToEditing);
     downloadTxtButton.addEventListener("click", downloadTxt);
     clearWorkButton.addEventListener("click", clearWork);
+
     if (submitCloudButton) {
       submitCloudButton.addEventListener("click", function () {
         submitToCloud();
       });
     }
+
     draftText.addEventListener("input", function () {
       updateWordCount();
       saveWork();
