@@ -253,12 +253,13 @@ html[data-theme="light"] #textSelect option {
 }
 
 .summary-workspace[data-phase="questions"] #editingPanel,
-.summary-workspace[data-phase="editing"] #questionsPanel {
+.summary-workspace[data-phase="editing"] #questionsPanel,
+.summary-workspace[data-phase="editing"] #sourcePanel {
   display: none !important;
 }
 
 .summary-workspace[data-phase="editing"] {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .summary-workspace[hidden],
