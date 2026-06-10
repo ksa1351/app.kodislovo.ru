@@ -414,11 +414,11 @@
     }
 
     if (currentPhase === PHASE_EDITING) {
-      phaseHint.textContent = "Сравните исходный текст с черновиком, отредактируйте изложение и отправьте на проверку";
+      phaseHint.textContent = "Нажмите «Сохранить» — работа уйдёт в хранилище, затем откроется сравнение";
       return;
     }
 
-    phaseHint.textContent = "Сравните исходный текст и своё изложение";
+    phaseHint.textContent = "Работа уже сохранена. Сравните исходный текст и своё изложение";
   }
 
   function updateStepper() {
@@ -586,16 +586,16 @@
 
     saveWork({ manual: true });
     saveDraftButton.disabled = true;
-    setSubmitStatus("Идёт отправка на проверку...");
+    setSubmitStatus("Сохранение работы в хранилище...");
 
     const submitted = await submitToCloud({ quietSuccess: true });
 
-    saveDraftButton.disabled = false;
-
     if (!submitted) {
+      saveDraftButton.disabled = false;
       return;
     }
 
+    setSubmitStatus(`Сохранено в хранилище: ${new Date().toLocaleString("ru-RU")}`);
     currentPhase = PHASE_COMPARISON;
     applyPhase();
   }
@@ -668,7 +668,7 @@
       return false;
     }
 
-    setSubmitStatus("Идёт отправка на проверку...");
+    setSubmitStatus("Сохранение работы в хранилище...");
 
     try {
       const config = await loadCloudConfig();
@@ -679,16 +679,16 @@
       await postJson(config.submitUrl, buildSubmissionPayload());
 
       saveWork({ manual: true });
-      setSubmitStatus(`Отправлено на проверку: ${new Date().toLocaleString("ru-RU")}`);
 
       if (!settings.quietSuccess) {
-        window.alert("Изложение успешно отправлено на проверку.");
+        setSubmitStatus(`Сохранено в хранилище: ${new Date().toLocaleString("ru-RU")}`);
+        window.alert("Работа сохранена в хранилище.");
       }
 
       return true;
     } catch (error) {
-      setSubmitStatus("Ошибка отправки");
-      window.alert(`Не удалось отправить работу.\n\n${error.message || error}`);
+      setSubmitStatus("Не удалось сохранить работу");
+      window.alert(`Не удалось сохранить работу.\n\n${error.message || error}`);
       return false;
     }
   }
