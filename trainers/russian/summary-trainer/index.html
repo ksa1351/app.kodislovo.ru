@@ -244,7 +244,7 @@
 
     <section id="step-comparison" class="summary-comparison" aria-label="Сравнение текстов" hidden>
 
-      <p class="summary-comparison-notice">Работа сохранена. Сравните исходный текст и ваше изложение.</p>
+      <p id="comparisonNotice" class="summary-comparison-notice">Работа сохранена. Сравните исходный текст и ваше изложение.</p>
 
       <article class="kd-panel summary-panel summary-panel-source">
 
@@ -282,6 +282,16 @@
 
       </article>
 
+      <div class="kd-actions summary-comparison-actions">
+
+        <button id="returnToEdit" class="kd-button" type="button">Вернуться к правке</button>
+
+        <button id="openQuestionsFromComparison" class="kd-button kd-button-secondary" type="button">Посмотреть вопросы</button>
+
+      </div>
+
+      <p class="summary-comparison-hint">Можно доработать изложение и сохранить новую версию. Учителю писать не нужно.</p>
+
     </section>
 
   </main>
@@ -292,7 +302,7 @@
 
   <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
 
-  <script src="./summary.js?v=2026-06-10-8"></script>
+  <script src="./summary.js?v=2026-06-10-9"></script>
 
 </body>
 

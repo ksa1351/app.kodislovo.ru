@@ -3,6 +3,10 @@
   const LAST_TEXT_KEY = `${STORAGE_PREFIX}:last-text`;
   const AUTOSAVE_MESSAGE = "Изменения сохраняются автоматически";
   const MANUAL_SAVE_MESSAGE = "Сохранено";
+  const RETURN_TO_EDIT_CONFIRM =
+    "Вернуться к правке?\n\nИсходный текст снова будет скрыт.\nТекущее изложение сохранится — вы сможете его доработать и отправить обновлённую версию.";
+  const OPEN_QUESTIONS_CONFIRM =
+    "Перейти к вопросам?\n\nОтветы можно изменить. При необходимости черновик можно пересобрать из ответов на шаге «Изложение».";
 
   const PHASE_QUESTIONS = "questions";
   const PHASE_EDITING = "editing";
@@ -33,6 +37,9 @@
   const comparisonSource = document.getElementById("comparisonSource");
   const comparisonDraft = document.getElementById("comparisonDraft");
   const comparisonWordCount = document.getElementById("comparisonWordCount");
+  const comparisonNotice = document.getElementById("comparisonNotice");
+  const returnToEditButton = document.getElementById("returnToEdit");
+  const openQuestionsFromComparisonButton = document.getElementById("openQuestionsFromComparison");
   const workflowStepper = document.getElementById("workflowStepper");
   const studentBar = document.getElementById("step-student");
   const studentGateHint = document.getElementById("studentGateHint");
@@ -46,6 +53,12 @@
   let summaryTexts = [];
   let currentPhase = PHASE_QUESTIONS;
   let currentGroupIndex = 0;
+  let submissionState = {
+    revision: 0,
+    lastSubmittedAt: null,
+    lastSubmitOk: false,
+    comparisonSeenAt: null
+  };
 
   function storageKey(id) {
     return `${STORAGE_PREFIX}:${id}`;
@@ -179,6 +192,42 @@
     }));
   }
 
+  function normalizeSubmissionState(data) {
+    const raw = data && typeof data === "object" ? data : {};
+    const revision = Number.isFinite(raw.revision) ? Math.max(0, raw.revision) : 0;
+    return {
+      revision,
+      lastSubmittedAt: raw.lastSubmittedAt || null,
+      lastSubmitOk: Boolean(raw.lastSubmitOk),
+      comparisonSeenAt: raw.comparisonSeenAt || null
+    };
+  }
+
+  function loadSubmissionState(saved) {
+    if (saved && saved.submission) {
+      return normalizeSubmissionState(saved.submission);
+    }
+
+    if (saved && saved.phase === PHASE_COMPARISON) {
+      return normalizeSubmissionState({
+        revision: 1,
+        lastSubmitOk: true,
+        comparisonSeenAt: saved.submission?.comparisonSeenAt || null
+      });
+    }
+
+    return normalizeSubmissionState(null);
+  }
+
+  function resetSubmissionState() {
+    submissionState = {
+      revision: 0,
+      lastSubmittedAt: null,
+      lastSubmitOk: false,
+      comparisonSeenAt: null
+    };
+  }
+
   function getPersistedState() {
     const phase = getSafePhase();
     return {
@@ -186,7 +235,8 @@
       answers: collectAnswers(),
       student: getStudentData(),
       phase,
-      groupIndex: currentGroupIndex
+      groupIndex: currentGroupIndex,
+      submission: submissionState
     };
   }
 
@@ -224,6 +274,7 @@
     });
     currentPhase = PHASE_QUESTIONS;
     currentGroupIndex = 0;
+    resetSubmissionState();
 
     if (!raw) {
       if (studentName) {
@@ -251,6 +302,7 @@
       }
 
       restoreAnswers(data);
+      submissionState = loadSubmissionState(data);
 
       const groupCount = getGroupCount();
       const savedGroup = Number.isFinite(data.groupIndex) ? data.groupIndex : 0;
@@ -345,7 +397,7 @@
       return;
     }
 
-    if (savedPhase === PHASE_COMPARISON) {
+    if (savedPhase === PHASE_COMPARISON && submissionState.lastSubmitOk) {
       currentPhase = PHASE_COMPARISON;
       return;
     }
@@ -366,6 +418,11 @@
     ) {
       return PHASE_QUESTIONS;
     }
+
+    if (currentPhase === PHASE_COMPARISON && !submissionState.lastSubmitOk) {
+      return canOpenDraft() ? PHASE_EDITING : PHASE_QUESTIONS;
+    }
+
     return currentPhase;
   }
 
@@ -414,11 +471,106 @@
     }
 
     if (currentPhase === PHASE_EDITING) {
-      phaseHint.textContent = "Исходный текст скрыт. Отредактируйте черновик по памяти и нажмите «Сохранить»";
+      phaseHint.textContent = submissionState.lastSubmitOk
+        ? "Исходный текст скрыт. Доработайте изложение и нажмите «Сохранить» — отправится новая версия"
+        : "Исходный текст скрыт. Отредактируйте черновик по памяти и нажмите «Сохранить»";
       return;
     }
 
-    phaseHint.textContent = "Работа уже сохранена. Сравните исходный текст и своё изложение";
+    phaseHint.textContent = "Работа сохранена. Сравните исходный текст и своё изложение";
+  }
+
+  function canNavigateToPhase(targetPhase) {
+    if (targetPhase === "student") {
+      return true;
+    }
+
+    if (targetPhase === PHASE_QUESTIONS) {
+      return isStudentProfileComplete();
+    }
+
+    if (targetPhase === PHASE_EDITING) {
+      return canOpenDraft();
+    }
+
+    if (targetPhase === PHASE_COMPARISON) {
+      return submissionState.lastSubmitOk;
+    }
+
+    return false;
+  }
+
+  function returnToEditingFromComparison() {
+    if (!window.confirm(RETURN_TO_EDIT_CONFIRM)) {
+      return false;
+    }
+
+    currentPhase = PHASE_EDITING;
+    applyPhase();
+    return true;
+  }
+
+  function openQuestionsFromComparison() {
+    if (!window.confirm(OPEN_QUESTIONS_CONFIRM)) {
+      return false;
+    }
+
+    const incompleteGroup = findFirstIncompleteGroup();
+    currentPhase = PHASE_QUESTIONS;
+    currentGroupIndex = incompleteGroup >= 0 ? incompleteGroup : 0;
+    applyPhase();
+    return true;
+  }
+
+  function navigateToPhase(targetPhase) {
+    if (!canNavigateToPhase(targetPhase)) {
+      return;
+    }
+
+    if (targetPhase === "student") {
+      if (studentBar) {
+        studentBar.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
+    if (targetPhase === PHASE_QUESTIONS) {
+      if (currentPhase === PHASE_COMPARISON && !window.confirm(OPEN_QUESTIONS_CONFIRM)) {
+        return;
+      }
+      const incompleteGroup = findFirstIncompleteGroup();
+      currentPhase = PHASE_QUESTIONS;
+      currentGroupIndex = incompleteGroup >= 0 ? incompleteGroup : 0;
+      applyPhase();
+      if (workspace) {
+        workspace.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
+    if (targetPhase === PHASE_EDITING) {
+      if (currentPhase === PHASE_COMPARISON) {
+        returnToEditingFromComparison();
+        return;
+      }
+      if (!canOpenDraft()) {
+        return;
+      }
+      if (!draftText.value.trim()) {
+        buildDraft();
+      }
+      currentPhase = PHASE_EDITING;
+      applyPhase();
+      return;
+    }
+
+    if (targetPhase === PHASE_COMPARISON) {
+      currentPhase = PHASE_COMPARISON;
+      applyPhase();
+      if (comparisonSection) {
+        comparisonSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
   }
 
   function updateStepper() {
@@ -438,7 +590,11 @@
         isActive = true;
       }
 
+      const allowed = canNavigateToPhase(linkPhase);
       link.classList.toggle("is-active", isActive);
+      link.classList.toggle("is-disabled", !allowed);
+      link.setAttribute("aria-disabled", allowed ? "false" : "true");
+      link.tabIndex = allowed ? 0 : -1;
     });
   }
 
@@ -467,6 +623,14 @@
     comparisonSource.textContent = currentText.sourceText;
     comparisonDraft.textContent = draft;
     comparisonWordCount.textContent = `Слов: ${countWords(draft)}`;
+
+    if (comparisonNotice) {
+      const revisionLabel = submissionState.revision > 1
+        ? ` (версия ${submissionState.revision})`
+        : "";
+      comparisonNotice.textContent =
+        `Работа сохранена${revisionLabel}. Сравните исходный текст и ваше изложение.`;
+    }
   }
 
   function setWorkspacePhase(phase) {
@@ -517,12 +681,25 @@
         editingPanel.hidden = false;
         editingPanel.scrollTop = 0;
       }
+      if (saveDraftButton) {
+        saveDraftButton.disabled = false;
+        saveDraftButton.textContent = submissionState.lastSubmitOk
+          ? "Сохранить новую версию"
+          : "Сохранить";
+      }
       draftText.focus();
     } else if (currentPhase === PHASE_COMPARISON) {
+      if (!submissionState.lastSubmitOk) {
+        currentPhase = canOpenDraft() ? PHASE_EDITING : PHASE_QUESTIONS;
+        applyPhase();
+        return;
+      }
+
       workspace.hidden = true;
       comparisonSection.hidden = false;
       setWorkspacePhase("comparison");
       updateComparisonView();
+      submissionState.comparisonSeenAt = submissionState.comparisonSeenAt || nowIso();
       if (summaryPage) {
         summaryPage.classList.add("is-comparison-ready");
       }
@@ -588,14 +765,25 @@
     saveDraftButton.disabled = true;
     setSubmitStatus("Сохранение работы в хранилище...");
 
-    const submitted = await submitToCloud({ quietSuccess: true });
+    const nextRevision = submissionState.revision + 1;
+    const submitted = await submitToCloud({
+      quietSuccess: true,
+      revision: nextRevision,
+      workflowPhase: nextRevision > 1 ? "resubmit" : "submit"
+    });
 
     if (!submitted) {
       saveDraftButton.disabled = false;
       return;
     }
 
-    setSubmitStatus(`Сохранено в хранилище: ${new Date().toLocaleString("ru-RU")}`);
+    submissionState.revision = nextRevision;
+    submissionState.lastSubmittedAt = nowIso();
+    submissionState.lastSubmitOk = true;
+    submissionState.comparisonSeenAt = nowIso();
+
+    const revisionNote = nextRevision > 1 ? ` (версия ${nextRevision})` : "";
+    setSubmitStatus(`Сохранено в хранилище${revisionNote}: ${new Date().toLocaleString("ru-RU")}`);
     currentPhase = PHASE_COMPARISON;
     applyPhase();
   }
@@ -618,10 +806,13 @@
     return cloudConfigPromise;
   }
 
-  function buildSubmissionPayload() {
+  function buildSubmissionPayload(options) {
+    const settings = options || {};
     const student = getStudentData();
-
-    return {
+    const revision = Number.isFinite(settings.revision)
+      ? settings.revision
+      : submissionState.revision + 1;
+    const payload = {
       schema: "kodislovo.summary-trainer.result.v1",
       createdAt: nowIso(),
       subject: "russian",
@@ -644,8 +835,16 @@
       draft: draftText.value.trim(),
       sourceText: currentText.sourceText,
       answers: collectAnswers(),
+      revision,
+      workflowPhase: settings.workflowPhase || (revision > 1 ? "resubmit" : "submit"),
       submittedFrom: location.href
     };
+
+    if (revision > 1) {
+      payload.supersedesRevision = revision - 1;
+    }
+
+    return payload;
   }
 
   async function submitToCloud(options) {
@@ -676,7 +875,7 @@
         throw new Error("Backend submit endpoint не настроен.");
       }
 
-      await postJson(config.submitUrl, buildSubmissionPayload());
+      await postJson(config.submitUrl, buildSubmissionPayload(settings));
 
       saveWork({ manual: true });
 
@@ -796,6 +995,25 @@
       updateWordCount();
       saveWork();
     });
+
+    if (returnToEditButton) {
+      returnToEditButton.addEventListener("click", returnToEditingFromComparison);
+    }
+
+    if (openQuestionsFromComparisonButton) {
+      openQuestionsFromComparisonButton.addEventListener("click", openQuestionsFromComparison);
+    }
+
+    if (workflowStepper) {
+      workflowStepper.addEventListener("click", function (event) {
+        const link = event.target.closest("a[data-phase]");
+        if (!link) {
+          return;
+        }
+        event.preventDefault();
+        navigateToPhase(link.dataset.phase);
+      });
+    }
   }
 
   async function init() {
