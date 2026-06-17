@@ -1,0 +1,55 @@
+{
+  "id": "RU-8-SYN-001",
+  "subject": "russian",
+  "grade": 8,
+  "title": "Обособленные обстоятельства",
+  "description": "Маршрут по теме: изучение правила, тренировка, контроль и самооценка.",
+  "steps": [
+    {
+      "id": "theory",
+      "title": "Изучаю теорию",
+      "type": "theory",
+      "zun": "knowledge",
+      "instruction": "Прочитай правило и выдели главное.",
+      "resource": "/theory/russian/8/obosoblennye-obstoyatelstva.html",
+      "required": true
+    },
+    {
+      "id": "examples",
+      "title": "Разбираю примеры",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Разбери предложения по образцу.",
+      "resource": "/tasks/russian/8/obosoblennye-obstoyatelstva/examples.json",
+      "required": true
+    },
+    {
+      "id": "trainer",
+      "title": "Тренируюсь",
+      "type": "trainer",
+      "zun": "habit",
+      "instruction": "Выполни тренажёр. Минимальный результат — 70%.",
+      "resource": "/trainer/russian/8/obosoblennye-obstoyatelstva.html",
+      "minScore": 70,
+      "required": true
+    },
+    {
+      "id": "control",
+      "title": "Выполняю контроль",
+      "type": "control",
+      "zun": "habit",
+      "instruction": "Выполни итоговую работу по теме.",
+      "resource": "/control/control.html?subject=russian&format=oge",
+      "minScore": 70,
+      "required": true
+    },
+    {
+      "id": "reflection",
+      "title": "Оцениваю результат",
+      "type": "reflection",
+      "zun": "knowledge",
+      "instruction": "Отметь, что получилось, а что нужно повторить.",
+      "required": false
+    }
+  ]
+}

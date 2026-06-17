@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "file": "russian/8/obosoblennye-obstoyatelstva.json" },
+    { "file": "russian/7/prichastnyy-oborot.json" },
+    { "file": "literature/9/gogol-shinel.json" }
+  ]
+}

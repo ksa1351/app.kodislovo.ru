@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Маршрутный лист — Кодислово</title>
+  <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-06-17-1" />
+  <link rel="stylesheet" href="./routes.css?v=2026-06-17-1" />
+</head>
+<body data-page="route">
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>маршрутный лист</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
+  <main class="kd-page">
+    <nav aria-label="Навигация">
+      <ol class="kd-breadcrumbs">
+        <li><a href="../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+        <li><a href="./index.html">Маршрутные листы</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+        <li><span aria-current="page">Маршрут</span></li>
+      </ol>
+    </nav>
+
+    <div id="routeLoading" class="rt-loading">Загрузка маршрута…</div>
+    <div id="routeError" class="rt-error" hidden></div>
+
+    <div id="routeContent" hidden>
+      <header class="rt-route-header">
+        <div>
+          <div class="rt-route-meta">
+            <span id="routeSubjectBadge" class="rt-subject-badge rt-subject-russian"><span id="routeSubject"></span></span>
+            <span class="rt-grade-badge" id="routeGrade"></span>
+          </div>
+          <h1 id="routeTitle"></h1>
+          <p id="routeDescription"></p>
+          <p class="rt-route-id" id="routeId"></p>
+        </div>
+        <aside class="rt-progress-panel" aria-labelledby="routePercentLabel">
+          <span id="routePercentLabel">Выполнено обязательных шагов</span>
+          <strong id="routePercent">0%</strong>
+          <div class="rt-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="routePercent">
+            <div id="routeProgressBar" class="rt-progress-fill" style="width:0%"></div>
+          </div>
+        </aside>
+      </header>
+
+      <section aria-labelledby="zun-title">
+        <h2 id="zun-title" class="rt-steps-title">ЗУН по маршруту</h2>
+        <div id="routeZunSummary" class="rt-zun-row"></div>
+      </section>
+
+      <section aria-labelledby="steps-title">
+        <h2 id="steps-title" class="rt-steps-title">Шаги маршрута</h2>
+        <div id="routeSteps"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    © Кодислово · маршрутный лист · Прогресс в localStorage
+  </footer>
+  <script src="../assets/js/theme.js"></script>
+  <script src="./routes_core.js?v=2026-06-17-1"></script>
+</body>
+</html>

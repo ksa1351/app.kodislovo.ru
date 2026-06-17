@@ -1,0 +1,73 @@
+{
+  "id": "RU-7-SYN-001",
+  "subject": "russian",
+  "grade": 7,
+  "title": "Причастный оборот",
+  "description": "Пошаговый маршрут: правило, алгоритм, примеры, упражнения, тренажёр и контроль.",
+  "steps": [
+    {
+      "id": "theory",
+      "title": "Правило",
+      "type": "theory",
+      "zun": "knowledge",
+      "instruction": "Прочитай правило о причастном обороте и запиши определение.",
+      "resource": "/theory/russian/7/prichastnyy-oborot.html",
+      "required": true
+    },
+    {
+      "id": "algorithm",
+      "title": "Алгоритм",
+      "type": "theory",
+      "zun": "skill",
+      "instruction": "Выучи алгоритм выделения причастного оборота в предложении.",
+      "resource": "/theory/russian/7/prichastnyy-oborot-algorithm.html",
+      "required": true
+    },
+    {
+      "id": "examples",
+      "title": "Примеры",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Разбери предложения по образцу учителя.",
+      "resource": "/tasks/russian/7/prichastnyy-oborot/examples.json",
+      "required": true
+    },
+    {
+      "id": "exercises",
+      "title": "Упражнения",
+      "type": "practice",
+      "zun": "habit",
+      "instruction": "Выполни тренировочные задания на выделение оборота.",
+      "resource": "/tasks/russian/7/prichastnyy-oborot/exercises.json",
+      "required": true
+    },
+    {
+      "id": "trainer",
+      "title": "Тренажёр",
+      "type": "trainer",
+      "zun": "habit",
+      "instruction": "Пройди тренажёр. Минимальный результат — 70%.",
+      "resource": "/trainer/russian/7/prichastnyy-oborot.html",
+      "minScore": 70,
+      "required": true
+    },
+    {
+      "id": "control",
+      "title": "Контроль",
+      "type": "control",
+      "zun": "habit",
+      "instruction": "Выполни итоговую работу по теме.",
+      "resource": "/control/control.html?subject=russian",
+      "minScore": 70,
+      "required": true
+    },
+    {
+      "id": "errors",
+      "title": "Работа над ошибками",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Повтори задания, в которых были ошибки.",
+      "required": false
+    }
+  ]
+}

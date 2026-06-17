@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Маршрутные листы — Кодислово</title>
+  <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/css/ui.css?v=2026-06-17-1" />
+  <link rel="stylesheet" href="./routes.css?v=2026-06-17-1" />
+</head>
+<body data-page="index">
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>маршрутные листы</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
+  <main class="kd-page">
+    <header class="kd-hero">
+      <nav aria-label="Навигация">
+        <ol class="kd-breadcrumbs">
+          <li><a href="../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><span aria-current="page">Маршрутные листы</span></li>
+        </ol>
+      </nav>
+      <h1>Маршрутные листы</h1>
+      <p>Пошаговые маршруты по темам русского языка и литературы: теория, практика, тренажёр, контроль и самооценка. Прогресс сохраняется в браузере.</p>
+    </header>
+
+    <div id="routesError" class="rt-error" hidden></div>
+    <div id="routesEmpty" class="rt-loading" hidden>Маршруты пока не добавлены.</div>
+    <div id="routesList"></div>
+  </main>
+
+  <footer class="site-footer">
+    © Кодислово · маршрутные листы · Обновлено июнь 2026
+  </footer>
+  <script src="../assets/js/theme.js"></script>
+  <script src="./routes_core.js?v=2026-06-17-1"></script>
+</body>
+</html>

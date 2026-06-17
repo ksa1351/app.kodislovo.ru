@@ -1,0 +1,67 @@
+{
+  "id": "LIT-9-001",
+  "subject": "literature",
+  "grade": 9,
+  "title": "Н. В. Гоголь «Шинель»",
+  "description": "Маршрут по произведению: чтение, понимание, анализ героя, цитаты, проблемный вопрос и развёрнутый ответ.",
+  "steps": [
+    {
+      "id": "reading",
+      "title": "Читаю текст",
+      "type": "theory",
+      "zun": "knowledge",
+      "instruction": "Прочитай повесть «Шинель» (или отрывки по заданию учителя).",
+      "resource": "/theory/literature/9/gogol-shinel.html",
+      "required": true
+    },
+    {
+      "id": "comprehension",
+      "title": "Проверяю понимание",
+      "type": "practice",
+      "zun": "knowledge",
+      "instruction": "Ответь на вопросы по содержанию произведения.",
+      "resource": "/tasks/literature/9/gogol-shinel/comprehension.json",
+      "required": true
+    },
+    {
+      "id": "hero",
+      "title": "Анализирую героя",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Составь портрет Акакия Акакиевича: внешность, характер, отношение к окружающим.",
+      "required": true
+    },
+    {
+      "id": "quotes",
+      "title": "Работаю с цитатами",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Подбери 3–5 цитат, иллюстрирующих образ героя.",
+      "required": true
+    },
+    {
+      "id": "problem",
+      "title": "Проблемный вопрос",
+      "type": "practice",
+      "zun": "skill",
+      "instruction": "Ответь на проблемный вопрос по теме «человек и общество».",
+      "required": true
+    },
+    {
+      "id": "essay",
+      "title": "Развёрнутый ответ",
+      "type": "control",
+      "zun": "habit",
+      "instruction": "Напиши мини-сочинение на 1–2 страницы по плану учителя.",
+      "required": true
+    },
+    {
+      "id": "reflection",
+      "title": "Оцениваю работу",
+      "type": "reflection",
+      "zun": "knowledge",
+      "instruction": "Отметь, что получилось хорошо, а над чем ещё нужно поработать.",
+      "required": false
+    }
+  ]
+}
