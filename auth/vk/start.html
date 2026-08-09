@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="strict-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://unpkg.com 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://*.vk.ru https://*.vk.com; img-src data: https://*.vk.ru https://*.vk.com; frame-src https://*.vk.ru https://*.vk.com; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://*.vk.ru https://*.vk.com; img-src data: https://*.vk.ru https://*.vk.com; frame-src https://*.vk.ru https://*.vk.com; base-uri 'none'; form-action 'none'">
   <title>Кодислово — вход через VK ID</title>
   <style>
     :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -22,7 +22,7 @@
     <p id="status">Нажмите кнопку, чтобы продолжить безопасную авторизацию.</p>
     <button id="loginButton" type="button" disabled>Продолжить через VK ID</button>
   </main>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.1/dist-sdk/umd/index.js"></script>
+  <script src="../../assets/vendor/vkid-sdk-2.6.1.js"></script>
   <script>
     (() => {
       "use strict";
