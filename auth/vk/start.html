@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="strict-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://unpkg.com 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://*.vk.ru https://*.vk.com; img-src data: https://*.vk.ru https://*.vk.com; frame-src https://*.vk.ru https://*.vk.com; base-uri 'none'; form-action 'none'">
+  <title>Кодислово — вход через VK ID</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #071a3b; color: #f7fbff; }
+    main { width: min(520px, calc(100% - 32px)); padding: 28px; box-sizing: border-box; border: 1px solid #24589a; border-radius: 20px; background: #0c2855; box-shadow: 0 24px 60px rgb(0 0 0 / 35%); }
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    p { margin: 0 0 20px; color: #c9ddf7; line-height: 1.5; }
+    button { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: #2688eb; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .65; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Вход через VK ID</h1>
+    <p id="status">Нажмите кнопку, чтобы продолжить безопасную авторизацию.</p>
+    <button id="loginButton" type="button" disabled>Продолжить через VK ID</button>
+  </main>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.1/dist-sdk/umd/index.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const APP_ID = 54713808;
+      const REDIRECT_URL = "https://ksa1351.github.io/app.kodislovo.ru/auth/vk/callback.html";
+      const source = new URL(window.location.href);
+      const state = source.searchParams.get("state") || "";
+      const codeChallenge = source.searchParams.get("code_challenge") || "";
+      const button = document.getElementById("loginButton");
+      const status = document.getElementById("status");
+
+      if (!/^[A-Za-z0-9._~-]{20,4096}$/.test(state) || !/^[A-Za-z0-9_-]{43,128}$/.test(codeChallenge)) {
+        status.textContent = "Параметры входа отсутствуют или устарели. Вернитесь в учительскую панель и повторите вход.";
+        return;
+      }
+
+      if (!("VKIDSDK" in window)) {
+        status.textContent = "Не удалось загрузить VK ID. Проверьте подключение к интернету и повторите попытку.";
+        return;
+      }
+
+      const VKID = window.VKIDSDK;
+      VKID.Config.init({
+        app: APP_ID,
+        redirectUrl: REDIRECT_URL,
+        state,
+        codeChallenge,
+        mode: VKID.ConfigAuthMode.InNewWindow,
+        responseMode: VKID.ConfigResponseMode.Redirect,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: ""
+      });
+
+      button.disabled = false;
+      button.addEventListener("click", () => {
+        button.disabled = true;
+        status.textContent = "Открываем VK ID…";
+        VKID.Auth.login().catch(() => {
+          button.disabled = false;
+          status.textContent = "Вход не завершён. Разрешите всплывающее окно и попробуйте ещё раз.";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
