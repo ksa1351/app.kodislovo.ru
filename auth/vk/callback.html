@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Кодислово — вход через VK ID</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #071a3b; color: #f7fbff; }
+    main { width: min(520px, calc(100% - 32px)); padding: 28px; box-sizing: border-box; border: 1px solid #24589a; border-radius: 20px; background: #0c2855; box-shadow: 0 24px 60px rgb(0 0 0 / 35%); }
+    h1 { margin: 0 0 12px; font-size: 24px; }
+    p { margin: 0; color: #c9ddf7; line-height: 1.5; }
+    a { display: inline-block; margin-top: 18px; color: #fff; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Возвращаемся в «Кодислово»…</h1>
+    <p id="status">Завершаем вход через VK ID в локальной учительской панели.</p>
+    <a id="continueLink" href="http://127.0.0.1:8010/auth/vk/callback">Продолжить вручную</a>
+  </main>
+  <script>
+    (() => {
+      "use strict";
+
+      const allowed = new Set(["code", "state", "device_id", "payload", "error", "error_description"]);
+      const source = new URL(window.location.href);
+      const target = new URL("http://127.0.0.1:8010/auth/vk/callback");
+
+      for (const [key, value] of source.searchParams) {
+        if (allowed.has(key)) target.searchParams.append(key, value);
+      }
+
+      const hashParams = new URLSearchParams(source.hash.replace(/^#/, ""));
+      for (const [key, value] of hashParams) {
+        if (allowed.has(key) && !target.searchParams.has(key)) {
+          target.searchParams.append(key, value);
+        }
+      }
+
+      const hasState = target.searchParams.has("state");
+      const hasResult = ["code", "payload", "error"].some((key) => target.searchParams.has(key));
+      const link = document.getElementById("continueLink");
+      const status = document.getElementById("status");
+      link.href = target.href;
+
+      if (!hasState || !hasResult) {
+        status.textContent = "VK ID не передал необходимые параметры. Вернитесь в панель и повторите вход.";
+        return;
+      }
+
+      window.location.replace(target.href);
+    })();
+  </script>
+</body>
+</html>
