@@ -50,8 +50,8 @@
             <span id="taskCode"></span>
           </div>
           <div class="trainer-score-pills">
-            <span class="trainer-score-pill" id="scoreAttempts">Проверок: 0</span>
-            <span class="trainer-score-pill ok" id="scoreCorrect">Верно: 0</span>
+            <span class="trainer-score-pill" id="scoreAttempts">Ответов: 0</span>
+            <span class="trainer-score-pill ok" id="scoreCorrect">Проверка: на сервере</span>
           </div>
         </div>
 
@@ -59,11 +59,11 @@
 
         <div class="answer-row">
           <input id="answerInput" type="text" autocomplete="off" placeholder="Введите ответ" aria-label="Ответ">
-          <button class="kd-button" id="checkBtn" type="button">Проверить</button>
+          <button class="kd-button" id="checkBtn" type="button">Сохранить ответ</button>
         </div>
 
         <div class="trainer-actions">
-          <button class="kd-button kd-button-secondary" id="showAnswerBtn" type="button">Показать ответ</button>
+          <button class="kd-button kd-button-secondary" id="showAnswerBtn" type="button">О проверке</button>
           <button class="kd-button kd-button-secondary" id="prevBtn" type="button">Предыдущее</button>
           <button class="kd-button kd-button-secondary" id="nextBtn" type="button">Следующее</button>
           <button class="kd-button kd-button-secondary" id="randomBtn" type="button">Случайное</button>
@@ -88,7 +88,6 @@
     }
 
     let currentIndex = 0;
-    let correctCount = 0;
     let totalCount = 0;
 
     const taskProgressEl = document.getElementById("taskProgress");
@@ -100,22 +99,9 @@
     const scoreCorrectEl = document.getElementById("scoreCorrect");
     const jumpSelectEl = document.getElementById("jumpSelect");
 
-    function normalizeAnswer(value) {
-      return String(value || "")
-        .toLowerCase()
-        .replace(/ё/g, "е")
-        .replace(/[^a-zа-я0-9 -]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
     function updateStats() {
-      scoreAttemptsEl.textContent = `Проверок: ${totalCount}`;
-      scoreCorrectEl.textContent = `Верно: ${correctCount}`;
-      if (totalCount > 0) {
-        const percent = Math.round((correctCount / totalCount) * 100);
-        scoreCorrectEl.textContent = `Верно: ${correctCount} (${percent}%)`;
-      }
+      scoreAttemptsEl.textContent = `Ответов: ${totalCount}`;
+      scoreCorrectEl.textContent = "Проверка: на сервере";
     }
 
     function setFeedback(message, type) {
@@ -139,28 +125,26 @@
     }
 
     function checkAnswer() {
-      const task = tasks[currentIndex];
-      const userAnswer = normalizeAnswer(answerInputEl.value);
-      const correctAnswer = normalizeAnswer(task.answer);
+      const userAnswer = String(answerInputEl.value || "").trim();
 
       if (!userAnswer) {
-        setFeedback("Введите ответ, затем нажмите «Проверить».", "bad");
+        setFeedback("Введите ответ, затем нажмите «Сохранить ответ».", "bad");
         return;
       }
 
       totalCount += 1;
-      if (userAnswer === correctAnswer) {
-        correctCount += 1;
-        setFeedback("Верно! Можно перейти к следующей задаче.", "ok");
-      } else {
-        setFeedback(`Неверно. Правильный ответ: ${task.answer}.`, "bad");
-      }
+      setFeedback(
+        "Ответ сохранён только в текущем окне. Проверка доступна в работе, назначенной учителем.",
+        "neutral"
+      );
       updateStats();
     }
 
     function showAnswer() {
-      const task = tasks[currentIndex];
-      setFeedback(`Правильный ответ: ${task.answer}.`, "neutral");
+      setFeedback(
+        "Правильные ответы не передаются в браузер. Итог проверяет сервер после отправки назначенной работы.",
+        "neutral"
+      );
     }
 
     function fillJumpSelect() {
