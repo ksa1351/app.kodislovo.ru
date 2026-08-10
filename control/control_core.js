@@ -866,13 +866,10 @@
 
   function renderTaskCard(task, taskIndex, textPractice, tasksCount) {
     const displayNumber = textPractice ? getTaskKimId(task) : task.id;
-    const progress = textPractice
-      ? ""
-      : ` <span class="kd-subtitle kd-task-progress">(${taskIndex + 1} из ${tasksCount})</span>`;
     const taskId = escapeHtml(String(task.id));
     return `
-      <section class="kd-task" data-task-id="${taskId}">
-        <h3 class="kd-task-heading">Задание ${escapeHtml(String(displayNumber))}${progress}</h3>
+      <section class="kd-task" data-task-id="${taskId}" tabindex="-1">
+        <h3 class="kd-task-heading">Задание ${escapeHtml(String(displayNumber))}</h3>
         ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
         <div class="q">${task.text || ""}</div>
         <label class="kd-answer-label" for="answerInput-${taskId}">Ответ</label>
@@ -880,6 +877,22 @@
           placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
       </section>
     `;
+  }
+
+  function focusCurrentUnit(textPractice, behavior = "smooth") {
+    const target = textPractice
+      ? $("stickyTextWrap")
+      : $("taskOne")?.querySelector(".kd-task");
+    if (!target) return;
+    const focusAndScroll = () => {
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ behavior, block: "start", inline: "nearest" });
+    };
+    if (typeof root.requestAnimationFrame === "function") {
+      root.requestAnimationFrame(focusAndScroll);
+    } else {
+      focusAndScroll();
+    }
   }
 
   function renderTaskNavigation(units, activeUnitIndex, tasks, textPractice) {
@@ -900,22 +913,20 @@
     navigation.innerHTML = `
       <div class="kd-task-navigation-head">
         <strong>${textPractice ? "Тексты" : "Задания"}</strong>
-        ${textPractice ? `
-          <div class="kd-task-navigation-status">
-            <button type="button" class="kd-task-nav-arrow" data-unit-step="-1"
-              aria-label="Предыдущий текст" ${activeUnitIndex === 0 ? "disabled" : ""}>←</button>
-            <span aria-live="polite">${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>
-            <button type="button" class="kd-task-nav-arrow" data-unit-step="1"
-              aria-label="Следующий текст" ${activeUnitIndex >= units.length - 1 ? "disabled" : ""}>→</button>
-          </div>
-        ` : `<span>${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>`}
+        <div class="kd-task-navigation-status">
+          <button type="button" class="kd-task-nav-arrow" data-unit-step="-1"
+            aria-label="${textPractice ? "Предыдущий текст" : "Предыдущее задание"}" ${activeUnitIndex === 0 ? "disabled" : ""}>←</button>
+          <span aria-live="polite">${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>
+          <button type="button" class="kd-task-nav-arrow" data-unit-step="1"
+            aria-label="${textPractice ? "Следующий текст" : "Следующее задание"}" ${activeUnitIndex >= units.length - 1 ? "disabled" : ""}>→</button>
+        </div>
       </div>
       <div class="kd-task-pills">${pills}</div>
     `;
 
     const pillStrip = navigation.querySelector(".kd-task-pills");
     const activePill = navigation.querySelector(".kd-task-pill.is-active");
-    if (textPractice && pillStrip && activePill) {
+    if (pillStrip && activePill) {
       const centerActivePill = () => {
         const stripRect = pillStrip.getBoundingClientRect();
         const pillRect = activePill.getBoundingClientRect();
@@ -939,8 +950,7 @@
       currentTaskIndex = units[unitIndex]?.taskIndices?.[0] ?? currentTaskIndex;
       saveProgress();
       renderCurrentTask();
-      const target = textPractice ? $("stickyTextWrap") : $("taskOne");
-      if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: "smooth" });
+      focusCurrentUnit(textPractice);
     };
 
     navigation.querySelectorAll(".kd-task-pill").forEach((pill) => {
@@ -1029,7 +1039,7 @@
         currentTaskIndex = units[activeUnitIndex - 1].taskIndices[0];
         saveProgress();
         renderCurrentTask();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        focusCurrentUnit(textPractice);
       }
     });
 
@@ -1038,7 +1048,7 @@
         currentTaskIndex = units[activeUnitIndex + 1].taskIndices[0];
         saveProgress();
         renderCurrentTask();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        focusCurrentUnit(textPractice);
       }
     });
 

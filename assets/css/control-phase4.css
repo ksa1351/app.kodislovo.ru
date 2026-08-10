@@ -328,16 +328,11 @@
 }
 
 .kd-task-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.kd-task-navigation.is-text-practice .kd-task-pills {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(42px, max-content);
   justify-content: start;
+  gap: 8px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   padding: 2px 2px 8px;
@@ -347,8 +342,12 @@
   max-width: 100%;
 }
 
-.kd-task-navigation.is-text-practice .kd-task-pills::-webkit-scrollbar {
+.kd-task-pills::-webkit-scrollbar {
   display: none;
+}
+
+.kd-reading-panel {
+  scroll-margin-top: 88px;
 }
 
 .kd-task-pill {

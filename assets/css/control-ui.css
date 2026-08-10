@@ -335,6 +335,16 @@ a { color: inherit; }
 .kd-task {
   margin-top: 14px;
   padding: 18px;
+  scroll-margin-top: 88px;
+}
+
+.kd-task:focus {
+  outline: none;
+}
+
+.kd-task:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ks-primary) 58%, transparent);
+  outline-offset: 3px;
 }
 
 .kd-task-group.is-text-practice {
