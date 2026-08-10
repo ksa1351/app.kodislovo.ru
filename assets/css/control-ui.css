@@ -306,9 +306,28 @@ a { color: inherit; }
   padding: 18px;
 }
 
+.kd-task-group.is-text-practice {
+  display: grid;
+  gap: 16px;
+}
+
+.kd-task-group.is-text-practice .kd-task {
+  margin-top: 0;
+}
+
 .kd-task h3 {
   margin: 0 0 10px 0;
   font-size: 20px;
+}
+
+.kd-task-heading {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.kd-task-progress {
+  display: inline;
+  font-size: 14px;
 }
 
 .kd-task .hint {
@@ -321,6 +340,18 @@ a { color: inherit; }
   margin-top: 10px;
   line-height: 1.6;
   color: var(--text);
+}
+
+.kd-answer-label {
+  display: block;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.kd-answer-label + .kd-answer {
+  margin-top: 7px;
 }
 
 .kd-nav {

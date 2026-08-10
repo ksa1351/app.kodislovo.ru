@@ -253,11 +253,51 @@
   color: color-mix(in srgb, var(--warning) 90%, var(--text));
 }
 
+.kd-task-navigation {
+  margin: 18px 0 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card2) 72%, transparent);
+}
+
+.kd-task-navigation:empty {
+  display: none;
+}
+
+.kd-task-navigation-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.kd-task-navigation-head strong {
+  font-size: 16px;
+}
+
+.kd-task-navigation-head span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .kd-task-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 14px;
+}
+
+.kd-task-navigation.is-text-practice .kd-task-pills {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(42px, max-content);
+  justify-content: start;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
 }
 
 .kd-task-pill {
@@ -287,6 +327,16 @@
 
 .kd-task-pill.is-answered {
   border-color: color-mix(in srgb, var(--ok) 34%, var(--line));
+}
+
+.kd-task-pill.is-partial {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--line));
+}
+
+.kd-task-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
 }
 
 .kd-success-overlay {
@@ -375,5 +425,10 @@
 
   .kd-timer-bar-value {
     font-size: 24px;
+  }
+
+  .kd-task-navigation {
+    margin-inline: -2px;
+    padding: 12px;
   }
 }

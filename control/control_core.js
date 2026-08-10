@@ -8,6 +8,7 @@
   const $ = (id) => document.getElementById(id);
   /** Браузер: globalThis/window; Node: global — не использовать голый global в браузере. */
   const root = typeof globalThis !== "undefined" ? globalThis : window;
+  const controlNavigation = root.KodislovoControlNavigation;
 
   function setText(id, text) {
     const el = $(id);
@@ -742,25 +743,7 @@
   let currentStickyBlockKey = "";
 
   function getTextRangesFromMeta() {
-    const texts = variantMeta?.texts || {};
-    const blocks = Object.values(texts)
-      .map((t) => {
-        const r = Array.isArray(t.range) ? t.range : null;
-        const from = r ? Number(r[0]) : NaN;
-        const to = r ? Number(r[1]) : NaN;
-        const rangeKim = Array.isArray(t.rangeKim) ? t.rangeKim.map((n) => Number(n)) : null;
-        return {
-          title: t.title || "Текст",
-          from,
-          to,
-          html: t.html || "",
-          rangeKim: rangeKim && rangeKim.length === 2 ? rangeKim : null,
-        };
-      })
-      .filter((b) => Number.isFinite(b.from) && Number.isFinite(b.to) && b.html);
-
-    blocks.sort((a, b) => a.from - b.from);
-    return blocks;
+    return controlNavigation?.getTextRanges(variantMeta) || [];
   }
 
   function setStickyVisible(visible) {
@@ -788,14 +771,16 @@
     }
   }
 
-  function setStickyContent(block) {
+  function setStickyContent(block, textPosition = null) {
     const title = $("stickyTextTitle");
     const range = $("stickyTextRange");
     const body = $("stickyTextBody");
     if (!title || !range || !body) return;
 
     title.textContent = block.title;
-    range.textContent = formatTaskRangeLabel(block);
+    range.textContent = textPosition
+      ? `Текст ${textPosition.current} из ${textPosition.total}`
+      : formatTaskRangeLabel(block);
     body.innerHTML = block.html;
     updateStickyToggleUi();
   }
@@ -835,29 +820,11 @@
   }
 
   function getTaskKimId(task) {
-    const fromSource = Number(task?.source?.taskId);
-    if (Number.isFinite(fromSource)) return fromSource;
-    const kim = Number(task?.kimNumber);
-    if (Number.isFinite(kim)) return kim;
-    return Number(task?.id);
+    return controlNavigation?.getTaskKimId(task) ?? Number(task?.id);
   }
 
   function findBlockForTask(blocks, task) {
-    if (!task) return null;
-    const displayId = Number(task.id);
-    const kimId = getTaskKimId(task);
-    for (const b of blocks) {
-      const kimRange = b.rangeKim;
-      if (Array.isArray(kimRange) && kimRange.length === 2) {
-        const fromKim = Number(kimRange[0]);
-        const toKim = Number(kimRange[1]);
-        if (Number.isFinite(fromKim) && Number.isFinite(toKim) && kimId >= fromKim && kimId <= toKim) {
-          return b;
-        }
-      }
-      if (Number.isFinite(displayId) && displayId >= b.from && displayId <= b.to) return b;
-    }
-    return null;
+    return controlNavigation?.findBlockForTask(blocks, task) || null;
   }
 
   function refreshStickyBlocks() {
@@ -877,7 +844,9 @@
 
   function renderTaskLoadState() {
     const cont = $("taskOne");
+    const navigation = $("taskNavigation");
     if (!cont) return;
+    if (navigation) navigation.innerHTML = "";
     if (variantLoading) {
       cont.innerHTML = "<div class='kd-task'>Загрузка заданий…</div>";
       setStickyVisible(false);
@@ -893,6 +862,69 @@
       cont.innerHTML = "<div class='kd-task'>Нет заданий в варианте. Выберите другую карточку или обновите страницу.</div>";
       setStickyVisible(false);
     }
+  }
+
+  function renderTaskCard(task, taskIndex, textPractice, tasksCount) {
+    const displayNumber = textPractice ? getTaskKimId(task) : task.id;
+    const progress = textPractice
+      ? ""
+      : ` <span class="kd-subtitle kd-task-progress">(${taskIndex + 1} из ${tasksCount})</span>`;
+    const taskId = escapeHtml(String(task.id));
+    return `
+      <section class="kd-task" data-task-id="${taskId}">
+        <h3 class="kd-task-heading">Задание ${escapeHtml(String(displayNumber))}${progress}</h3>
+        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
+        <div class="q">${task.text || ""}</div>
+        <label class="kd-answer-label" for="answerInput-${taskId}">Ответ</label>
+        <input class="kd-answer" id="answerInput-${taskId}" data-task-id="${taskId}" type="text"
+          placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
+      </section>
+    `;
+  }
+
+  function renderTaskNavigation(units, activeUnitIndex, tasks, textPractice) {
+    const navigation = $("taskNavigation");
+    if (!navigation) return;
+    const activeLabel = textPractice ? "Текст" : "Задание";
+    const pills = units.map((unit, index) => {
+      const answerState = controlNavigation?.getUnitAnswerState(unit, tasks, answersMap) || "empty";
+      const classes = ["kd-task-pill"];
+      if (index === activeUnitIndex) classes.push("is-active");
+      if (answerState === "answered") classes.push("is-answered");
+      if (answerState === "partial") classes.push("is-partial");
+      return `<button type="button" class="${classes.join(" ")}" data-unit-index="${index}" aria-label="${escapeHtml(unit.ariaLabel)}">${escapeHtml(unit.label)}</button>`;
+    }).join("");
+
+    navigation.className = `kd-task-navigation${textPractice ? " is-text-practice" : ""}`;
+    navigation.setAttribute("aria-label", textPractice ? "Навигация по текстам" : "Номера заданий");
+    navigation.innerHTML = `
+      <div class="kd-task-navigation-head">
+        <strong>${textPractice ? "Тексты" : "Задания"}</strong>
+        <span>${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>
+      </div>
+      <div class="kd-task-pills">${pills}</div>
+    `;
+
+    const pillStrip = navigation.querySelector(".kd-task-pills");
+    const activePill = navigation.querySelector(".kd-task-pill.is-active");
+    if (textPractice && pillStrip && activePill) {
+      pillStrip.scrollLeft = Math.max(
+        0,
+        activePill.offsetLeft - (pillStrip.clientWidth - activePill.offsetWidth) / 2
+      );
+    }
+
+    navigation.querySelectorAll(".kd-task-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const unitIndex = Number(pill.getAttribute("data-unit-index"));
+        if (!Number.isFinite(unitIndex) || unitIndex === activeUnitIndex) return;
+        currentTaskIndex = units[unitIndex]?.taskIndices?.[0] ?? currentTaskIndex;
+        saveProgress();
+        renderCurrentTask();
+        const target = textPractice ? $("stickyTextWrap") : $("taskOne");
+        if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: "smooth" });
+      });
+    });
   }
 
   function renderCurrentTask() {
@@ -911,10 +943,18 @@
     }
 
     currentTaskIndex = Math.max(0, Math.min(currentTaskIndex, tasks.length - 1));
-    const task = tasks[currentTaskIndex];
-
     refreshStickyBlocks();
-    const block = findBlockForTask(stickyBlocks, task);
+    const textPractice = Boolean(
+      controlNavigation?.isTextPracticeMode(variantData, variantMeta, stickyBlocks, tasks)
+    );
+    const units = controlNavigation?.buildNavigationUnits(tasks, stickyBlocks, textPractice) || [];
+    const activeUnitIndex = controlNavigation?.findUnitIndex(units, currentTaskIndex) || 0;
+    const activeUnit = units[activeUnitIndex];
+    const taskIndices = activeUnit?.taskIndices?.length ? activeUnit.taskIndices : [currentTaskIndex];
+    const task = tasks[taskIndices[0]];
+    const block = textPractice ? activeUnit?.block : findBlockForTask(stickyBlocks, task);
+
+    renderTaskNavigation(units, activeUnitIndex, tasks, textPractice);
     if (block) {
       const blockKey = getStickyBlockKey(block);
       if (blockKey !== currentStickyBlockKey) {
@@ -922,61 +962,41 @@
         stickyCollapsed = false;
       }
       setStickyVisible(true);
-      setStickyContent(block);
+      setStickyContent(
+        block,
+        textPractice ? { current: activeUnitIndex + 1, total: units.length } : null
+      );
     } else {
       currentStickyBlockKey = "";
       setStickyVisible(false);
     }
 
-    const pills = tasks.map((item, index) => {
-      const answered = safeText(answersMap[String(item.id)]).length > 0;
-      const classes = ["kd-task-pill"];
-      if (index === currentTaskIndex) classes.push("is-active");
-      if (answered) classes.push("is-answered");
-      return `<button type="button" class="${classes.join(" ")}" data-task-index="${index}" aria-label="Задание ${item.id}">${item.id}</button>`;
-    }).join("");
-
     cont.innerHTML = `
-      <nav class="kd-task-pills" aria-label="Номера заданий">${pills}</nav>
-      <section class="kd-task" data-task-id="${String(task.id)}">
-        <h3>Задание ${task.id} <span class="kd-subtitle" style="display:inline;font-size:14px">(${currentTaskIndex + 1} из ${tasks.length})</span></h3>
-        ${task.hint ? `<div class="hint">${task.hint}</div>` : ""}
-        <div class="q">${task.text || ""}</div>
-
-        <input class="kd-answer" id="answerInput" type="text"
-          placeholder="Введите ответ…" autocomplete="off" spellcheck="false">
-
-        <div class="kd-nav">
-          <button class="kd-btn secondary" id="btnPrev" type="button">← Предыдущее</button>
-          <button class="kd-btn secondary" id="btnNext" type="button">Следующее →</button>
-        </div>
-      </section>
+      <div class="kd-task-group${textPractice ? " is-text-practice" : ""}">
+        ${taskIndices.map((taskIndex) => renderTaskCard(tasks[taskIndex], taskIndex, textPractice, tasks.length)).join("")}
+      </div>
+      <div class="kd-nav">
+        <button class="kd-btn secondary" id="btnPrev" type="button" ${activeUnitIndex === 0 ? "disabled" : ""}>← Предыдущее</button>
+        <button class="kd-btn secondary" id="btnNext" type="button" ${activeUnitIndex >= units.length - 1 ? "disabled" : ""}>Следующее →</button>
+      </div>
     `;
 
-    cont.querySelectorAll(".kd-task-pill").forEach((pill) => {
-      pill.addEventListener("click", () => {
-        const index = Number(pill.getAttribute("data-task-index"));
-        if (!Number.isFinite(index) || index === currentTaskIndex) return;
-        currentTaskIndex = index;
+    cont.querySelectorAll(".kd-answer[data-task-id]").forEach((input) => {
+      const taskId = safeText(input.getAttribute("data-task-id"));
+      const saved = answersMap[taskId];
+      if (typeof saved === "string") input.value = saved;
+      input.disabled = isFinished;
+      input.addEventListener("input", () => {
+        if (isFinished) return;
+        answersMap[taskId] = input.value;
         saveProgress();
-        renderCurrentTask();
-        window.scrollTo({ top: cont.offsetTop - 80, behavior: "smooth" });
+        renderTaskNavigation(units, activeUnitIndex, tasks, textPractice);
       });
     });
 
-    const inp = $("answerInput");
-    const saved = answersMap[String(task.id)];
-    if (inp && typeof saved === "string") inp.value = saved;
-
-    inp?.addEventListener("input", () => {
-      if (isFinished) return;
-      answersMap[String(task.id)] = inp.value;
-      saveProgress();
-    });
-
     $("btnPrev")?.addEventListener("click", () => {
-      if (currentTaskIndex > 0) {
-        currentTaskIndex--;
+      if (activeUnitIndex > 0) {
+        currentTaskIndex = units[activeUnitIndex - 1].taskIndices[0];
         saveProgress();
         renderCurrentTask();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -984,15 +1004,14 @@
     });
 
     $("btnNext")?.addEventListener("click", () => {
-      if (currentTaskIndex < tasks.length - 1) {
-        currentTaskIndex++;
+      if (activeUnitIndex < units.length - 1) {
+        currentTaskIndex = units[activeUnitIndex + 1].taskIndices[0];
         saveProgress();
         renderCurrentTask();
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
 
-    if (isFinished && inp) inp.disabled = true;
   }
 
   // ========= load =========
