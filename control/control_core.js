@@ -4,6 +4,7 @@
   // ========= helpers =========
   const THEME_KEY = "kodislovo_theme";
   const LS_PREFIX = "kodislovo_control:";
+  const SERVICE_UNAVAILABLE_MESSAGE = "Работа временно недоступна. Попробуйте открыть её позднее";
   const $ = (id) => document.getElementById(id);
   /** Браузер: globalThis/window; Node: global — не использовать голый global в браузере. */
   const root = typeof globalThis !== "undefined" ? globalThis : window;
@@ -33,14 +34,6 @@
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
   }
-  function normalizeAnswer(s) {
-    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
-  }
-
-  function normalizeStrictSequence(s) {
-    return safeText(s).toLowerCase().replace(/ё/g, "е").replace(/\s+/g, "");
-  }
-
   // Варианты лежат в /controls/<subject>/variants/ (controls в корне сайта)
   function projectRoot() {
   // GitHub Pages: первый сегмент пути — это папка проекта (например "app.kodislovo.ru")
@@ -121,8 +114,7 @@
           variantBaseUrl: services.variantBaseUrl
             ? new URL(services.variantBaseUrl, `${baseUrl}/`).toString()
             : "",
-          // "db" — задания и проверка идут с сервера (ответы скрыты); "static" — старый путь.
-          contentSource: safeText(services.contentSource) || "static",
+          contentSource: safeText(services.contentSource),
         };
       });
     }
@@ -180,6 +172,9 @@
   // ========= state =========
   let subject = getParam("subject") || "russian";
   let base = variantsBase(subject);
+  const assignmentPublicId = safeText(getParam("assignment"));
+  let assignmentConfig = null;
+  let lastSubmissionId = "";
 
   let manifest = null;
   let variantMeta = null;
@@ -203,9 +198,49 @@
   let variantLoadError = null;
   let variantLoading = false;
 
-  // Режим контента: при contentSource === "db" задания и проверка идут с сервера,
-  // ответы ученику не отдаются. По умолчанию — статический путь (обратная совместимость).
+  // Production-контент и проверка всегда идут с сервера; небезопасного static fallback нет.
   const apiContent = { enabled: false, manifestUrl: "", variantBaseUrl: "" };
+
+  async function loadAssignmentMode() {
+    if (!assignmentPublicId) return false;
+    const configUrl = `${location.origin}${projectRoot()}assets/config/public-api.json`;
+    const config = await fetchJson(configUrl);
+    const apiBase = safeText(config?.baseUrl).replace(/\/+$/, "");
+    if (!apiBase) throw new Error("Не задан адрес API для назначения.");
+    assignmentConfig = await fetchJson(
+      `${apiBase}/api/public/assignments/${encodeURIComponent(assignmentPublicId)}`
+    );
+    lastSubmissionId = localStorage.getItem(`kodislovo_last_submission:${assignmentPublicId}`) || "";
+    subject = assignmentConfig.subject || subject;
+    base = variantsBase(subject);
+    const publicVariant = assignmentConfig.variant || {};
+    const meta = publicVariant.meta || {};
+    const variantId = safeText(assignmentConfig.variantSlug || meta.id || meta.slug || publicVariant.id || "assignment-variant");
+    manifest = {
+      subjectTitle: assignmentConfig.title || subject,
+      variants: [{ id: variantId, title: meta.title || assignmentConfig.title, examFormat: meta.examFormat }]
+    };
+    currentVariantEntry = manifest.variants[0];
+    currentVariantId = variantId;
+    currentVariantFile = `assignment:${assignmentPublicId}`;
+    apiContent.enabled = true;
+    backendServicesPromise = Promise.resolve({
+      submitUrl: assignmentConfig.submitUrl,
+      resetConsumeUrl: assignmentConfig.resetConsumeUrl,
+      timerConfigUrl: "",
+      contentSource: "assignment"
+    });
+    const select = $("variantSelect");
+    if (select) {
+      select.innerHTML = `<option value="${escapeHtml(variantId)}">${escapeHtml(currentVariantEntry.title || variantId)}</option>`;
+      select.disabled = true;
+    }
+    if (assignmentConfig.class && $("studentClass")) {
+      $("studentClass").value = assignmentConfig.class;
+      $("studentClass").readOnly = true;
+    }
+    return true;
+  }
 
   async function detectContentMode() {
     try {
@@ -214,10 +249,12 @@
         apiContent.enabled = true;
         apiContent.manifestUrl = services.manifestUrl;
         apiContent.variantBaseUrl = services.variantBaseUrl;
+        return;
       }
+      throw new Error(SERVICE_UNAVAILABLE_MESSAGE);
     } catch (error) {
-      console.warn("content mode detection failed, fallback to static", error);
-      apiContent.enabled = false;
+      console.warn("content mode detection failed", error);
+      throw new Error(SERVICE_UNAVAILABLE_MESSAGE);
     }
   }
 
@@ -449,69 +486,6 @@
     );
   }
 
-  // ========= scoring (для результата) =========
-  function checkOne(task, studentAnswerRaw) {
-    const maxPts = Number(task.points ?? 1);
-
-    if (task.checkStrict) {
-      const acceptable = (task.answers || []).map(normalizeStrictSequence).filter(Boolean);
-      const actual = normalizeStrictSequence(studentAnswerRaw);
-      if (!actual || !acceptable.length) return { ok: false, earned: 0 };
-
-      for (const expected of acceptable) {
-        if (actual === expected) {
-          return { ok: true, earned: maxPts };
-        }
-        if (maxPts >= 2 && actual.length === expected.length) {
-          let mismatches = 0;
-          for (let i = 0; i < expected.length; i += 1) {
-            if (expected[i] !== actual[i]) mismatches += 1;
-          }
-          if (mismatches > 0 && mismatches <= 2) {
-            return { ok: false, earned: 1 };
-          }
-        }
-      }
-      return { ok: false, earned: 0 };
-    }
-
-    const acceptable = (task.answers || []).map(normalizeAnswer);
-    const a = normalizeAnswer(studentAnswerRaw);
-    if (!a) return { ok: false, earned: 0 };
-    const ok = acceptable.includes(a);
-    return { ok, earned: ok ? maxPts : 0 };
-  }
-
-  function calcScore() {
-    const tasks = variantData?.tasks || [];
-    let earned = 0, max = 0;
-    const perTask = [];
-
-    for (const task of tasks) {
-      const pts = Number(task.points ?? 1);
-      max += pts;
-
-      const studentRaw = answersMap[String(task.id)] ?? "";
-      const res = checkOne(task, studentRaw);
-      earned += res.earned;
-
-      perTask.push({
-        id: task.id,
-        earned: res.earned,
-        max: pts,
-        ok: res.ok,
-        student: safeText(studentRaw),
-        accepted: (task.answers || []).slice(0),
-      });
-    }
-
-    const percent = max > 0 ? Math.round((earned / max) * 100) : 0;
-    const mark = root.KodislovoControlGrading
-      ? root.KodislovoControlGrading.markFromScore(earned, max, variantMeta, currentVariantEntry)
-      : null;
-    return { earned, max, percent, perTask, mark };
-  }
-
   // ========= timer =========
   function formatTime(sec) {
     const s = Math.max(0, Math.floor(sec));
@@ -718,10 +692,8 @@
   }
 
   function buildResultPayload() {
-    // В API-режиме балл и perTask считает сервер (ответов у клиента нет).
-    const score = apiContent.enabled
-      ? { max: 0, earned: 0, percent: 0, mark: null, perTask: [] }
-      : calcScore();
+    // Балл и детализацию всегда считает сервер; клиент отправляет только ответы ученика.
+    const score = { max: 0, earned: 0, percent: 0, mark: null, perTask: [] };
     return {
       schema: "kodislovo.result.v1",
       createdAt: nowIso(),
@@ -1133,7 +1105,9 @@
     stickyCollapsed = false;
     currentStickyBlockKey = "";
 
-    if (apiContent.enabled) {
+    if (assignmentConfig) {
+      variantData = deepClone(assignmentConfig.variant || {});
+    } else if (apiContent.enabled) {
       // Сервер отдаёт собранный вариант БЕЗ правильных ответов; проверка — на сервере.
       variantData = await loadVariantFromApi(currentVariantId);
     } else if (entry.compose) {
@@ -1212,7 +1186,22 @@
     try {
       const payload = buildResultPayload();
       const services = await loadBackendServices();
-      const response = await postJson(services.submitUrl, payload);
+      const keyName = `kodislovo_submission_key:${assignmentPublicId || subject}:${currentVariantId}`;
+      let idempotencyKey = localStorage.getItem(keyName) || "";
+      if (!idempotencyKey) {
+        idempotencyKey = root.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        localStorage.setItem(keyName, idempotencyKey);
+      }
+      const response = await postJson(
+        services.submitUrl,
+        payload,
+        assignmentConfig ? { "Idempotency-Key": idempotencyKey } : {}
+      );
+      if (assignmentConfig && response?.submissionId) {
+        lastSubmissionId = response.submissionId;
+        localStorage.setItem(`kodislovo_last_submission:${assignmentPublicId}`, lastSubmissionId);
+        localStorage.removeItem(keyName);
+      }
 
       // ✅ после успешной отправки — удаляем временное автосохранение
       clearLocalProgress();
@@ -1220,20 +1209,22 @@
       // оставляем экран в состоянии "завершено" (в памяти)
       applyFinishedState();
 
-      // В API-режиме балл приходит с сервера; иначе считаем локально (статика).
       const serverGrading = response && response.gradedBy === "server" ? response.grading : null;
-      const score = serverGrading
-        ? {
-            earned: serverGrading.earnedPoints,
-            max: serverGrading.maxPoints,
-            percent: serverGrading.percent,
-            mark: serverGrading.mark,
-          }
-        : calcScore();
+      const earned = Number(serverGrading?.earnedPoints);
+      const maximum = Number(serverGrading?.maxPoints);
+      if (!serverGrading || !Number.isFinite(earned) || !Number.isFinite(maximum)) {
+        throw new Error(SERVICE_UNAVAILABLE_MESSAGE);
+      }
+      const score = {
+        earned,
+        max: maximum,
+        percent: maximum > 0 ? Math.round((earned / maximum) * 100) : 0,
+        mark: null,
+      };
       showSubmitSuccessOverlay(score);
     } catch (err) {
       console.error(err);
-      alert("Не удалось отправить работу. Проверьте интернет и попробуйте ещё раз.\n\n" + String(err.message || err));
+      alert(SERVICE_UNAVAILABLE_MESSAGE);
       if (btn) { btn.disabled = false; }
     } finally {
       if (btn) btn.textContent = prevText || "Отправить";
@@ -1287,7 +1278,12 @@
         cls,
         variant: currentVariantId,
         code,
+        submissionId: lastSubmissionId,
       });
+      if (assignmentConfig) {
+        localStorage.removeItem(`kodislovo_last_submission:${assignmentPublicId}`);
+        lastSubmissionId = "";
+      }
 
       // ✅ сброс: очищаем локальный прогресс и стартуем заново
       clearLocalProgress();
@@ -1410,8 +1406,11 @@
       if (event.target === $("submitSuccessOverlay")) hideSubmitSuccessOverlay();
     });
 
-    await detectContentMode();
-    await loadManifest();
+    const isAssignment = await loadAssignmentMode();
+    if (!isAssignment) {
+      await detectContentMode();
+      await loadManifest();
+    }
     renderVariantCards();
     if (currentVariantEntry) {
       await selectVariant(currentVariantEntry, { force: true });
@@ -1419,14 +1418,14 @@
       throw new Error("Не выбран вариант в manifest.json.");
     }
 
-    const resetFromUrl = safeText(getParam("reset")).toLowerCase();
-    if (resetFromUrl && $("resetCode")) {
-      $("resetCode").value = resetFromUrl;
-    }
   }
 
   init().catch((err) => {
     console.error(err);
+    if (assignmentPublicId || safeText(err?.message) === SERVICE_UNAVAILABLE_MESSAGE) {
+      alert(SERVICE_UNAVAILABLE_MESSAGE);
+      return;
+    }
     const hint =
       `Subject: ${subject}\n` +
       `Ожидаем manifest:\n${base}manifest.json\n` +
