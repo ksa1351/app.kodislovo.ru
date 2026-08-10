@@ -254,6 +254,8 @@
 }
 
 .kd-task-navigation {
+  width: 100%;
+  min-width: 0;
   margin: 18px 0 14px;
   padding: 14px;
   border: 1px solid var(--line);
@@ -285,7 +287,7 @@
 
 .kd-task-navigation-status {
   display: inline-grid;
-  grid-template-columns: 34px minmax(96px, auto) 34px;
+  grid-template-columns: 42px minmax(96px, auto) 42px;
   align-items: center;
   gap: 8px;
   text-align: center;
@@ -296,8 +298,8 @@
 }
 
 .kd-task-nav-arrow {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
@@ -342,6 +344,7 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   touch-action: pan-x;
+  max-width: 100%;
 }
 
 .kd-task-navigation.is-text-practice .kd-task-pills::-webkit-scrollbar {
@@ -487,6 +490,28 @@
 
   .kd-task-navigation-status {
     align-self: stretch;
-    grid-template-columns: 38px 1fr 38px;
+    grid-template-columns: 44px 1fr 44px;
+  }
+
+  .kd-task-nav-arrow {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .kd-task-navigation {
+    border-radius: 16px;
+    padding: 10px;
+  }
+
+  .kd-task-navigation-head {
+    gap: 8px;
+  }
+
+  .kd-task-pill {
+    min-width: 42px;
+    min-height: 42px;
+    padding-inline: 8px;
   }
 }
