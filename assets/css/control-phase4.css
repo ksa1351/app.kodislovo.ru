@@ -267,7 +267,7 @@
 
 .kd-task-navigation-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
@@ -281,6 +281,48 @@
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.kd-task-navigation-status {
+  display: inline-grid;
+  grid-template-columns: 34px minmax(96px, auto) 34px;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.kd-task-navigation-status span {
+  white-space: nowrap;
+}
+
+.kd-task-nav-arrow {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.kd-task-nav-arrow:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ks-primary) 42%, var(--line));
+  background: color-mix(in srgb, var(--ks-primary-soft) 72%, var(--card));
+}
+
+.kd-task-nav-arrow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.kd-task-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .kd-task-pills {
@@ -297,7 +339,13 @@
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   padding: 2px 2px 8px;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-x;
+}
+
+.kd-task-navigation.is-text-practice .kd-task-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .kd-task-pill {
@@ -430,5 +478,15 @@
   .kd-task-navigation {
     margin-inline: -2px;
     padding: 12px;
+  }
+
+  .kd-task-navigation-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .kd-task-navigation-status {
+    align-self: stretch;
+    grid-template-columns: 38px 1fr 38px;
   }
 }

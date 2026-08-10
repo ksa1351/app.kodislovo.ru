@@ -900,7 +900,15 @@
     navigation.innerHTML = `
       <div class="kd-task-navigation-head">
         <strong>${textPractice ? "Тексты" : "Задания"}</strong>
-        <span>${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>
+        ${textPractice ? `
+          <div class="kd-task-navigation-status">
+            <button type="button" class="kd-task-nav-arrow" data-unit-step="-1"
+              aria-label="Предыдущий текст" ${activeUnitIndex === 0 ? "disabled" : ""}>←</button>
+            <span aria-live="polite">${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>
+            <button type="button" class="kd-task-nav-arrow" data-unit-step="1"
+              aria-label="Следующий текст" ${activeUnitIndex >= units.length - 1 ? "disabled" : ""}>→</button>
+          </div>
+        ` : `<span>${activeLabel} ${activeUnitIndex + 1} из ${units.length}</span>`}
       </div>
       <div class="kd-task-pills">${pills}</div>
     `;
@@ -908,21 +916,39 @@
     const pillStrip = navigation.querySelector(".kd-task-pills");
     const activePill = navigation.querySelector(".kd-task-pill.is-active");
     if (textPractice && pillStrip && activePill) {
-      pillStrip.scrollLeft = Math.max(
-        0,
-        activePill.offsetLeft - (pillStrip.clientWidth - activePill.offsetWidth) / 2
-      );
+      const centerActivePill = () => {
+        pillStrip.scrollLeft = Math.max(
+          0,
+          activePill.offsetLeft - (pillStrip.clientWidth - activePill.offsetWidth) / 2
+        );
+      };
+      if (typeof root.requestAnimationFrame === "function") {
+        root.requestAnimationFrame(centerActivePill);
+      } else {
+        centerActivePill();
+      }
     }
+
+    const activateUnit = (unitIndex) => {
+      if (!Number.isFinite(unitIndex) || unitIndex < 0 || unitIndex >= units.length) return;
+      if (unitIndex === activeUnitIndex) return;
+      currentTaskIndex = units[unitIndex]?.taskIndices?.[0] ?? currentTaskIndex;
+      saveProgress();
+      renderCurrentTask();
+      const target = textPractice ? $("stickyTextWrap") : $("taskOne");
+      if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: "smooth" });
+    };
 
     navigation.querySelectorAll(".kd-task-pill").forEach((pill) => {
       pill.addEventListener("click", () => {
         const unitIndex = Number(pill.getAttribute("data-unit-index"));
-        if (!Number.isFinite(unitIndex) || unitIndex === activeUnitIndex) return;
-        currentTaskIndex = units[unitIndex]?.taskIndices?.[0] ?? currentTaskIndex;
-        saveProgress();
-        renderCurrentTask();
-        const target = textPractice ? $("stickyTextWrap") : $("taskOne");
-        if (target) window.scrollTo({ top: target.offsetTop - 80, behavior: "smooth" });
+        activateUnit(unitIndex);
+      });
+    });
+
+    navigation.querySelectorAll(".kd-task-nav-arrow[data-unit-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        activateUnit(activeUnitIndex + Number(button.getAttribute("data-unit-step")));
       });
     });
   }
