@@ -917,9 +917,13 @@
     const activePill = navigation.querySelector(".kd-task-pill.is-active");
     if (textPractice && pillStrip && activePill) {
       const centerActivePill = () => {
+        const stripRect = pillStrip.getBoundingClientRect();
+        const pillRect = activePill.getBoundingClientRect();
         pillStrip.scrollLeft = Math.max(
           0,
-          activePill.offsetLeft - (pillStrip.clientWidth - activePill.offsetWidth) / 2
+          pillStrip.scrollLeft
+            + (pillRect.left - stripRect.left)
+            - (stripRect.width - pillRect.width) / 2
         );
       };
       if (typeof root.requestAnimationFrame === "function") {
