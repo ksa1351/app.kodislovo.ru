@@ -57,7 +57,7 @@
       "type": "control",
       "zun": "habit",
       "instruction": "Выполни итоговую работу по теме.",
-      "resource": "/control/control.html?subject=russian",
+      "resource": "/control/",
       "minScore": 70,
       "required": true
     },
