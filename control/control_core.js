@@ -1426,7 +1426,7 @@
     const format = getFormatFilter();
     const formatNavWrap = $("controlFormatNav");
     if (formatNavWrap) {
-      formatNavWrap.classList.toggle("kd-hidden", subject !== "russian");
+      formatNavWrap.classList.toggle("kd-hidden", subject !== "russian" || Boolean(assignmentPublicId));
     }
     const formatNav = document.querySelectorAll("[data-format-nav]");
     formatNav.forEach((link) => {
