@@ -40,15 +40,14 @@
     <section class="kd-section" aria-labelledby="published-title">
       <div class="kd-section-head">
         <h2 id="published-title">Опубликованные работы</h2>
-        <p>Русский язык</p>
+        <p>Список обновляется автоматически после публикации учителем.</p>
       </div>
-      <div class="kd-card-grid kd-card-grid-compact">
-        <a class="kd-card kd-card-live kd-card-control" href="control.html?assignment=945eb6fa31fdfbf42ddc8a109e055a4f7d510021">
-          <div class="kd-card-head"><span class="kd-kicker">ОГЭ · задания 2–3</span><span class="kd-status kd-status-live">Доступно</span></div>
-          <strong>Тренажёр ОГЭ</strong>
-          <small>80 текстов, задания 2 и 3 с полями для ответов. Время выполнения — 80 минут.</small>
-        </a>
+      <div id="publishedControls" class="kd-card-grid kd-card-grid-compact" aria-live="polite" aria-busy="true">
+        <div class="kd-panel">
+          <strong>Загружаем опубликованные работы…</strong>
+        </div>
       </div>
+      <noscript><p class="kd-panel">Для загрузки списка контрольных включите JavaScript в браузере.</p></noscript>
     </section>
 
     <section class="kd-section">
@@ -67,5 +66,6 @@
     © Кодислово · контрольные · Обновлено август 2026
   </footer>
   <script src="../assets/js/theme.js"></script>
+  <script src="./control_catalog.js?v=1"></script>
 </body>
 </html>

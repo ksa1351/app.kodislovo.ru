@@ -3,11 +3,20 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
-const publishedId = "945eb6fa31fdfbf42ddc8a109e055a4f7d510021";
-
 const controlIndex = read("control/index.html");
-if (!controlIndex.includes(`control.html?assignment=${publishedId}`)) {
-  throw new Error("Раздел контрольных не содержит ссылку на опубликованную работу");
+if (!controlIndex.includes('id="publishedControls"') || !controlIndex.includes("control_catalog.js?v=1")) {
+  throw new Error("Раздел контрольных не подключает автоматический каталог");
+}
+if (/control\.html\?assignment=[a-z0-9]{20,}/i.test(controlIndex)) {
+  throw new Error("Опубликованные работы не должны быть прописаны в HTML вручную");
+}
+
+const catalogScript = read("control/control_catalog.js");
+if (!catalogScript.includes("/api/public/assignments")) {
+  throw new Error("Каталог не загружает безопасный публичный список");
+}
+if (!catalogScript.includes('target.searchParams.set("assignment", id)')) {
+  throw new Error("Карточки каталога не формируют assignment-ссылки");
 }
 
 const directoryLinks = [
