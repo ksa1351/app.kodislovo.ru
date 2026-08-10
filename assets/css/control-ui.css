@@ -33,6 +33,7 @@
 }
 
 html, body { height: 100%; }
+html { overflow-x: clip; }
 * { box-sizing: border-box; }
 
 body {
@@ -48,9 +49,23 @@ body {
 a { color: inherit; }
 
 .kd-wrap {
+  width: 100%;
+  min-width: 0;
   max-width: var(--max);
   margin: 0 auto;
-  padding: var(--pad);
+  padding-top: var(--pad);
+  padding-right: max(var(--pad), env(safe-area-inset-right));
+  padding-bottom: var(--pad);
+  padding-left: max(var(--pad), env(safe-area-inset-left));
+}
+
+.kd-panel,
+.kd-stage,
+.kd-textbox,
+.kd-task,
+#taskOne {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .kd-topbar {
@@ -285,6 +300,22 @@ a { color: inherit; }
   padding: 18px;
   line-height: 1.65;
   color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.kd-textbox img,
+.kd-task img {
+  max-width: 100%;
+  height: auto;
+}
+
+.kd-textbox table,
+.kd-task table,
+.kd-textbox pre,
+.kd-task pre {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .kd-reading-panel-head {
@@ -334,12 +365,14 @@ a { color: inherit; }
   margin: 10px 0 0 0;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .kd-task .q {
   margin-top: 10px;
   line-height: 1.6;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .kd-answer-label {
@@ -385,6 +418,16 @@ a { color: inherit; }
   .kd-actions { grid-template-columns: 1fr; }
 }
 
+/* Планшет и раскрытый складной экран. */
+@media (max-width: 1024px) {
+  :root { --pad: 20px; }
+
+  .kd-task,
+  .kd-textbox {
+    font-size: 17px;
+  }
+}
+
 @media (max-width: 860px) {
   .kd-actions-row {
     grid-template-columns: 1fr 1fr minmax(180px, 1fr) 1fr;
@@ -392,7 +435,7 @@ a { color: inherit; }
 }
 
 @media (max-width: 760px) {
-  .kd-wrap { padding: 16px; }
+  :root { --pad: 16px; }
   .kd-grid { grid-template-columns: 1fr; }
   .kd-topbar { padding: 10px 0; }
   .kd-header,
@@ -400,13 +443,49 @@ a { color: inherit; }
   .kd-stage { padding: 18px; }
 }
 
+/* Обычный телефон и узкая половина складного экрана. */
 @media (max-width: 620px) {
   .kd-reset-row,
   .kd-actions-row {
     grid-template-columns: 1fr;
   }
+
+  .kd-reading-panel-head {
+    align-items: stretch;
+  }
+
+  .kd-reading-panel-head .kd-btn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
   .kd-nav .kd-btn { width: 100%; }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --pad: 12px;
+    --radius: 18px;
+  }
+
+  .kd-header,
+  .kd-panel,
+  .kd-stage {
+    padding: 14px;
+  }
+
+  .kd-task,
+  .kd-textbox {
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  .kd-task h3 {
+    font-size: 19px;
+  }
+
+  .kd-title {
+    font-size: clamp(24px, 8vw, 30px);
+  }
 }
