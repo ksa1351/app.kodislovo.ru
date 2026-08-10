@@ -29,6 +29,13 @@
 
       const APP_ID = 54713808;
       const REDIRECT_URL = "https://ksa1351.github.io/app.kodislovo.ru/auth/vk/callback.html";
+      const CALLBACK_STORAGE_PREFIX = "kodislovo.vk.callback.";
+      const PRODUCTION_CALLBACK = "https://bbae5ggs5hjqgfo6htv8.containers.yandexcloud.net/auth/vk/callback";
+      const callbackByPanelOrigin = new Map([
+        ["https://bbae5ggs5hjqgfo6htv8.containers.yandexcloud.net", PRODUCTION_CALLBACK],
+        ["http://127.0.0.1:5500", "http://127.0.0.1:8010/auth/vk/callback"],
+        ["http://localhost:5500", "http://127.0.0.1:8010/auth/vk/callback"]
+      ]);
       const source = new URL(window.location.href);
       const state = source.searchParams.get("state") || "";
       const codeChallenge = source.searchParams.get("code_challenge") || "";
@@ -45,13 +52,26 @@
         return;
       }
 
+      let panelOrigin = "";
+      try {
+        panelOrigin = document.referrer ? new URL(document.referrer).origin : "";
+      } catch (_) {
+        panelOrigin = "";
+      }
+      const backendCallback = callbackByPanelOrigin.get(panelOrigin) || PRODUCTION_CALLBACK;
+      try {
+        localStorage.setItem(`${CALLBACK_STORAGE_PREFIX}${state}`, backendCallback);
+      } catch (_) {
+        // The callback page has a safe production fallback when storage is unavailable.
+      }
+
       const VKID = window.VKIDSDK;
       VKID.Config.init({
         app: APP_ID,
         redirectUrl: REDIRECT_URL,
         state,
         codeChallenge,
-        mode: VKID.ConfigAuthMode.InNewWindow,
+        mode: VKID.ConfigAuthMode.Redirect,
         responseMode: VKID.ConfigResponseMode.Redirect,
         source: VKID.ConfigSource.LOWCODE,
         scope: ""
@@ -60,10 +80,10 @@
       button.disabled = false;
       button.addEventListener("click", () => {
         button.disabled = true;
-        status.textContent = "Открываем VK ID…";
+        status.textContent = "Переходим в VK ID…";
         VKID.Auth.login().catch(() => {
           button.disabled = false;
-          status.textContent = "Вход не завершён. Разрешите всплывающее окно и попробуйте ещё раз.";
+          status.textContent = "Не удалось открыть VK ID. Обновите страницу и попробуйте ещё раз.";
         });
       });
     })();
