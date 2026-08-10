@@ -18,22 +18,51 @@
 <body>
   <main>
     <h1>Возвращаемся в «Кодислово»…</h1>
-    <p id="status">Завершаем вход через VK ID в локальной учительской панели.</p>
-    <a id="continueLink" href="http://127.0.0.1:8010/auth/vk/callback">Продолжить вручную</a>
+    <p id="status">Завершаем вход через VK ID в учительской панели.</p>
+    <a id="continueLink" href="https://bbae5ggs5hjqgfo6htv8.containers.yandexcloud.net/auth/vk/callback">Продолжить вручную</a>
   </main>
   <script>
     (() => {
       "use strict";
 
+      const CALLBACK_STORAGE_PREFIX = "kodislovo.vk.callback.";
+      const PRODUCTION_CALLBACK = "https://bbae5ggs5hjqgfo6htv8.containers.yandexcloud.net/auth/vk/callback";
+      const allowedCallbacks = new Set([
+        PRODUCTION_CALLBACK,
+        "http://127.0.0.1:8010/auth/vk/callback"
+      ]);
       const allowed = new Set(["code", "state", "device_id", "payload", "error", "error_description"]);
       const source = new URL(window.location.href);
-      const target = new URL("http://127.0.0.1:8010/auth/vk/callback");
+      const hashParams = new URLSearchParams(source.hash.replace(/^#/, ""));
+      let state = source.searchParams.get("state") || hashParams.get("state") || "";
+
+      if (!state) {
+        const rawPayload = source.searchParams.get("payload") || hashParams.get("payload") || "";
+        if (rawPayload) {
+          try {
+            state = String(JSON.parse(rawPayload).state || "");
+          } catch (_) {
+            state = "";
+          }
+        }
+      }
+
+      let callbackUrl = PRODUCTION_CALLBACK;
+      if (state) {
+        try {
+          const storedCallback = localStorage.getItem(`${CALLBACK_STORAGE_PREFIX}${state}`) || "";
+          if (allowedCallbacks.has(storedCallback)) callbackUrl = storedCallback;
+          localStorage.removeItem(`${CALLBACK_STORAGE_PREFIX}${state}`);
+        } catch (_) {
+          callbackUrl = PRODUCTION_CALLBACK;
+        }
+      }
+      const target = new URL(callbackUrl);
 
       for (const [key, value] of source.searchParams) {
         if (allowed.has(key)) target.searchParams.append(key, value);
       }
 
-      const hashParams = new URLSearchParams(source.hash.replace(/^#/, ""));
       for (const [key, value] of hashParams) {
         if (allowed.has(key) && !target.searchParams.has(key)) {
           target.searchParams.append(key, value);
