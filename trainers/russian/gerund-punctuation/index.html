@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Обособление деепричастий — Кодислово</title>
+  <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-08-22-2" />
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-08-22-1" />
+  <link rel="stylesheet" href="./gerund-punctuation.css?v=2026-08-22-1" />
+</head>
+<body class="trainer-body trainer-mobile-pad">
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo" aria-hidden="true"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>русский язык · 7 класс</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
+  <main class="kd-page trainer-page punctuation-page">
+    <header class="kd-hero">
+      <nav aria-label="Навигация">
+        <ol class="kd-breadcrumbs">
+          <li><a href="../../../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><a href="../index.html">Русский язык</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><a href="../trainer.html?section=grade-7">7 класс</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><span aria-current="page">Обособление деепричастий</span></li>
+        </ol>
+      </nav>
+      <span class="punctuation-eyebrow">Интерактивная пунктуация</span>
+      <h1>Обособление деепричастий и оборотов</h1>
+      <p>Нажимай на места между словами, где должны стоять запятые. В конце можно повторить только трудные предложения.</p>
+    </header>
+
+    <nav class="punctuation-stepper" aria-label="Этапы тренажёра">
+      <a href="#step-start" class="is-active">1. Начало</a>
+      <a href="#step-rule">2. Правило</a>
+      <a href="#step-practice">3. Тренировка</a>
+      <a href="#step-result">4. Итог</a>
+    </nav>
+
+    <section class="kd-section" id="step-start" aria-labelledby="startTitle">
+      <div class="kd-panel punctuation-start-panel">
+        <div>
+          <span class="punctuation-section-kicker">Перед началом</span>
+          <h2 id="startTitle">Кто выполняет задания?</h2>
+          <p>Имя используется только для приветствия и сохранения прогресса в этом браузере.</p>
+        </div>
+        <div class="punctuation-start-controls">
+          <label class="field" for="studentName">
+            <span class="label">Имя ученика</span>
+            <input id="studentName" class="input" type="text" maxlength="40" autocomplete="name" placeholder="Например: Матвей" />
+          </label>
+          <button id="startBtn" class="kd-button" type="button">Начать тренировку</button>
+        </div>
+        <p id="resumeHint" class="punctuation-resume-hint" hidden></p>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-rule" aria-labelledby="ruleTitle">
+      <div class="kd-section-head">
+        <h2 id="ruleTitle">Памятка перед стартом</h2>
+        <p>Определи границы добавочного действия, а затем проверь союзы и устойчивые выражения.</p>
+      </div>
+      <div class="punctuation-rule-grid">
+        <article class="kd-panel punctuation-rule-card">
+          <span class="punctuation-rule-mark">,</span>
+          <h3>Одиночное деепричастие</h3>
+          <p>Обычно обособляется: <em>Мальчик, улыбнувшись, вошёл.</em></p>
+        </article>
+        <article class="kd-panel punctuation-rule-card">
+          <span class="punctuation-rule-mark">, … ,</span>
+          <h3>Деепричастный оборот</h3>
+          <p>Выделяется целиком: <em>Мальчик, открыв дверь, вошёл.</em></p>
+        </article>
+        <article class="kd-panel punctuation-rule-card">
+          <span class="punctuation-rule-mark">и</span>
+          <h3>Однородные обороты</h3>
+          <p>Одиночный союз «и» не разделяем: <em>встав и открыв дверь</em>.</p>
+        </article>
+        <article class="kd-panel punctuation-rule-card">
+          <span class="punctuation-rule-mark">∅</span>
+          <h3>Фразеологизмы</h3>
+          <p>Запятые не нужны: <em>работать спустя рукава</em>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-practice" aria-label="Тренировка" hidden>
+      <div class="kd-panel punctuation-practice-panel">
+        <div class="trainer-score-bar" aria-live="polite">
+          <div>
+            <strong id="taskProgress">Задание 1 из 16</strong>
+            <span id="studentGreeting">Расставь запятые.</span>
+          </div>
+          <div class="trainer-score-pills">
+            <span class="trainer-score-pill" id="levelPill">Уровень 1</span>
+            <span class="trainer-score-pill ok" id="scorePill">Верно: 0</span>
+          </div>
+        </div>
+
+        <div class="punctuation-progress-track" role="progressbar" aria-label="Прогресс тренировки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="progressBar"></span>
+        </div>
+
+        <div class="punctuation-task">
+          <span class="punctuation-instruction">Нажми на кружок после слова, чтобы поставить или убрать запятую</span>
+          <div id="sentenceEditor" class="punctuation-sentence" aria-label="Предложение для расстановки запятых"></div>
+          <div class="kd-actions punctuation-task-actions">
+            <button id="checkBtn" class="kd-button" type="button">Проверить</button>
+            <button id="clearBtn" class="kd-button kd-button-secondary" type="button">Убрать запятые</button>
+            <button id="nextBtn" class="kd-button kd-button-secondary" type="button" hidden>Следующее</button>
+          </div>
+          <div id="feedback" class="punctuation-feedback" role="status" aria-live="polite" hidden>
+            <strong id="feedbackTitle"></strong>
+            <p id="feedbackSentence"></p>
+            <p id="feedbackRule"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-result" aria-labelledby="resultTitle" hidden>
+      <div class="kd-panel punctuation-result-panel">
+        <span class="punctuation-section-kicker">Тренировка завершена</span>
+        <h2 id="resultTitle">Результат</h2>
+        <div class="punctuation-result-score"><strong id="resultPercent">0%</strong><span id="resultMessage"></span></div>
+        <div class="punctuation-result-grid">
+          <div><strong id="resultCorrect">0</strong><span>верно</span></div>
+          <div><strong id="resultErrors">0</strong><span>ошибок</span></div>
+          <div><strong id="resultResolved">0</strong><span>исправлено</span></div>
+        </div>
+        <div class="kd-actions punctuation-result-actions">
+          <button id="retryBtn" class="kd-button" type="button">Повторить ошибки</button>
+          <button id="newSessionBtn" class="kd-button kd-button-secondary" type="button">Новая тренировка</button>
+          <button id="downloadBtn" class="kd-button kd-button-secondary" type="button">Скачать результат</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="trainer-mobile-bar" aria-label="Быстрые действия">
+    <span id="mobileStatus" class="trainer-mobile-bar-status">Готов к тренировке</span>
+    <button id="mobileActionBtn" class="kd-button" type="button">Начать</button>
+  </div>
+
+  <script src="../../../assets/js/theme.js"></script>
+  <script src="../../../assets/js/trainer-shell.js?v=2026-08-22-1"></script>
+  <script src="./gerund-punctuation-core.js?v=2026-08-22-1"></script>
+  <script src="./gerund-punctuation.js?v=2026-08-22-1"></script>
+</body>
+</html>

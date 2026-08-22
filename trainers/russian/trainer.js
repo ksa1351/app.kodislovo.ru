@@ -15,9 +15,9 @@
     "grade-7": {
       title: "7 класс",
       lead: "Причастия, деепричастия, наречия, служебные части речи и пунктуация.",
-      items: ["Образование деепричастий", "Причастный оборот", "Деепричастный оборот", "Наречие", "Предлоги, союзы, частицы"],
+      items: ["Образование деепричастий", "Обособление деепричастий и деепричастных оборотов", "Причастный оборот", "Наречие", "Предлоги, союзы, частицы"],
       status: "partial",
-      callout: "Уже доступен тренажер по образованию деепричастий. Остальные темы раздела готовятся."
+      callout: "Уже доступны тренажеры по образованию деепричастий и постановке запятых. Остальные темы раздела готовятся."
     },
     "grade-8": {
       title: "8 класс",
@@ -75,6 +75,7 @@
 
   const sectionPrimaryLink = document.getElementById("sectionPrimaryLink");
   const gerundFormationLink = document.getElementById("gerundFormationLink");
+  const gerundPunctuationLink = document.getElementById("gerundPunctuationLink");
   const summaryTrainerLink = document.getElementById("summaryTrainerLink");
   const readingTrainerLink = document.getElementById("readingTrainerLink");
   const sectionCallout = document.getElementById("sectionCallout");
@@ -101,6 +102,7 @@
   } else if (key === "grade-7") {
     sectionPrimaryLink.hidden = true;
     gerundFormationLink.hidden = false;
+    gerundPunctuationLink.hidden = false;
   } else if (key === "oge") {
     sectionPrimaryLink.textContent = "Открыть контрольную ОГЭ";
     summaryTrainerLink.hidden = false;

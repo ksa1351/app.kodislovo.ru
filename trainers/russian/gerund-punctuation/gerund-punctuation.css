@@ -1,0 +1,359 @@
+.punctuation-page {
+  --punctuation-accent: var(--ks-russian);
+}
+
+.punctuation-eyebrow,
+.punctuation-section-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--punctuation-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.punctuation-stepper {
+  position: sticky;
+  top: calc(var(--trainer-topbar-h, 64px) + 8px);
+  z-index: 9;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 18px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.punctuation-stepper a {
+  padding: 10px 12px;
+  border-radius: 11px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.punctuation-stepper a.is-active {
+  color: var(--text);
+  background: var(--primary-soft);
+}
+
+.punctuation-start-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .75fr);
+  gap: 26px;
+  align-items: end;
+}
+
+.punctuation-start-panel h2,
+.punctuation-result-panel h2 {
+  margin-bottom: 8px;
+}
+
+.punctuation-start-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.punctuation-start-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.punctuation-resume-hint {
+  grid-column: 1 / -1;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--text) !important;
+}
+
+.punctuation-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.punctuation-rule-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+.punctuation-rule-card h3 {
+  margin: 38px 0 10px;
+  font-family: var(--ks-font-serif);
+  font-size: 23px;
+}
+
+.punctuation-rule-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.punctuation-rule-card em {
+  color: var(--text);
+}
+
+.punctuation-rule-mark {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  color: color-mix(in srgb, var(--punctuation-accent) 50%, transparent);
+  font-family: var(--ks-font-serif);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.punctuation-practice-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.punctuation-practice-panel .trainer-score-bar {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.punctuation-progress-track {
+  height: 5px;
+  background: var(--card-soft);
+}
+
+.punctuation-progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--punctuation-accent), var(--primary));
+  transition: width .25s ease;
+}
+
+.punctuation-task {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 58px) 24px;
+  text-align: center;
+}
+
+.punctuation-instruction {
+  display: block;
+  max-width: 650px;
+  margin: 0 auto 28px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.punctuation-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  row-gap: 18px;
+  min-height: 130px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--card-soft) 72%, transparent);
+  font-family: var(--ks-font-serif);
+  font-size: clamp(23px, 4.5vw, 38px);
+  line-height: 1.45;
+}
+
+.punctuation-word-unit {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.punctuation-word-unit:last-child::after {
+  content: ".";
+}
+
+.punctuation-gap {
+  width: 28px;
+  min-width: 28px;
+  height: 32px;
+  margin: 0 4px;
+  padding: 0;
+  border: 1px dashed color-mix(in srgb, var(--muted) 52%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: 700 18px/1 var(--ks-font-sans);
+  cursor: pointer;
+}
+
+.punctuation-gap::before {
+  content: "+";
+}
+
+.punctuation-gap:hover,
+.punctuation-gap:focus-visible {
+  border-color: var(--primary);
+  color: var(--primary);
+  outline: none;
+}
+
+.punctuation-gap.is-selected {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--punctuation-accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--punctuation-accent) 14%, var(--card));
+  color: var(--punctuation-accent);
+  font-family: var(--ks-font-serif);
+  font-size: 30px;
+}
+
+.punctuation-gap.is-selected::before {
+  content: ",";
+}
+
+.punctuation-gap:disabled {
+  cursor: default;
+  opacity: .78;
+}
+
+.punctuation-task-actions {
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.punctuation-feedback {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.punctuation-feedback.is-correct {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 10%, var(--card));
+}
+
+.punctuation-feedback.is-wrong {
+  border-color: color-mix(in srgb, var(--warning) 48%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--card));
+}
+
+.punctuation-feedback strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.punctuation-feedback p {
+  margin: 5px 0 0;
+  line-height: 1.55;
+}
+
+.punctuation-feedback p:last-child {
+  color: var(--muted);
+}
+
+.punctuation-result-panel {
+  text-align: center;
+}
+
+.punctuation-result-score {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  margin: 24px 0;
+}
+
+.punctuation-result-score strong {
+  color: var(--punctuation-accent);
+  font-family: var(--ks-font-serif);
+  font-size: clamp(58px, 12vw, 96px);
+  line-height: 1;
+}
+
+.punctuation-result-score span {
+  color: var(--muted);
+}
+
+.punctuation-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 620px;
+  margin: 0 auto 24px;
+}
+
+.punctuation-result-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-soft);
+}
+
+.punctuation-result-grid strong {
+  font-size: 28px;
+}
+
+.punctuation-result-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.punctuation-result-actions {
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .punctuation-stepper {
+    top: calc(var(--trainer-topbar-h, 64px) + 4px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .punctuation-stepper a {
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+
+  .punctuation-start-panel,
+  .punctuation-rule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .punctuation-start-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .punctuation-start-controls .kd-button,
+  .punctuation-task-actions .kd-button,
+  .punctuation-result-actions .kd-button {
+    width: 100%;
+  }
+
+  .punctuation-sentence {
+    justify-content: flex-start;
+    min-height: 150px;
+    padding: 20px 14px;
+    font-size: 25px;
+  }
+
+  .punctuation-result-grid {
+    gap: 8px;
+  }
+
+  .punctuation-result-grid div {
+    padding: 14px 8px;
+  }
+
+  .punctuation-result-grid strong {
+    font-size: 23px;
+  }
+}
