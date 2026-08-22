@@ -1,0 +1,311 @@
+.gerund-page {
+  --gerund-accent: var(--ks-russian);
+}
+
+.gerund-eyebrow,
+.gerund-section-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--gerund-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.gerund-stepper {
+  position: sticky;
+  top: calc(var(--trainer-topbar-h, 64px) + 8px);
+  z-index: 9;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 18px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.gerund-stepper a {
+  padding: 10px 12px;
+  border-radius: 11px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.gerund-stepper a.is-active {
+  color: var(--text);
+  background: var(--primary-soft);
+}
+
+.gerund-start-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr);
+  gap: 26px;
+  align-items: end;
+}
+
+.gerund-start-panel h2,
+.gerund-result-panel h2 {
+  margin-bottom: 8px;
+}
+
+.gerund-start-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.gerund-start-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.gerund-resume-hint {
+  grid-column: 1 / -1;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--text) !important;
+}
+
+.gerund-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.gerund-rule-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+.gerund-rule-card h3 {
+  margin: 34px 0 10px;
+  font-family: var(--ks-font-serif);
+  font-size: 23px;
+}
+
+.gerund-rule-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.gerund-rule-card em {
+  color: var(--text);
+}
+
+.gerund-rule-number {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  color: color-mix(in srgb, var(--gerund-accent) 42%, transparent);
+  font-family: var(--ks-font-serif);
+  font-size: 40px;
+  font-weight: 800;
+}
+
+.gerund-practice-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.gerund-practice-panel .trainer-score-bar {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.gerund-progress-track {
+  height: 5px;
+  background: var(--card-soft);
+}
+
+.gerund-progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gerund-accent), var(--primary));
+  transition: width .25s ease;
+}
+
+.gerund-task {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: clamp(28px, 6vw, 64px) 24px;
+  text-align: center;
+}
+
+.gerund-aspect {
+  display: inline-flex;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--card-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gerund-prompt {
+  margin: 24px 0 8px;
+  color: var(--muted);
+}
+
+.gerund-verb {
+  display: block;
+  margin-bottom: 30px;
+  font-family: var(--ks-font-serif);
+  font-size: clamp(42px, 9vw, 76px);
+  line-height: 1;
+}
+
+.gerund-answer-field {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.gerund-answer-field input {
+  min-height: 54px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.gerund-task-actions {
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.gerund-feedback {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.gerund-feedback.is-correct {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 10%, var(--card));
+}
+
+.gerund-feedback.is-wrong {
+  border-color: color-mix(in srgb, var(--warning) 48%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--card));
+}
+
+.gerund-feedback strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.gerund-feedback p {
+  margin: 5px 0 0;
+  line-height: 1.55;
+}
+
+.gerund-feedback p:last-child {
+  color: var(--muted);
+}
+
+.gerund-result-panel {
+  text-align: center;
+}
+
+.gerund-result-score {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  margin: 24px 0;
+}
+
+.gerund-result-score strong {
+  color: var(--gerund-accent);
+  font-family: var(--ks-font-serif);
+  font-size: clamp(58px, 12vw, 96px);
+  line-height: 1;
+}
+
+.gerund-result-score span {
+  color: var(--muted);
+}
+
+.gerund-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 620px;
+  margin: 0 auto 24px;
+}
+
+.gerund-result-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-soft);
+}
+
+.gerund-result-grid strong {
+  font-size: 28px;
+}
+
+.gerund-result-grid span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.gerund-result-actions {
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .gerund-stepper {
+    top: calc(var(--trainer-topbar-h, 64px) + 4px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gerund-stepper a {
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+
+  .gerund-start-panel,
+  .gerund-rule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gerund-start-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .gerund-start-controls .kd-button,
+  .gerund-task-actions .kd-button,
+  .gerund-result-actions .kd-button {
+    width: 100%;
+  }
+
+  .gerund-result-grid {
+    gap: 8px;
+  }
+
+  .gerund-result-grid div {
+    padding: 14px 8px;
+  }
+
+  .gerund-result-grid strong {
+    font-size: 23px;
+  }
+}

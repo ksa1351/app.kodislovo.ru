@@ -37,6 +37,8 @@
 
 html, body { height: 100%; }
 
+[hidden] { display: none !important; }
+
 body {
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--ks-accent) 18%, transparent), transparent 28rem),

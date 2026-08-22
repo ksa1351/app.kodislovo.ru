@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Образование деепричастий — Кодислово</title>
+  <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-08-22-2" />
+  <link rel="stylesheet" href="../../../assets/css/trainer-shell.css?v=2026-08-22-1" />
+  <link rel="stylesheet" href="./gerund-formation.css?v=2026-08-22-1" />
+</head>
+<body class="trainer-body trainer-mobile-pad">
+  <div class="site-topbar">
+    <div class="site-topbar-inner">
+      <a class="site-brand" href="../index.html">
+        <span class="site-logo" aria-hidden="true"></span>
+        <span>
+          <b>Кодислово</b>
+          <span>русский язык · 7 класс</span>
+        </span>
+      </a>
+      <label class="theme-toggle">
+        <span>Тема</span>
+        <input id="themeToggle" type="checkbox" aria-label="Светлая тема">
+        <span class="theme-switch"><span class="theme-knob"></span></span>
+      </label>
+    </div>
+  </div>
+
+  <main class="kd-page trainer-page gerund-page">
+    <header class="kd-hero">
+      <nav aria-label="Навигация">
+        <ol class="kd-breadcrumbs">
+          <li><a href="../../../index.html">Кодислово</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><a href="../index.html">Русский язык</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><a href="../trainer.html?section=grade-7">7 класс</a><span class="kd-breadcrumbs-sep" aria-hidden="true">/</span></li>
+          <li><span aria-current="page">Образование деепричастий</span></li>
+        </ol>
+      </nav>
+      <span class="gerund-eyebrow">Персональная тренировка</span>
+      <h1>Образование деепричастий</h1>
+      <p>Определи вид глагола, выбери нужный суффикс и запиши нормативную форму. Ошибки можно повторить в конце.</p>
+    </header>
+
+    <nav class="gerund-stepper" aria-label="Этапы тренажёра">
+      <a href="#step-start" class="is-active">1. Начало</a>
+      <a href="#step-rule">2. Правило</a>
+      <a href="#step-practice">3. Тренировка</a>
+      <a href="#step-result">4. Итог</a>
+    </nav>
+
+    <section class="kd-section" id="step-start" aria-labelledby="startTitle">
+      <div class="kd-panel gerund-start-panel">
+        <div>
+          <span class="gerund-section-kicker">Перед началом</span>
+          <h2 id="startTitle">Как тебя зовут?</h2>
+          <p>Имя нужно только для приветствия и локального сохранения прогресса на этом устройстве.</p>
+        </div>
+        <div class="gerund-start-controls">
+          <label class="field" for="studentName">
+            <span class="label">Имя ученика</span>
+            <input id="studentName" class="input" type="text" maxlength="40" autocomplete="name" placeholder="Например: Матвей" />
+          </label>
+          <button id="startBtn" class="kd-button" type="button">Начать тренировку</button>
+        </div>
+        <p id="resumeHint" class="gerund-resume-hint" hidden></p>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-rule" aria-labelledby="ruleTitle">
+      <div class="kd-section-head">
+        <h2 id="ruleTitle">Коротко о правиле</h2>
+        <p>Сначала определи вид глагола, потом обрати внимание на возвратность.</p>
+      </div>
+      <div class="gerund-rule-grid">
+        <article class="kd-panel gerund-rule-card">
+          <span class="gerund-rule-number">01</span>
+          <h3>Несовершенный вид</h3>
+          <p>Что делая? Обычно используются суффиксы <strong>-а/-я</strong>: <em>читать → читая</em>.</p>
+        </article>
+        <article class="kd-panel gerund-rule-card">
+          <span class="gerund-rule-number">02</span>
+          <h3>Совершенный вид</h3>
+          <p>Что сделав? Чаще используются <strong>-в/-вши/-ши</strong>: <em>решить → решив</em>.</p>
+        </article>
+        <article class="kd-panel gerund-rule-card">
+          <span class="gerund-rule-number">03</span>
+          <h3>Возвратная форма</h3>
+          <p>Постфикс сохраняется: <em>улыбаться → улыбаясь, улыбнуться → улыбнувшись</em>.</p>
+        </article>
+        <article class="kd-panel gerund-rule-card">
+          <span class="gerund-rule-number">04</span>
+          <h3>Особые формы</h3>
+          <p>Их нужно запомнить: <em>быть → будучи, прийти → придя</em>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-practice" aria-label="Тренировка" hidden>
+      <div class="kd-panel gerund-practice-panel">
+        <div class="trainer-score-bar" aria-live="polite">
+          <div>
+            <strong id="taskProgress">Задание 1 из 16</strong>
+            <span id="studentGreeting">Работаем внимательно.</span>
+          </div>
+          <div class="trainer-score-pills">
+            <span class="trainer-score-pill" id="levelPill">Уровень 1</span>
+            <span class="trainer-score-pill ok" id="scorePill">Верно: 0</span>
+          </div>
+        </div>
+
+        <div class="gerund-progress-track" role="progressbar" aria-label="Прогресс тренировки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="progressBar"></span>
+        </div>
+
+        <div class="gerund-task">
+          <span id="aspectBadge" class="gerund-aspect">Несовершенный вид</span>
+          <p class="gerund-prompt">Образуй деепричастие от глагола</p>
+          <strong id="verbWord" class="gerund-verb">читать</strong>
+          <label class="field gerund-answer-field" for="answerInput">
+            <span class="label">Твой ответ</span>
+            <input id="answerInput" class="input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Напиши одно слово" />
+          </label>
+          <div class="kd-actions gerund-task-actions">
+            <button id="checkBtn" class="kd-button" type="button">Проверить</button>
+            <button id="nextBtn" class="kd-button kd-button-secondary" type="button" hidden>Следующее</button>
+          </div>
+          <div id="feedback" class="gerund-feedback" role="status" aria-live="polite" hidden>
+            <strong id="feedbackTitle"></strong>
+            <p id="feedbackAnswer"></p>
+            <p id="feedbackRule"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kd-section" id="step-result" aria-labelledby="resultTitle" hidden>
+      <div class="kd-panel gerund-result-panel">
+        <span class="gerund-section-kicker">Тренировка завершена</span>
+        <h2 id="resultTitle">Результат</h2>
+        <div class="gerund-result-score"><strong id="resultPercent">0%</strong><span id="resultMessage"></span></div>
+        <div class="gerund-result-grid">
+          <div><strong id="resultCorrect">0</strong><span>верно</span></div>
+          <div><strong id="resultErrors">0</strong><span>ошибок</span></div>
+          <div><strong id="resultResolved">0</strong><span>исправлено</span></div>
+        </div>
+        <div class="kd-actions gerund-result-actions">
+          <button id="retryBtn" class="kd-button" type="button">Повторить ошибки</button>
+          <button id="newSessionBtn" class="kd-button kd-button-secondary" type="button">Новая тренировка</button>
+          <button id="downloadBtn" class="kd-button kd-button-secondary" type="button">Скачать результат</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="trainer-mobile-bar" aria-label="Быстрые действия">
+    <span id="mobileStatus" class="trainer-mobile-bar-status">Готов к тренировке</span>
+    <button id="mobileActionBtn" class="kd-button" type="button">Начать</button>
+  </div>
+
+  <script src="../../../assets/js/theme.js"></script>
+  <script src="../../../assets/js/trainer-shell.js?v=2026-08-22-1"></script>
+  <script src="./gerund-formation-core.js?v=2026-08-22-1"></script>
+  <script src="./gerund-formation.js?v=2026-08-22-1"></script>
+</body>
+</html>
