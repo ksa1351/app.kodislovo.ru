@@ -1,0 +1,2 @@
+# Preserve the supplied standalone assignments exactly, including line endings.
+assignments/2026-09-18/*.html -text

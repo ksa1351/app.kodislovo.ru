@@ -1,0 +1,267 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>9В · Русский язык</title><style>
+:root{--bg:#f5f7fb;--card:#fff;--accent:#245a91;--text:#1f2937;--muted:#64748b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text);line-height:1.5}
+.wrap{max-width:920px;margin:auto;padding:18px}.hero{background:linear-gradient(135deg,#e8f1fb,#fff);border-left:6px solid var(--accent);padding:20px;border-radius:14px}
+h1{margin:0 0 6px;font-size:26px}.sub{color:#475569}.card{background:#fff;padding:18px;border-radius:14px;margin:14px 0;box-shadow:0 1px 5px rgba(0,0,0,.08)}
+.small{font-size:13px;color:var(--muted)}label{display:block;margin:9px 0}input[type=text],textarea,select{width:100%;padding:10px;border:1px solid #bcc7d4;border-radius:8px;font-size:16px;background:#fff}
+textarea{min-height:140px}.match{display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:center;padding:12px 0;border-top:1px solid #e5e7eb}.match:first-child{border-top:0}
+.desc{font-weight:600}.wordrow{display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center;margin:12px 0}.wordrow b{font-size:17px}
+button{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:16px;cursor:pointer;margin:6px 8px 6px 0}button.secondary{background:#64748b}
+.result{font-size:18px;font-weight:bold;padding:10px}.sticky{position:sticky;bottom:0;background:#fff;padding:10px;border-top:1px solid #ddd}
+@media(max-width:700px){.match,.wordrow{grid-template-columns:1fr}}@media print{.sticky,button{display:none}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
+</style></head><body><div class="wrap">
+<div class="hero"><h1>9В · Русский язык</h1><div class="sub">Повторение: правописание суффиксов слов разных частей речи · 30–35 минут</div></div>
+<div class="card"><label><b>Фамилия, имя</b><input id="student" type="text" placeholder="Введите фамилию и имя"></label><label><b>Класс</b><input id="klass" type="text" value="9В"></label><div class="small">Ответы сохраняются в этом браузере автоматически.</div></div>
+<form id="quiz"><div class="card"><b>1. Запиши слова полностью, вставляя нужный суффикс или букву суффикса.</b><div class="wordrow"><b>ноч..вать</b><input type="text" name="w1" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>совет..вать</b><input type="text" name="w2" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>рассказ..вать</b><input type="text" name="w3" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>испытыв..ть</b><input type="text" name="w4" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>ключ..к</b><input type="text" name="w5" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>замоч..к</b><input type="text" name="w6" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>перевод..ик</b><input type="text" name="w7" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>камен..ик</b><input type="text" name="w8" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>заботл..вый</b><input type="text" name="w9" autocomplete="off" placeholder="Запиши слово полностью"></div><div class="wordrow"><b>доверч..вый</b><input type="text" name="w10" autocomplete="off" placeholder="Запиши слово полностью"></div></div><div class="card"><b>2. Отметь четыре верных объяснения написания.</b><label><input type="checkbox" name="rules" value="r1"> РАЗВЕДЧИК: после Д в суффиксе существительного пишется -ЧИК-.</label><label><input type="checkbox" name="rules" value="r5"> УСИДЧИВЫЙ: в суффиксе -ЧИВ- пишется Е.</label><label><input type="checkbox" name="rules" value="r2"> БАРАБАНЩИК: после Н пишется -ЩИК-, потому что -ЧИК- употребляется после Д, Т, З, С, Ж.</label><label><input type="checkbox" name="rules" value="r3"> ОРЕШЕК: пишется -ЕК-, потому что при изменении слова гласная выпадает: орешка.</label><label><input type="checkbox" name="rules" value="r6"> ДОЖДЛИВЫЙ: в суффиксе -ЛИВ- пишется Е.</label><label><input type="checkbox" name="rules" value="r4"> МЯЧИК: пишется -ИК-, потому что при изменении слова гласная сохраняется: мячика.</label></div><div class="card"><b>3.1. Выбери правильное написание.</b><label><input type="radio" name="q1" value="a"> перебежщик</label><label><input type="radio" name="q1" value="b"> перебежчик</label><label><input type="radio" name="q1" value="c"> перебежчек</label></div><div class="card"><b>3.2. Выбери правильное написание.</b><label><input type="radio" name="q2" value="a"> навязчевый</label><label><input type="radio" name="q2" value="b"> навязчливый</label><label><input type="radio" name="q2" value="c"> навязчивый</label></div><div class="card"><b>3.3. Выбери правильное написание.</b><label><input type="radio" name="q3" value="a"> фонарик</label><label><input type="radio" name="q3" value="b"> фонарек</label><label><input type="radio" name="q3" value="c"> фонарчик</label></div><div class="card"><b>4. Выбери любые три слова из задания 1 и кратко объясни написание суффикса в каждом.</b><textarea name="open" placeholder="Напиши ответ здесь..."></textarea></div></form>
+<div class="card"><h3>Результат</h3><div id="result" class="result">После выполнения нажми «Завершить и проверить».</div><div class="small">Автоматическая часть — до 17 баллов. Открытая часть — до 3 баллов после проверки учителем. Максимум — 20.</div></div>
+<div class="sticky"><button type="button" onclick="checkQuiz()">Завершить и проверить</button><button type="button" class="secondary" onclick="copyResult()">Скопировать результат</button><button type="button" class="secondary" onclick="window.print()">Печать / PDF</button><button type="button" class="secondary" onclick="resetQuiz()">Сбросить</button></div>
+</div><script>
+const KEY="task_"+location.pathname.split("/").pop();
+const answerKey={"w1": {"type": "text", "answer": "ночевать", "points": 1}, "w2": {"type": "text", "answer": "советовать", "points": 1}, "w3": {"type": "text", "answer": "рассказывать", "points": 1}, "w4": {"type": "text", "answer": "испытывать", "points": 1}, "w5": {"type": "text", "answer": "ключик", "points": 1}, "w6": {"type": "text", "answer": "замочек", "points": 1}, "w7": {"type": "text", "answer": "переводчик", "points": 1}, "w8": {"type": "text", "answer": "каменщик", "points": 1}, "w9": {"type": "text", "answer": "заботливый", "points": 1}, "w10": {"type": "text", "answer": "доверчивый", "points": 1}, "rules": {"type": "array", "answer": ["r1", "r2", "r3", "r4"], "points": 4}, "q1": {"answer": "b", "points": 1}, "q2": {"answer": "c", "points": 1}, "q3": {"answer": "a", "points": 1}};
+function normText(v){return String(v||"").trim().toLowerCase().replace(/ё/g,"е").replace(/\s+/g," ")}
+function getVal(name){const es=[...document.querySelectorAll(`[name="${CSS.escape(name)}"]`)];if(!es.length)return"";if(es[0].type==="radio")return(es.find(e=>e.checked)||{}).value||"";if(es[0].type==="checkbox")return es.filter(e=>e.checked).map(e=>e.value);return es[0].value||""}
+function arrEq(a,b){return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&[...a].sort().join("|")===[...b].sort().join("|")}
+function save(){const d={student:student.value,klass:klass.value,fields:{}};document.querySelectorAll("input,textarea,select").forEach(el=>{const k=el.name||el.id;if(!k)return;if(el.type==="radio"){if(el.checked)d.fields[k]=el.value}else if(el.type==="checkbox"){if(!d.fields[k])d.fields[k]=[];if(el.checked)d.fields[k].push(el.value)}else d.fields[k]=el.value});localStorage.setItem(KEY,JSON.stringify(d))}
+function load(){const r=localStorage.getItem(KEY);if(!r)return;const d=JSON.parse(r);student.value=d.student||"";klass.value=d.klass||"9В";Object.entries(d.fields||{}).forEach(([k,v])=>{document.querySelectorAll(`[name="${CSS.escape(k)}"],#${CSS.escape(k)}`).forEach(el=>{if(el.type==="radio")el.checked=el.value===v;else if(el.type==="checkbox")el.checked=Array.isArray(v)&&v.includes(el.value);else el.value=v})})}
+function checkQuiz(){let s=0,m=0;for(const [n,sp] of Object.entries(answerKey)){m+=sp.points;const v=getVal(n);let ok=false;if(sp.type==="array")ok=arrEq(v,sp.answer);else if(sp.type==="text")ok=normText(v)===normText(sp.answer);else ok=v===sp.answer;if(ok)s+=sp.points}const who=student.value.trim()||"Ученик";result.textContent=`${who}: ${s} из ${m} автоматических баллов. Открытая часть — до 3 баллов после проверки учителем.`;save()}
+function copyResult(){navigator.clipboard?.writeText(result.textContent);alert("Результат скопирован.")}
+function resetQuiz(){if(confirm("Удалить сохранённые ответы?")){localStorage.removeItem(KEY);location.reload()}}
+document.addEventListener("input",save);document.addEventListener("change",save);load();
+</script>
+<div id="collector-send-card" class="card" style="margin-top:14px">
+  <h3 style="margin-top:0">Отправка учителю</h3>
+  <p style="margin-bottom:10px">Проверь фамилию и имя, затем отправь выполненную работу.</p>
+  <button type="button" id="send-to-teacher" style="background:#245a91;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-size:16px;cursor:pointer">Отправить учителю</button>
+  <div id="collector-status" style="margin-top:10px;font-size:14px" aria-live="polite">Работа ещё не отправлена.</div>
+</div>
+
+<script>window.TASK_META = {"code": "9V_RUS_06", "klass": "9В", "subject": "Русский язык", "assignment": "Повторение: правописание суффиксов слов разных частей речи", "autoMax": 18, "openMax": 2};</script>
+<script>window.COLLECTOR_URL = "https://script.google.com/macros/s/AKfycbxMF52C2BzQI7WRo7cmiWwvoiUIrjI60RyP6xn-ShM7oJER4FVyYECMolyszifrgQ9j/exec";</script>
+<script>
+(function(){
+  "use strict";
+  if (window.__centralCollectorLoaded) return;
+  window.__centralCollectorLoaded = true;
+
+  const meta = window.TASK_META || {};
+  const statusEl = document.getElementById("collector-status");
+  const sendBtn = document.getElementById("send-to-teacher");
+  if (!sendBtn || !statusEl) return;
+
+  function norm(v){
+    return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g," ");
+  }
+
+  function getStudent(){
+    const el = document.getElementById("student");
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function getClass(){
+    const el = document.getElementById("klass");
+    return el ? String(el.value || "").trim() : (meta.klass || "");
+  }
+
+  function readNamed(name){
+    const els = [...document.querySelectorAll('[name="' + CSS.escape(name) + '"]')];
+    if (!els.length) return "";
+    const first = els[0];
+    if (first.type === "radio") {
+      const checked = els.find(e => e.checked);
+      return checked ? checked.value : "";
+    }
+    if (first.type === "checkbox") {
+      return els.filter(e => e.checked).map(e => e.value);
+    }
+    return first.value || "";
+  }
+
+  function collectAnswers(){
+    const answers = {};
+    const named = new Set();
+
+    document.querySelectorAll("input[name], textarea[name], select[name]").forEach(el => named.add(el.name));
+    named.forEach(name => { answers[name] = readNamed(name); });
+
+    document.querySelectorAll("textarea[id], input[type=text][id], select[id]").forEach(el => {
+      if (el.id === "student" || el.id === "klass") return;
+      if (!(el.id in answers)) answers[el.id] = el.value || "";
+    });
+
+    const chosenSentences = [...document.querySelectorAll('.sent[aria-pressed="true"]')].map(el => el.dataset.id || el.textContent.trim());
+    if (chosenSentences.length) answers.__selected_sentences = chosenSentences;
+
+    return answers;
+  }
+
+  function collectOpenText(answers){
+    const parts = [];
+    document.querySelectorAll("textarea").forEach((el, i) => {
+      const value = String(el.value || "").trim();
+      if (!value) return;
+      const key = el.name || el.id || ("textarea_" + (i+1));
+      parts.push(key + ": " + value);
+    });
+    return parts.join("\n\n");
+  }
+
+  function scoreFromAnswerKey(){
+    try{
+      if (typeof answerKey === "undefined" || !answerKey) return null;
+      let score = 0, max = 0;
+      for (const [name, spec] of Object.entries(answerKey)) {
+        const points = Number(spec.points || 0);
+        max += points;
+        const value = readNamed(name);
+        let ok = false;
+        if (spec.type === "array") {
+          const a = Array.isArray(value) ? value.map(norm).sort() : [];
+          const b = Array.isArray(spec.answer) ? spec.answer.map(norm).sort() : [];
+          ok = a.length === b.length && a.every((x,i)=>x===b[i]);
+        } else {
+          ok = norm(value) === norm(spec.answer);
+        }
+        if (ok) score += points;
+      }
+      return {score, max};
+    }catch(e){
+      return null;
+    }
+  }
+
+  function scoreCustom(){
+    if (!Array.isArray(meta.customCorrectIds)) return null;
+    const selected = [...document.querySelectorAll('.sent[aria-pressed="true"]')].map(el => el.dataset.id);
+    const correct = new Set(meta.customCorrectIds);
+    const hits = selected.filter(x => correct.has(x)).length;
+    return {score:hits, max:meta.customCorrectIds.length};
+  }
+
+  function getScore(){
+    return scoreFromAnswerKey() || scoreCustom() || {score:0, max:Number(meta.autoMax || 0)};
+  }
+
+  function makeId(){
+    if (window.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function endpointReady(){
+    return window.COLLECTOR_URL &&
+      /^https:\/\/script\.google\.com\//.test(window.COLLECTOR_URL) &&
+      !/PASTE_GOOGLE/.test(window.COLLECTOR_URL);
+  }
+
+  function submitPayload(payload){
+    return new Promise((resolve, reject) => {
+      if (!endpointReady()) {
+        reject(new Error("Адрес приёмника ещё не настроен."));
+        return;
+      }
+
+      const iframeName = "collector_frame_" + Date.now();
+      const iframe = document.createElement("iframe");
+      iframe.name = iframeName;
+      iframe.style.display = "none";
+      let submitted = false;
+      let timer = null;
+
+      iframe.addEventListener("load", () => {
+        if (!submitted) return;
+        clearTimeout(timer);
+        setTimeout(() => {
+          iframe.remove();
+          resolve();
+        }, 50);
+      });
+
+      document.body.appendChild(iframe);
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = window.COLLECTOR_URL;
+      form.target = iframeName;
+      form.style.display = "none";
+
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      submitted = true;
+      timer = setTimeout(() => {
+        try{ form.remove(); iframe.remove(); }catch(e){}
+        reject(new Error("Не удалось подтвердить отправку. Проверь интернет и попробуй ещё раз."));
+      }, 15000);
+
+      form.submit();
+      form.remove();
+    });
+  }
+
+  sendBtn.addEventListener("click", async () => {
+    const student = getStudent();
+    const klass = getClass();
+
+    if (!student) {
+      statusEl.textContent = "Введите фамилию и имя перед отправкой.";
+      const el = document.getElementById("student");
+      if (el) el.focus();
+      return;
+    }
+    if (!klass) {
+      statusEl.textContent = "Укажите класс перед отправкой.";
+      const el = document.getElementById("klass");
+      if (el) el.focus();
+      return;
+    }
+
+    if (!endpointReady()) {
+      statusEl.textContent = "Сборщик ещё не подключён. Учителю нужно указать адрес приёмника.";
+      return;
+    }
+
+    const answers = collectAnswers();
+    const scoring = getScore();
+
+    const payload = {
+      submission_id: makeId(),
+      student: student,
+      klass: klass,
+      subject: meta.subject || "",
+      code: meta.code || "",
+      assignment: meta.assignment || document.title || "",
+      auto_score: Number(scoring.score || 0),
+      auto_max: Number(scoring.max || meta.autoMax || 0),
+      open_max: Number(meta.openMax || 0),
+      open_text: collectOpenText(answers),
+      answers: answers,
+      client_time: new Date().toISOString()
+    };
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Отправляем…";
+    statusEl.textContent = "Не закрывай страницу, идёт отправка.";
+
+    try{
+      await submitPayload(payload);
+      statusEl.textContent = "Работа отправлена учителю. Можно закрыть страницу.";
+      sendBtn.textContent = "Отправить ещё раз";
+      try{
+        localStorage.setItem("collector_last_" + (meta.code || "task"), JSON.stringify({
+          submission_id: payload.submission_id,
+          sent_at: new Date().toISOString()
+        }));
+      }catch(e){}
+    }catch(err){
+      statusEl.textContent = err.message || "Ошибка отправки. Попробуй ещё раз.";
+      sendBtn.textContent = "Повторить отправку";
+    }finally{
+      sendBtn.disabled = false;
+    }
+  });
+})();
+</script>
+</body></html>

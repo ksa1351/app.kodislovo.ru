@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9В · Культура речи · Подготовка к изложению</title>
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --panel:#eef3f8;
+  --text:#1f2937;
+  --muted:#64748b;
+  --border:#cbd5e1;
+  --accent:#245a91;
+  --accent-bg:#e8f1fb;
+  --warn:#fff4cc;
+  --ok:#e7f6ea;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+  line-height:1.5;
+}
+.wrap{
+  max-width:920px;
+  margin:0 auto;
+  padding:18px;
+}
+.hero{
+  background:linear-gradient(135deg,#e8f1fb,#fff);
+  border-left:6px solid var(--accent);
+  padding:20px;
+  border-radius:14px;
+  margin-bottom:14px;
+}
+h1{margin:0 0 6px;font-size:28px}
+.sub{color:var(--muted)}
+.card{
+  background:var(--card);
+  padding:18px;
+  border-radius:14px;
+  margin:14px 0;
+  box-shadow:0 1px 5px rgba(0,0,0,.08);
+}
+.info{
+  background:var(--panel);
+  padding:14px;
+  border-radius:10px;
+}
+.small{font-size:13px;color:var(--muted)}
+.pill{
+  display:inline-block;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:4px 9px;
+  font-size:13px;
+  color:var(--muted);
+  margin-right:6px;
+  margin-bottom:6px;
+}
+.sent{
+  width:100%;
+  text-align:left;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 14px;
+  margin:7px 0;
+  background:var(--card);
+  color:var(--text);
+  font-size:16px;
+  cursor:pointer;
+}
+.sent[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:var(--accent-bg);
+}
+textarea,input[type=text],select{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  background:var(--card);
+  color:var(--text);
+  font-size:16px;
+}
+textarea{
+  min-height:92px;
+  resize:vertical;
+}
+label{
+  display:block;
+  margin:10px 0 14px;
+}
+.quote{
+  border-left:4px solid var(--accent);
+  padding:12px 14px;
+  background:var(--panel);
+  border-radius:0 10px 10px 0;
+}
+.feedback{
+  border-radius:10px;
+  padding:10px 12px;
+  background:var(--panel);
+  margin-top:10px;
+}
+button.action,button.ghost{
+  border-radius:10px;
+  padding:10px 14px;
+  min-height:44px;
+  font-size:16px;
+  cursor:pointer;
+}
+button.action{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+}
+button.ghost{
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.section{
+  border-top:1px solid var(--border);
+  padding-top:18px;
+  margin-top:18px;
+}
+.top-fields{
+  display:grid;
+  grid-template-columns:1fr 140px;
+  gap:12px;
+}
+@media(max-width:650px){
+  .top-fields{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}
+  .card{box-shadow:none;border:1px solid #ddd}
+  .actions{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>9В · Культура речи</h1>
+    <div class="sub">Подготовка к изложению: «Времена меняются…» · 30–35 минут</div>
+  </div>
+
+  <div class="card">
+    <div class="top-fields">
+      <label><b>Фамилия, имя</b>
+        <input id="student" type="text" placeholder="Введите фамилию и имя">
+      </label>
+      <label><b>Класс</b>
+        <input id="klass" type="text" value="9В">
+      </label>
+    </div>
+    <div class="small">Ответы сохраняются в этом браузере автоматически.</div>
+  </div>
+
+  <div class="card">
+    <div class="pill">9 класс</div>
+    <div class="pill">Культура речи</div>
+    <div class="pill">Подготовка к изложению</div>
+    <div class="info">
+      <b>Как работать:</b> сначала выдели главную информацию, затем сформулируй микротемы, письменно ответь на вопросы, поработай с цитатой и в конце сожми одну микротему до 2–3 предложений.
+    </div>
+  </div>
+
+  <div class="card section">
+    <h2>1. Найди главную информацию</h2>
+    <p>Нажми на <b>два ключевых предложения</b> в каждой смысловой части. Всего нужно выбрать 6 предложений.</p>
+
+    <div data-group="1">
+      <h3>Часть 1</h3>
+      <button type="button" class="sent" aria-pressed="false" data-id="s11">Каждое новое поколение отличается интересами, привычками и жизненными целями.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s12">Но сложные личные вопросы, особенно вопросы любви, по-прежнему волнуют подростков.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s13">Подростку бывает важно понять, как обратить на себя внимание понравившегося человека.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s14">Одним из самых трудных остаётся вопрос: как отличить увлечение от настоящего чувства.</button>
+    </div>
+
+    <div data-group="2">
+      <h3>Часть 2</h3>
+      <button type="button" class="sent" aria-pressed="false" data-id="s21">Юношеская мечта о любви тесно связана с желанием быть понятым другим человеком.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s22">В общении подросток может проявлять сочувствие и сопереживание.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s23">Особенно важно суметь раскрыть лучшие качества перед тем, кто готов тебя принять и понять.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s24">Общение со сверстниками помогает человеку лучше узнать и самого себя.</button>
+    </div>
+
+    <div data-group="3">
+      <h3>Часть 3</h3>
+      <button type="button" class="sent" aria-pressed="false" data-id="s31">Настоящая любовь строится на глубоком доверии между людьми.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s32">Доверие может включать дружбу и общность интересов.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s33">Любящий человек признаёт право другого на собственные чувства и внутренний мир.</button>
+      <button type="button" class="sent" aria-pressed="false" data-id="s34">Поэтому любовь требует не только близости, но и уважения к личности другого человека.</button>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="check-main" class="action">Проверить выбор</button>
+      <button type="button" id="reset-main" class="ghost">Сбросить выделение</button>
+    </div>
+    <div id="main-feedback" class="feedback" aria-live="polite">Выбрано: 0 из 6.</div>
+  </div>
+
+  <div class="card section">
+    <h2>2. Сформулируй микротемы</h2>
+    <p class="small">Не переписывай выбранные предложения дословно. Передай каждую мысль своими словами.</p>
+
+    <label><b>Микротема 1</b>
+      <input type="text" id="micro1" placeholder="О чём первая смысловая часть?">
+    </label>
+
+    <label><b>Микротема 2</b>
+      <input type="text" id="micro2" placeholder="О чём вторая смысловая часть?">
+    </label>
+
+    <label><b>Микротема 3</b>
+      <input type="text" id="micro3" placeholder="О чём третья смысловая часть?">
+    </label>
+  </div>
+
+  <div class="card section">
+    <h2>3. Ответь на вопросы письменно</h2>
+    <p class="small">Отвечай полными предложениями.</p>
+
+    <label><b>1. Что меняется от поколения к поколению, а что, по смыслу текста, остаётся неизменным?</b>
+      <textarea id="q1"></textarea>
+    </label>
+
+    <label><b>2. Почему мечта о любви связана с потребностью во взаимопонимании?</b>
+      <textarea id="q2"></textarea>
+    </label>
+
+    <label><b>3. Какие качества человек может проявить перед тем, кто готов его понять?</b>
+      <textarea id="q3"></textarea>
+    </label>
+
+    <label><b>4. Что является основой настоящей любви?</b>
+      <textarea id="q4"></textarea>
+    </label>
+
+    <label><b>5. Почему любовь, по смыслу текста, шире дружбы?</b>
+      <textarea id="q5"></textarea>
+    </label>
+  </div>
+
+  <div class="card section">
+    <h2>4. Цитата и доказательства</h2>
+
+    <div class="quote">
+      «Любить — это не значит смотреть друг на друга, любить — значит вместе смотреть в одном направлении».
+      <div class="small">А. де Сент-Экзюпери</div>
+    </div>
+
+    <p>Объясни смысл высказывания и подтверди его <b>двумя примерами-мыслями</b> из текста.</p>
+
+    <label><b>Как ты понимаешь цитату?</b>
+      <textarea id="quote-meaning"></textarea>
+    </label>
+
+    <label><b>Пример из текста №1</b>
+      <textarea id="ex1" placeholder="Можно передать мысль своими словами."></textarea>
+    </label>
+
+    <label><b>Пример из текста №2</b>
+      <textarea id="ex2"></textarea>
+    </label>
+
+    <label><b>Вывод</b>
+      <textarea id="conclusion" placeholder="Свяжи цитату и оба примера в одном выводе."></textarea>
+    </label>
+  </div>
+
+  <div class="card section">
+    <h2>5. Подготовка к изложению</h2>
+    <p>Выбери одну микротему и сожми её до 2–3 предложений. Сохрани главное, убери повторы и частные детали.</p>
+
+    <label><b>Какую микротему сжимаешь?</b>
+      <select id="micro-choice">
+        <option value="">— выбери —</option>
+        <option value="1">Микротема 1</option>
+        <option value="2">Микротема 2</option>
+        <option value="3">Микротема 3</option>
+      </select>
+    </label>
+
+    <label><b>Сжатый вариант</b>
+      <textarea id="compressed" placeholder="2–3 предложения"></textarea>
+    </label>
+  </div>
+
+  <div class="card section">
+    <div class="actions">
+      <button type="button" id="review" class="action">Проверить, всё ли заполнено</button>
+      <button type="button" id="clear-all" class="ghost">Очистить работу</button>
+    </div>
+    <div id="review-box" class="feedback" aria-live="polite">Можно выполнять задания в любом темпе.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const KEY = "kr_9v_vremena_menyayutsya_v1";
+  const correct = new Set(["s12","s14","s21","s23","s31","s34"]);
+  const sentenceButtons = [...document.querySelectorAll(".sent")];
+  const feedback = document.getElementById("main-feedback");
+
+  function selected(){
+    return sentenceButtons
+      .filter(b => b.getAttribute("aria-pressed") === "true")
+      .map(b => b.dataset.id);
+  }
+
+  function updateCount(){
+    feedback.textContent = "Выбрано: " + selected().length + " из 6.";
+  }
+
+  sentenceButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      btn.setAttribute(
+        "aria-pressed",
+        btn.getAttribute("aria-pressed") === "true" ? "false" : "true"
+      );
+      updateCount();
+      save();
+    });
+  });
+
+  document.getElementById("check-main").addEventListener("click", () => {
+    const s = selected();
+    const hits = s.filter(x => correct.has(x)).length;
+    const extra = s.filter(x => !correct.has(x)).length;
+
+    if (s.length !== 6){
+      feedback.textContent = "Сейчас выбрано " + s.length + ". Нужно выбрать ровно 6 предложений — по два из каждой части.";
+      return;
+    }
+
+    let perGroupOk = true;
+    [1,2,3].forEach(g => {
+      const count = document.querySelectorAll('[data-group="' + g + '"] .sent[aria-pressed="true"]').length;
+      if (count !== 2) perGroupOk = false;
+    });
+
+    if (!perGroupOk){
+      feedback.textContent = "Проверь распределение: в каждой смысловой части должно быть выбрано ровно два предложения.";
+      return;
+    }
+
+    if (hits === 6){
+      feedback.textContent = "6 из 6. Главная информация выделена точно.";
+    } else if (hits >= 4){
+      feedback.textContent = hits + " из 6 ключевых предложений выбраны верно. Есть " + extra + " лишних выбора: проверь, не выбраны ли подробности вместо смыслового центра.";
+    } else {
+      feedback.textContent = hits + " из 6. Вернись к каждой части и спроси себя: без какого предложения смысл абзаца разрушится?";
+    }
+  });
+
+  document.getElementById("reset-main").addEventListener("click", () => {
+    sentenceButtons.forEach(b => b.setAttribute("aria-pressed","false"));
+    updateCount();
+    save();
+  });
+
+  document.getElementById("review").addEventListener("click", () => {
+    const ids = [
+      "micro1","micro2","micro3",
+      "q1","q2","q3","q4","q5",
+      "quote-meaning","ex1","ex2","conclusion",
+      "micro-choice","compressed"
+    ];
+
+    const empty = ids.filter(id => {
+      const el = document.getElementById(id);
+      return !el || !String(el.value || "").trim();
+    });
+
+    const box = document.getElementById("review-box");
+    if (empty.length === 0){
+      box.textContent = "Все письменные части заполнены. Проверь: ответы даны полными предложениями, примеры связаны с цитатой, а сжатый вариант содержит только главное.";
+    } else {
+      box.textContent = "Не заполнено полей: " + empty.length + ". Вернись к пропущенным заданиям.";
+    }
+  });
+
+  document.getElementById("clear-all").addEventListener("click", () => {
+    if (!confirm("Очистить все ответы и выделения?")) return;
+    sentenceButtons.forEach(b => b.setAttribute("aria-pressed","false"));
+    document.querySelectorAll("textarea,input[type=text],select").forEach(el => {
+      if (el.id === "klass") el.value = "9В";
+      else el.value = "";
+    });
+    updateCount();
+    document.getElementById("review-box").textContent = "Работа очищена.";
+    localStorage.removeItem(KEY);
+  });
+
+  function save(){
+    const data = {
+      student: document.getElementById("student").value,
+      klass: document.getElementById("klass").value,
+      selected: selected(),
+      fields: {}
+    };
+    document.querySelectorAll("textarea,input[type=text],select").forEach(el => {
+      if (el.id) data.fields[el.id] = el.value;
+    });
+    localStorage.setItem(KEY, JSON.stringify(data));
+  }
+
+  function load(){
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    try{
+      const data = JSON.parse(raw);
+      document.getElementById("student").value = data.student || "";
+      document.getElementById("klass").value = data.klass || "9В";
+
+      const set = new Set(data.selected || []);
+      sentenceButtons.forEach(b => {
+        b.setAttribute("aria-pressed", set.has(b.dataset.id) ? "true" : "false");
+      });
+
+      Object.entries(data.fields || {}).forEach(([id,val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+    }catch(e){}
+    updateCount();
+  }
+
+  document.addEventListener("input", save);
+  document.addEventListener("change", save);
+
+  load();
+  updateCount();
+})();
+</script>
+
+<div id="collector-send-card" class="card" style="margin-top:14px">
+  <h3 style="margin-top:0">Отправка учителю</h3>
+  <p style="margin-bottom:10px">Проверь фамилию и имя, затем отправь выполненную работу.</p>
+  <button type="button" id="send-to-teacher" style="background:#245a91;color:#fff;border:0;border-radius:9px;padding:11px 16px;font-size:16px;cursor:pointer">Отправить учителю</button>
+  <div id="collector-status" style="margin-top:10px;font-size:14px" aria-live="polite">Работа ещё не отправлена.</div>
+</div>
+
+<script>window.TASK_META = {"code": "9V_KR_01", "klass": "9В", "subject": "Культура речи", "assignment": "Подготовка к изложению «Времена меняются…»", "autoMax": 6, "openMax": 14, "customCorrectIds": ["s12", "s14", "s21", "s23", "s31", "s34"]};</script>
+<script>window.COLLECTOR_URL = "https://script.google.com/macros/s/AKfycbxMF52C2BzQI7WRo7cmiWwvoiUIrjI60RyP6xn-ShM7oJER4FVyYECMolyszifrgQ9j/exec";</script>
+<script>
+(function(){
+  "use strict";
+  if (window.__centralCollectorLoaded) return;
+  window.__centralCollectorLoaded = true;
+
+  const meta = window.TASK_META || {};
+  const statusEl = document.getElementById("collector-status");
+  const sendBtn = document.getElementById("send-to-teacher");
+  if (!sendBtn || !statusEl) return;
+
+  function norm(v){
+    return String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g," ");
+  }
+
+  function getStudent(){
+    const el = document.getElementById("student");
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function getClass(){
+    const el = document.getElementById("klass");
+    return el ? String(el.value || "").trim() : (meta.klass || "");
+  }
+
+  function readNamed(name){
+    const els = [...document.querySelectorAll('[name="' + CSS.escape(name) + '"]')];
+    if (!els.length) return "";
+    const first = els[0];
+    if (first.type === "radio") {
+      const checked = els.find(e => e.checked);
+      return checked ? checked.value : "";
+    }
+    if (first.type === "checkbox") {
+      return els.filter(e => e.checked).map(e => e.value);
+    }
+    return first.value || "";
+  }
+
+  function collectAnswers(){
+    const answers = {};
+    const named = new Set();
+
+    document.querySelectorAll("input[name], textarea[name], select[name]").forEach(el => named.add(el.name));
+    named.forEach(name => { answers[name] = readNamed(name); });
+
+    document.querySelectorAll("textarea[id], input[type=text][id], select[id]").forEach(el => {
+      if (el.id === "student" || el.id === "klass") return;
+      if (!(el.id in answers)) answers[el.id] = el.value || "";
+    });
+
+    const chosenSentences = [...document.querySelectorAll('.sent[aria-pressed="true"]')].map(el => el.dataset.id || el.textContent.trim());
+    if (chosenSentences.length) answers.__selected_sentences = chosenSentences;
+
+    return answers;
+  }
+
+  function collectOpenText(answers){
+    const parts = [];
+    document.querySelectorAll("textarea").forEach((el, i) => {
+      const value = String(el.value || "").trim();
+      if (!value) return;
+      const key = el.name || el.id || ("textarea_" + (i+1));
+      parts.push(key + ": " + value);
+    });
+    return parts.join("\n\n");
+  }
+
+  function scoreFromAnswerKey(){
+    try{
+      if (typeof answerKey === "undefined" || !answerKey) return null;
+      let score = 0, max = 0;
+      for (const [name, spec] of Object.entries(answerKey)) {
+        const points = Number(spec.points || 0);
+        max += points;
+        const value = readNamed(name);
+        let ok = false;
+        if (spec.type === "array") {
+          const a = Array.isArray(value) ? value.map(norm).sort() : [];
+          const b = Array.isArray(spec.answer) ? spec.answer.map(norm).sort() : [];
+          ok = a.length === b.length && a.every((x,i)=>x===b[i]);
+        } else {
+          ok = norm(value) === norm(spec.answer);
+        }
+        if (ok) score += points;
+      }
+      return {score, max};
+    }catch(e){
+      return null;
+    }
+  }
+
+  function scoreCustom(){
+    if (!Array.isArray(meta.customCorrectIds)) return null;
+    const selected = [...document.querySelectorAll('.sent[aria-pressed="true"]')].map(el => el.dataset.id);
+    const correct = new Set(meta.customCorrectIds);
+    const hits = selected.filter(x => correct.has(x)).length;
+    return {score:hits, max:meta.customCorrectIds.length};
+  }
+
+  function getScore(){
+    return scoreFromAnswerKey() || scoreCustom() || {score:0, max:Number(meta.autoMax || 0)};
+  }
+
+  function makeId(){
+    if (window.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+  }
+
+  function endpointReady(){
+    return window.COLLECTOR_URL &&
+      /^https:\/\/script\.google\.com\//.test(window.COLLECTOR_URL) &&
+      !/PASTE_GOOGLE/.test(window.COLLECTOR_URL);
+  }
+
+  function submitPayload(payload){
+    return new Promise((resolve, reject) => {
+      if (!endpointReady()) {
+        reject(new Error("Адрес приёмника ещё не настроен."));
+        return;
+      }
+
+      const iframeName = "collector_frame_" + Date.now();
+      const iframe = document.createElement("iframe");
+      iframe.name = iframeName;
+      iframe.style.display = "none";
+      let submitted = false;
+      let timer = null;
+
+      iframe.addEventListener("load", () => {
+        if (!submitted) return;
+        clearTimeout(timer);
+        setTimeout(() => {
+          iframe.remove();
+          resolve();
+        }, 50);
+      });
+
+      document.body.appendChild(iframe);
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = window.COLLECTOR_URL;
+      form.target = iframeName;
+      form.style.display = "none";
+
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "payload";
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      submitted = true;
+      timer = setTimeout(() => {
+        try{ form.remove(); iframe.remove(); }catch(e){}
+        reject(new Error("Не удалось подтвердить отправку. Проверь интернет и попробуй ещё раз."));
+      }, 15000);
+
+      form.submit();
+      form.remove();
+    });
+  }
+
+  sendBtn.addEventListener("click", async () => {
+    const student = getStudent();
+    const klass = getClass();
+
+    if (!student) {
+      statusEl.textContent = "Введите фамилию и имя перед отправкой.";
+      const el = document.getElementById("student");
+      if (el) el.focus();
+      return;
+    }
+    if (!klass) {
+      statusEl.textContent = "Укажите класс перед отправкой.";
+      const el = document.getElementById("klass");
+      if (el) el.focus();
+      return;
+    }
+
+    if (!endpointReady()) {
+      statusEl.textContent = "Сборщик ещё не подключён. Учителю нужно указать адрес приёмника.";
+      return;
+    }
+
+    const answers = collectAnswers();
+    const scoring = getScore();
+
+    const payload = {
+      submission_id: makeId(),
+      student: student,
+      klass: klass,
+      subject: meta.subject || "",
+      code: meta.code || "",
+      assignment: meta.assignment || document.title || "",
+      auto_score: Number(scoring.score || 0),
+      auto_max: Number(scoring.max || meta.autoMax || 0),
+      open_max: Number(meta.openMax || 0),
+      open_text: collectOpenText(answers),
+      answers: answers,
+      client_time: new Date().toISOString()
+    };
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Отправляем…";
+    statusEl.textContent = "Не закрывай страницу, идёт отправка.";
+
+    try{
+      await submitPayload(payload);
+      statusEl.textContent = "Работа отправлена учителю. Можно закрыть страницу.";
+      sendBtn.textContent = "Отправить ещё раз";
+      try{
+        localStorage.setItem("collector_last_" + (meta.code || "task"), JSON.stringify({
+          submission_id: payload.submission_id,
+          sent_at: new Date().toISOString()
+        }));
+      }catch(e){}
+    }catch(err){
+      statusEl.textContent = err.message || "Ошибка отправки. Попробуй ещё раз.";
+      sendBtn.textContent = "Повторить отправку";
+    }finally{
+      sendBtn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
