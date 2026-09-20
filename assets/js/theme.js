@@ -16,7 +16,7 @@
       const card = document.createElement("a");
       card.className = "card live card-russian";
       card.href = url;
-      card.innerHTML = '<div class="card-head"><span class="chip">5А · 5Б · 9В · 11А</span><span class="status live">Доступно</span></div><h3>Задания</h3><p>Выбери свой класс, выполни работу и отправь ответы учителю.</p>';
+      card.innerHTML = '<div class="card-head"><span class="chip">5А · 5Б · 7Б · 9В · 11А</span><span class="status live">Доступно</span></div><h3>Задания</h3><p>Выбери свой класс, дату и открой нужное задание.</p>';
       cards.prepend(card);
     }
   }
