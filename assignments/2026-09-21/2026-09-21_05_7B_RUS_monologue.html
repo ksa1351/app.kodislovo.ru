@@ -1,18 +1,184 @@
 <!DOCTYPE html>
-<html lang="ru"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>7Б · Монолог и диалог. Монолог-описание</title><style>
+<html lang="ru"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>7Б · Монолог-описание + подготовка к контрольной</title><style>
 :root{--bg:#f4f7fb;--panel:#fff;--text:#26354b;--muted:#6b778c;--line:#dbe4ef;--accent:#356aa8;--accent-soft:#eaf2fb;--good:#25754f;--bad:#a54545;--gold:#b88a47;--warn:#fff7e7;--open:#fffdf8}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}button,input,select,textarea{font:inherit}.app{max-width:1200px;margin:0 auto;padding:18px}.top{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;margin-bottom:12px}.brand{font-weight:800;font-size:20px}.sub{color:var(--muted);font-size:14px}.student{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.student label{display:grid;gap:4px;font-size:13px;color:var(--muted)}.student input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--text);min-width:220px}.student input#klass{min-width:88px;width:88px}.meter{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:10px 0 14px}.track{height:8px;background:#e2e9f1;border-radius:99px;overflow:hidden}.track>div{height:100%;background:var(--accent);width:0;transition:width .2s}.meterText{font-size:14px;color:var(--muted);font-weight:700}.deck{position:relative}.slide{display:none;min-height:590px;background:linear-gradient(135deg,#fff,#f8fbfe);border:1px solid var(--line);border-radius:22px;padding:34px 42px 70px;box-shadow:0 8px 24px rgba(32,49,77,.07)}.slide.active{display:block}.slide h1,.slide h2{font-family:Georgia,serif;color:#20395f;margin:0 0 12px}.slide h1{font-size:42px}.slide h2{font-size:32px}.lead{font-size:21px;color:var(--muted);margin-bottom:22px}.quote{font-family:Georgia,serif;font-size:23px;line-height:1.55;background:#fff8ef;border-left:5px solid var(--gold);padding:18px 22px;border-radius:10px;margin:14px 0;white-space:pre-line}.quote.small{font-size:20px}.source{font-size:13px;color:var(--muted);margin-top:6px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}.soft{background:var(--accent-soft)}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.note{background:#eef5ff;border-left:5px solid var(--accent);padding:14px 16px;border-radius:10px;margin:14px 0}.task{font-size:21px;font-weight:800;margin:18px 0 10px}.q{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px;margin:12px 0}.q.missing{border-color:var(--bad);box-shadow:0 0 0 2px rgba(165,69,69,.08)}.choices{display:grid;gap:8px;margin-top:8px}.choice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;cursor:pointer}.choice:hover{border-color:#9bb8d8}.choice input{margin-top:3px;transform:scale(1.15)}select,input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--text)}textarea{min-height:110px;resize:vertical}.short{min-height:78px}.match{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(180px,1fr);gap:10px;align-items:center;margin:9px 0}.checkBtn{border:0;border-radius:10px;padding:10px 15px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer;margin-top:10px}.checkMsg{margin-top:9px;min-height:24px;font-weight:700}.checkMsg.ok{color:var(--good)}.checkMsg.bad{color:var(--bad)}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:#edf3f9;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-weight:700}.footer{position:absolute;bottom:18px;left:42px;right:42px;display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.nav{display:flex;justify-content:space-between;gap:12px;margin-top:12px;align-items:center}.nav button,.sendBtn{border:0;border-radius:11px;padding:11px 16px;font-weight:800;cursor:pointer}.prev{background:#fff;border:1px solid var(--line)!important;color:var(--text)}.next,.sendBtn{background:var(--accent);color:#fff}.counter{font-weight:800;color:var(--muted)}.sendbox{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}.sendbox h3{margin:0 0 8px}.sendrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sendStatus{font-size:14px;color:var(--muted)}.sendStatus.good{color:var(--good);font-weight:700}.sendStatus.bad{color:var(--bad);font-weight:700}.reqNote{font-size:13px;color:var(--muted)}.pill{display:inline-block;background:#f3eadb;color:#6d5731;border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}.textblock{font-size:20px;line-height:1.55}.seqgrid{display:grid;grid-template-columns:58px 1fr;gap:8px 10px;align-items:center}.seqgrid .num{font-weight:800;color:var(--accent)}
-@media(max-width:800px){.app{padding:10px}.top{grid-template-columns:1fr}.student{justify-content:flex-start}.slide{padding:24px 20px 68px;min-height:620px}.slide h1{font-size:32px}.slide h2{font-size:27px}.grid2,.grid3{grid-template-columns:1fr}.footer{left:20px;right:20px}.match{grid-template-columns:1fr}.student input{min-width:0;width:100%}.student label{flex:1 1 180px}}
-</style><style>
-.slide:last-child{padding-bottom:34px}
-.slide:last-child .footer{position:static;margin-top:22px}
-.slide:last-child .sendbox{margin-top:22px}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}button,input,select,textarea{font:inherit}.app{max-width:1200px;margin:0 auto;padding:18px}.top{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;margin-bottom:12px}.brand{font-weight:800;font-size:20px}.sub{color:var(--muted);font-size:14px}.student{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.student label{display:grid;gap:4px;font-size:13px;color:var(--muted)}.student input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--text);min-width:220px}.student input#klass{min-width:88px;width:88px}.meter{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:10px 0 14px}.track{height:8px;background:#e2e9f1;border-radius:99px;overflow:hidden}.track>div{height:100%;background:var(--accent);width:0;transition:width .2s}.meterText{font-size:14px;color:var(--muted);font-weight:700}.deck{position:relative}.slide{display:none;min-height:590px;background:linear-gradient(135deg,#fff,#f8fbfe);border:1px solid var(--line);border-radius:22px;padding:34px 42px 70px;box-shadow:0 8px 24px rgba(32,49,77,.07)}.slide.active{display:block}.slide h1,.slide h2{font-family:Georgia,serif;color:#20395f;margin:0 0 12px}.slide h1{font-size:42px}.slide h2{font-size:32px}.lead{font-size:21px;color:var(--muted);margin-bottom:22px}.quote{font-family:Georgia,serif;font-size:23px;line-height:1.55;background:#fff8ef;border-left:5px solid var(--gold);padding:18px 22px;border-radius:10px;margin:14px 0;white-space:pre-line}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}.soft{background:var(--accent-soft)}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.note{background:#eef5ff;border-left:5px solid var(--accent);padding:14px 16px;border-radius:10px;margin:14px 0}.task{font-size:21px;font-weight:800;margin:18px 0 10px}.q{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px;margin:12px 0}.q.missing{border-color:var(--bad);box-shadow:0 0 0 2px rgba(165,69,69,.08)}.choices{display:grid;gap:8px;margin-top:8px}.choice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;cursor:pointer}.choice:hover{border-color:#9bb8d8}.choice input{margin-top:3px;transform:scale(1.15)}select,input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--text)}textarea{min-height:110px;resize:vertical}.short{min-height:78px}.match{display:grid;grid-template-columns:minmax(210px,1.2fr) minmax(180px,1fr);gap:10px;align-items:center;margin:9px 0}.checkBtn{border:0;border-radius:10px;padding:10px 15px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer;margin-top:10px}.checkMsg{margin-top:9px;min-height:24px;font-weight:700}.checkMsg.ok{color:var(--good)}.checkMsg.bad{color:var(--bad)}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:#edf3f9;border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-weight:700}.footer{position:absolute;bottom:18px;left:42px;right:42px;display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.nav{display:flex;justify-content:space-between;gap:12px;margin-top:12px;align-items:center}.nav button,.sendBtn{border:0;border-radius:11px;padding:11px 16px;font-weight:800;cursor:pointer}.prev{background:#fff;border:1px solid var(--line)!important;color:var(--text)}.next,.sendBtn{background:var(--accent);color:#fff}.counter{font-weight:800;color:var(--muted)}.sendbox{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}.sendbox h3{margin:0 0 8px}.sendrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sendStatus{font-size:14px;color:var(--muted)}.sendStatus.good{color:var(--good);font-weight:700}.sendStatus.bad{color:var(--bad);font-weight:700}.reqNote{font-size:13px;color:var(--muted)}.pill{display:inline-block;background:#f3eadb;color:#6d5731;border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}.textblock{font-size:20px;line-height:1.55}.mini{font-size:15px;color:var(--muted)}
+.slide:last-child{padding-bottom:34px}.slide:last-child .footer{position:static;margin-top:22px}.slide:last-child .sendbox{margin-top:22px}
+@media(max-width:800px){.app{padding:10px}.top{grid-template-columns:1fr}.student{justify-content:flex-start}.slide{padding:24px 20px 68px;min-height:620px}.slide h1{font-size:32px}.slide h2{font-size:27px}.grid2,.grid3,.grid4{grid-template-columns:1fr}.footer{left:20px;right:20px}.match{grid-template-columns:1fr}.student input{min-width:0;width:100%}.student label{flex:1 1 180px}}
 </style></head><body><main class="app">
-<div class="top"><div><div class="brand">7Б · Русский язык</div><div class="sub">21 сентября 2026 · интерактивный урок · ответы сохраняются на этом устройстве</div></div><div class="student"><label>Фамилия, имя<input autocomplete="name" id="student" placeholder="Введите фамилию и имя"/></label><label>Класс<input id="klass" value="7Б"/></label></div></div>
+<div class="top"><div><div class="brand">7Б · Русский язык</div><div class="sub">21 сентября 2026 · очный урок · ответы сохраняются на этом устройстве</div></div><div class="student"><label>Фамилия, имя<input autocomplete="name" id="student" placeholder="Введите фамилию и имя"/></label><label>Класс<input id="klass" value="7Б"/></label></div></div>
 <div class="meter"><div class="track"><div id="slideProgress"></div></div><div class="meterText" id="completion"></div></div>
-<div class="deck"><section class="slide" data-n="1"><h1>Монолог и диалог</h1><div class="lead">Учимся узнавать и строить монолог-описание</div><div class="footer"><span>21 сентября 2026</span><span>1</span></div></section><section class="slide" data-n="2"><h2>Разминка</h2><div class="q" data-q="warmup" data-required="1"><div class="task">Один человек подробно рассказывает классу о своём любимом месте. Это…</div><div class="choices"><label class="choice"><input name="warmup" type="radio" value="dialog"/> <span>диалог</span></label><label class="choice"><input name="warmup" type="radio" value="mono"/> <span>монолог</span></label><label class="choice"><input name="warmup" type="radio" value="poly"/> <span>полилог</span></label></div><button class="checkBtn" data-check="warmup" type="button">Проверить</button><div aria-live="polite" class="checkMsg"></div></div><div class="footer"><span>21 сентября 2026</span><span>2</span></div></section><section class="slide" data-n="3"><h2>Как отличить?</h2><div class="grid2"><div class="card"><b>Монолог</b><p>Один говорящий. Мысль разворачивается последовательно.</p></div><div class="card"><b>Диалог</b><p>Два участника обмениваются репликами.</p></div></div><div class="footer"><span>21 сентября 2026</span><span>3</span></div></section><section class="slide" data-n="4"><h2>Монолог-описание</h2><div class="quote small">«Передо мной небольшой школьный двор. В центре растёт высокая берёза. Слева видна спортивная площадка, а у входа стоят две скамейки…»</div><div class="q" data-q="description_words" data-required="1"><label><span class="reqNote">Выпишите 3–4 слова или сочетания</span><input name="description_words" type="text"/></label></div><div class="footer"><span>21 сентября 2026</span><span>4</span></div></section><section class="slide" data-n="5"><h2>Определи тип</h2><div class="quote small">«Сначала мы вышли из школы, затем повернули к парку, а через десять минут подошли к реке».</div><div class="q" data-q="type1" data-required="1"><div class="task">Какой это тип речи?</div><div class="choices"><label class="choice"><input name="type1" type="radio" value="desc"/> <span>описание</span></label><label class="choice"><input name="type1" type="radio" value="narr"/> <span>повествование</span></label><label class="choice"><input name="type1" type="radio" value="reason"/> <span>рассуждение</span></label></div></div><div class="footer"><span>21 сентября 2026</span><span>5</span></div></section><section class="slide" data-n="6"><h2>Определи тип</h2><div class="quote small">«Я считаю, что школьная форма удобна, потому что утром не нужно долго выбирать одежду».</div><div class="q" data-q="type2" data-required="1"><div class="task">Какой это тип речи?</div><div class="choices"><label class="choice"><input name="type2" type="radio" value="desc"/> <span>описание</span></label><label class="choice"><input name="type2" type="radio" value="narr"/> <span>повествование</span></label><label class="choice"><input name="type2" type="radio" value="reason"/> <span>рассуждение</span></label></div></div><div class="footer"><span>21 сентября 2026</span><span>6</span></div></section><section class="slide" data-n="7"><h2>Составьте монолог-описание</h2><div class="note">Ориентиры: где? какой? что находится? какое впечатление?</div><div class="q" data-q="monologue" data-required="1"><div class="task">Опишите свой кабинет или вид из окна.</div><label><span class="reqNote">5–6 предложений</span><textarea data-label="5–6 предложений" name="monologue" rows="6"></textarea></label></div><div class="footer"><span>21 сентября 2026</span><span>7</span></div></section><section class="slide" data-n="8"><h2>Итог</h2><div class="q" data-q="final" data-required="1"><div class="task">Какой признак быстрее всего помогает узнать описание?</div><label><span class="reqNote">1–2 предложения</span><textarea data-label="1–2 предложения" name="final" rows="3"></textarea></label></div><div class="sendbox"><h3>Отправка работы</h3><p class="reqNote">Перед отправкой проверьте ФИО и обязательные задания. Правильные ответы итогового блока на экране не показываются.</p><div class="sendrow"><button class="sendBtn" id="sendBtn" type="button">Отправить учителю</button><span class="sendStatus" id="sendStatus">Работа ещё не отправлена.</span></div></div><div class="footer"><span>21 сентября 2026</span><span>8</span></div></section></div>
-<div class="nav"><button class="prev" id="prev" type="button">← Назад</button><span class="counter" id="counter"></span><button class="next" id="next" type="button">Дальше →</button></div>
+<div class="deck">
+<section class="slide" data-n="1">
+  <h1>Монолог-описание + подготовка к контрольной</h1>
+  <div class="lead">Готовимся именно к тем типам заданий, которые будут на следующем уроке.</div>
+  <div class="note"><b>Сегодня не повторяем всё подряд.</b> Репетируем 7 конкретных действий: восстановить текст, проверить корни, написать приставки, определить признаки частей речи, исправить формы слов, разобрать слово по составу и проанализировать предложение.</div>
+  <div class="footer"><span>21 сентября 2026</span><span>1</span></div>
+</section>
 
+<section class="slide" data-n="2">
+  <h2>Что будет проверяться</h2>
+  <div class="grid4">
+    <div class="card"><b>1. Текст</b><p>буквы + знаки препинания</p></div>
+    <div class="card"><b>2. Корни</b><p>проверочное слово</p></div>
+    <div class="card"><b>3. Приставки</b><p>З/С, ПРЕ-/ПРИ-</p></div>
+    <div class="card"><b>4. Морфология</b><p>признаки 5 частей речи</p></div>
+    <div class="card"><b>5. Формы слов</b><p>местоимение, числительное</p></div>
+    <div class="card"><b>6. Состав слова</b><p>приставка, корень, суффикс, окончание</p></div>
+    <div class="card"><b>7. Предложение</b><p>основа + части речи</p></div>
+  </div>
+  <div class="note">Примеры сегодня другие, но способ действия — тот же, что понадобится на контрольной.</div>
+  <div class="footer"><span>21 сентября 2026</span><span>2</span></div>
+</section>
+
+<section class="slide" data-n="3">
+  <h2>1. Работа с текстом: буквы и пунктуация</h2>
+  <div class="quote">После д..ждя мы вышли на тр..пинку. Над п..лем висели лёгкие облака а у дороги блестела м..края трава. Вскоре выглянуло солнце и всё вокруг засияло. Мы бе..шумно подошли к ручью и стали наблюдать за стрекозами.</div>
+  <div class="q" data-q="text_blanks" data-required="1">
+    <div class="match"><span>д..ждя</span><select name="t1"><option value="">— буква —</option><option value="а">а</option><option value="о">о</option></select></div>
+    <div class="match"><span>тр..пинку</span><select name="t2"><option value="">— буква —</option><option value="а">а</option><option value="о">о</option></select></div>
+    <div class="match"><span>п..лем</span><select name="t3"><option value="">— буква —</option><option value="а">а</option><option value="о">о</option></select></div>
+    <div class="match"><span>м..края</span><select name="t4"><option value="">— буква —</option><option value="а">а</option><option value="о">о</option></select></div>
+    <div class="match"><span>бе..шумно</span><select name="t5"><option value="">— буква —</option><option value="з">з</option><option value="с">с</option></select></div>
+    <div class="match"><span>После «облака»</span><select name="p1"><option value="">— знак —</option><option value="comma">нужна запятая</option><option value="none">запятая не нужна</option></select></div>
+    <div class="match"><span>После «солнце»</span><select name="p2"><option value="">— знак —</option><option value="comma">нужна запятая</option><option value="none">запятая не нужна</option></select></div>
+    <button type="button" class="checkBtn" data-fields="t1,t2,t3,t4,t5,p1,p2">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="footer"><span>21 сентября 2026</span><span>3</span></div>
+</section>
+
+<section class="slide" data-n="4">
+  <h2>1. Работа с текстом: перепиши восстановленный вариант</h2>
+  <div class="note">На контрольной нужно будет не просто выбрать буквы, а <b>списать текст целиком</b>. Поэтому деформированный текст остаётся перед глазами.</div>
+  <div class="quote">После д..ждя мы вышли на тр..пинку. Над п..лем висели лёгкие облака а у дороги блестела м..края трава. Вскоре выглянуло солнце и всё вокруг засияло. Мы бе..шумно подошли к ручью и стали наблюдать за стрекозами.</div>
+  <div class="q" data-q="full_text" data-required="1"><label><span class="reqNote">Перепиши текст без пропусков, вставив буквы и знаки препинания.</span><textarea name="full_text" data-label="Восстановленный тренировочный текст" rows="7"></textarea></label></div>
+  <div class="footer"><span>21 сентября 2026</span><span>4</span></div>
+</section>
+
+<section class="slide" data-n="5">
+  <h2>2. Проверяемая гласная в корне</h2>
+  <div class="note">На контрольной нужно будет <b>самостоятельно найти</b> в тексте два слова с проверяемой безударной гласной и подобрать к ним проверочные слова.</div>
+  <div class="quote">1. По реке медленно плыл небольшой катер.
+2. На траве блестела холодная роса.
+3. За окном темнела высокая гора.
+4. На столе лежало письмо от брата.</div>
+  <div class="task">Найди в предложениях два слова с проверяемой безударной гласной в корне.</div>
+  <div class="grid2">
+    <div class="q" data-q="root_open1" data-required="1"><b>Пара 1</b><input type="text" name="root_word1" placeholder="слово из предложений"/><input type="text" name="root_check1" placeholder="проверочное слово" style="margin-top:8px"/></div>
+    <div class="q" data-q="root_open2" data-required="1"><b>Пара 2</b><input type="text" name="root_word2" placeholder="слово из предложений"/><input type="text" name="root_check2" placeholder="проверочное слово" style="margin-top:8px"/></div>
+  </div>
+  <div class="note"><b>Самопроверка:</b> проверочное слово должно быть однокоренным, а сомнительная гласная — стоять под ударением.</div>
+  <div class="footer"><span>21 сентября 2026</span><span>5</span></div>
+</section>
+
+<section class="slide" data-n="6">
+  <h2>3. Приставки: З/С и ПРЕ-/ПРИ-</h2>
+  <div class="q" data-q="prefixes" data-required="1">
+    <div class="match"><span>бе..полезный</span><select name="pr1"><option value="">— буква —</option><option value="з">з</option><option value="с">с</option></select></div>
+    <div class="match"><span>ра..бить</span><select name="pr2"><option value="">— буква —</option><option value="з">з</option><option value="с">с</option></select></div>
+    <div class="match"><span>и..править</span><select name="pr3"><option value="">— буква —</option><option value="з">з</option><option value="с">с</option></select></div>
+    <div class="match"><span>пр..бежать к дому</span><select name="pr4"><option value="">— буква —</option><option value="е">е</option><option value="и">и</option></select></div>
+    <div class="match"><span>пр..мудрый человек</span><select name="pr5"><option value="">— буква —</option><option value="е">е</option><option value="и">и</option></select></div>
+    <div class="match"><span>пр..открыть дверь</span><select name="pr6"><option value="">— буква —</option><option value="е">е</option><option value="и">и</option></select></div>
+    <button type="button" class="checkBtn" data-fields="pr1,pr2,pr3,pr4,pr5,pr6">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="footer"><span>21 сентября 2026</span><span>6</span></div>
+</section>
+
+<section class="slide" data-n="7">
+  <h2>4. Части речи и их признаки</h2>
+  <div class="lead">Тренируем тот же алгоритм, но на других словах.</div>
+  <div class="q" data-q="morph_noun" data-required="1"><b>к озеру</b><div class="grid2" style="margin-top:10px"><select name="n_gender"><option value="">род</option><option value="m">мужской</option><option value="f">женский</option><option value="n">средний</option></select><select name="n_decl"><option value="">склонение</option><option value="1">1-е</option><option value="2">2-е</option><option value="3">3-е</option></select><select name="n_num"><option value="">число</option><option value="sg">единственное</option><option value="pl">множественное</option></select><select name="n_case"><option value="">падеж</option><option value="dat">дательный</option><option value="prep">предложный</option><option value="gen">родительный</option></select></div></div>
+  <div class="q" data-q="morph_adj" data-required="1"><b>тихий (вечер)</b><div class="grid2" style="margin-top:10px"><select name="a_type"><option value="">разряд</option><option value="qual">качественное</option><option value="rel">относительное</option><option value="poss">притяжательное</option></select><select name="a_gender"><option value="">род</option><option value="m">мужской</option><option value="f">женский</option><option value="n">средний</option></select><select name="a_num"><option value="">число</option><option value="sg">единственное</option><option value="pl">множественное</option></select><select name="a_case"><option value="">падеж</option><option value="nom">именительный</option><option value="acc">винительный</option><option value="dat">дательный</option></select></div></div>
+  <div class="footer"><span>21 сентября 2026</span><span>7</span></div>
+</section>
+
+<section class="slide" data-n="8">
+  <h2>4. Морфология: числительное, местоимение, глагол</h2>
+  <div class="q" data-q="morph_num" data-required="1"><b>Пять учеников подошли к окну.</b><div class="grid3" style="margin-top:10px"><select name="num_type"><option value="">разряд по значению</option><option value="quant">количественное</option><option value="ord">порядковое</option></select><select name="num_struct"><option value="">строение</option><option value="simple">простое</option><option value="complex">сложное</option><option value="compound">составное</option></select><select name="num_case"><option value="">падеж</option><option value="nom">именительный</option><option value="acc">винительный</option><option value="gen">родительный</option></select></div></div>
+  <div class="q" data-q="morph_pron" data-required="1"><b>они</b><div class="grid3" style="margin-top:10px"><select name="pro_type"><option value="">часть речи</option><option value="pron">местоимение</option><option value="noun">существительное</option></select><select name="pro_person"><option value="">лицо</option><option value="1">1-е</option><option value="2">2-е</option><option value="3">3-е</option></select><select name="pro_case"><option value="">падеж</option><option value="nom">именительный</option><option value="acc">винительный</option><option value="dat">дательный</option></select></div></div>
+  <div class="q" data-q="morph_verb" data-required="1"><b>увидели</b><div class="grid3" style="margin-top:10px"><input type="text" name="v_inf" placeholder="начальная форма"/><select name="v_aspect"><option value="">вид</option><option value="pf">совершенный</option><option value="impf">несовершенный</option></select><select name="v_conj"><option value="">спряжение</option><option value="1">I</option><option value="2">II</option></select><select name="v_mood"><option value="">наклонение</option><option value="ind">изъявительное</option><option value="cond">условное</option><option value="imp">повелительное</option></select><select name="v_tense"><option value="">время</option><option value="past">прошедшее</option><option value="pres">настоящее</option><option value="fut">будущее</option></select><select name="v_num"><option value="">число</option><option value="sg">единственное</option><option value="pl">множественное</option></select></div></div>
+  <button type="button" class="checkBtn" data-fields="num_type,num_struct,num_case,pro_type,pro_person,pro_case,v_inf,v_aspect,v_conj,v_mood,v_tense,v_num">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  <div class="footer"><span>21 сентября 2026</span><span>8</span></div>
+</section>
+
+<section class="slide" data-n="9">
+  <h2>5. Исправь формы слов</h2>
+  <div class="q" data-q="forms" data-required="1">
+    <div class="task">Выберите нормативный вариант.</div>
+    <div class="match"><span>подойти к …</span><select name="f1"><option value="">— вариант —</option><option value="im">им</option><option value="nim">ним</option></select></div>
+    <div class="match"><span>любоваться … фотографиями</span><select name="f2"><option value="">— вариант —</option><option value="500bad">пятьсот</option><option value="500good">пятьюстами</option><option value="500bad2">пятистами</option></select></div>
+    <div class="match"><span>с … ученицами</span><select name="f3"><option value="">— вариант —</option><option value="bothm">обоими</option><option value="bothf">обеими</option></select></div>
+    <button type="button" class="checkBtn" data-fields="f1,f2,f3">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="footer"><span>21 сентября 2026</span><span>9</span></div>
+</section>
+
+<section class="slide" data-n="10">
+  <h2>6. Состав слова</h2>
+  <div class="quote">бесшумный</div>
+  <div class="q" data-q="morphemes" data-required="1">
+    <div class="grid4">
+      <label>приставка<select name="m_pref"><option value="">—</option><option value="bez">без-</option><option value="bes">бес-</option><option value="be">бе-</option></select></label>
+      <label>корень<select name="m_root"><option value="">—</option><option value="shum">шум</option><option value="bes">бес</option><option value="sh">ш</option></select></label>
+      <label>суффикс<select name="m_suf"><option value="">—</option><option value="n">-н-</option><option value="ny">-н-ый</option><option value="zero">нет</option></select></label>
+      <label>окончание<select name="m_end"><option value="">—</option><option value="iy">-ый</option><option value="y">-й</option><option value="zero">нулевое</option></select></label>
+    </div>
+    <button type="button" class="checkBtn" data-fields="m_pref,m_root,m_suf,m_end">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="note">На контрольной будет другое слово, но порядок тот же: окончание → основа → корень → приставка/суффикс.</div>
+  <div class="footer"><span>21 сентября 2026</span><span>10</span></div>
+</section>
+
+<section class="slide" data-n="11">
+  <h2>7. Предложение: основа и части речи</h2>
+  <div class="quote">Два туриста быстро подошли к реке.</div>
+  <div class="q" data-q="sentence_pos" data-required="1">
+    <div class="grid3">
+      <label>Два<select name="pos1"><option value="">— часть речи —</option><option value="num">числительное</option><option value="noun">существительное</option><option value="adv">наречие</option></select></label>
+      <label>туриста<select name="pos2"><option value="">— часть речи —</option><option value="noun">существительное</option><option value="adj">прилагательное</option><option value="pron">местоимение</option></select></label>
+      <label>быстро<select name="pos3"><option value="">— часть речи —</option><option value="adv">наречие</option><option value="adj">прилагательное</option><option value="verb">глагол</option></select></label>
+      <label>подошли<select name="pos4"><option value="">— часть речи —</option><option value="verb">глагол</option><option value="adv">наречие</option><option value="noun">существительное</option></select></label>
+      <label>к<select name="pos5"><option value="">— часть речи —</option><option value="prep">предлог</option><option value="conj">союз</option><option value="part">частица</option></select></label>
+      <label>реке<select name="pos6"><option value="">— часть речи —</option><option value="noun">существительное</option><option value="adj">прилагательное</option><option value="pron">местоимение</option></select></label>
+    </div>
+    <button type="button" class="checkBtn" data-fields="pos1,pos2,pos3,pos4,pos5,pos6">Проверить части речи</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="q" data-q="basis" data-required="1"><label><span class="reqNote">Запишите грамматическую основу.</span><input type="text" name="basis" placeholder="подлежащее + сказуемое"/></label></div>
+  <div class="footer"><span>21 сентября 2026</span><span>11</span></div>
+</section>
+
+<section class="slide" data-n="12">
+  <h2>Переходим к новой теме: монолог и диалог</h2>
+  <div class="lead">После повторения — короткий шаг вперёд.</div>
+  <div class="q" data-q="speech" data-required="1">
+    <div class="match"><span>Ученик подробно описывает свою комнату.</span><select name="sp1"><option value="">—</option><option value="mono">монолог</option><option value="dialog">диалог</option></select></div>
+    <div class="match"><span>Два друга обсуждают маршрут.</span><select name="sp2"><option value="">—</option><option value="mono">монолог</option><option value="dialog">диалог</option></select></div>
+    <div class="match"><span>Учитель объясняет правило классу.</span><select name="sp3"><option value="">—</option><option value="mono">монолог</option><option value="dialog">диалог</option></select></div>
+    <button type="button" class="checkBtn" data-fields="sp1,sp2,sp3">Проверить</button><div class="checkMsg" aria-live="polite"></div>
+  </div>
+  <div class="note"><b>Монолог-описание</b> отвечает прежде всего на вопросы «какой?», «что находится где?», «какие признаки заметны?».</div>
+  <div class="footer"><span>21 сентября 2026</span><span>12</span></div>
+</section>
+
+<section class="slide" data-n="13">
+  <h2>Финал: короткий монолог-описание</h2>
+  <div class="task">Опишите своё рабочее место в 4–5 связанных предложениях.</div>
+  <div class="note">Постарайтесь использовать <b>одно слово с приставкой на З/С</b> и <b>одно слово с проверяемой безударной гласной</b>. Так новая тема ещё раз работает на подготовку к контрольной.</div>
+  <div class="q" data-q="monologue" data-required="1"><textarea name="monologue" data-label="Монолог-описание" rows="7" placeholder="Передо мной находится… Слева… Больше всего заметно…"></textarea></div>
+  <div class="q" data-q="weak" data-required="1"><div class="task">Что повторить сегодня вечером?</div><div class="choices">
+    <label class="choice"><input type="radio" name="weak" value="текст"><span>буквы и знаки препинания в тексте</span></label>
+    <label class="choice"><input type="radio" name="weak" value="корни"><span>проверяемые гласные в корне</span></label>
+    <label class="choice"><input type="radio" name="weak" value="приставки"><span>приставки З/С и ПРЕ-/ПРИ-</span></label>
+    <label class="choice"><input type="radio" name="weak" value="морфология"><span>признаки частей речи</span></label>
+    <label class="choice"><input type="radio" name="weak" value="формы"><span>формы местоимений и числительных</span></label>
+    <label class="choice"><input type="radio" name="weak" value="состав"><span>состав слова</span></label>
+    <label class="choice"><input type="radio" name="weak" value="предложение"><span>грамматическая основа и части речи</span></label>
+  </div></div>
+  <div class="sendbox"><h3>Отправка работы</h3><p class="reqNote">Кнопка появляется только на последней странице. Проверьте ФИО и обязательные задания.</p><div class="sendrow"><button class="sendBtn" id="sendBtn" type="button">Отправить учителю</button><span class="sendStatus" id="sendStatus">Работа ещё не отправлена.</span></div></div>
+  <div class="footer"><span>21 сентября 2026</span><span>13</span></div>
+</section>
+</div>
+<div class="nav"><button class="prev" id="prev" type="button">← Назад</button><span class="counter" id="counter"></span><button class="next" id="next" type="button">Дальше →</button></div>
 </main>
 <script>
 (() => {
@@ -23,13 +189,12 @@
   const completion=document.getElementById('completion');
   const student=document.getElementById('student'), klass=document.getElementById('klass');
   const sendBtn=document.getElementById('sendBtn'), sendStatus=document.getElementById('sendStatus');
-  const META={"klass": "7Б", "subject": "Русский язык", "code": "21_7B_RUS_MONOLOG_11", "assignment": "Монолог и диалог. Монолог-описание", "openMax": 5, "lessonDay": "21.09.2026"};
-  const ANSWERS={"warmup": "mono", "type1": "narr", "type2": "reason"};
-  const FORMATIVE=new Set(["warmup"]);
+  const META={"klass":"7Б","subject":"Русский язык","code":"21_7B_RUS_MONOLOG_11","assignment":"Монолог-описание + подготовка к контрольной по повторению","openMax":6,"lessonDay":"21.09.2026"};
+  const ANSWERS={"t1":"о","t2":"о","t3":"о","t4":"о","t5":"с","p1":"comma","p2":"comma","pr1":"с","pr2":"з","pr3":"с","pr4":"и","pr5":"е","pr6":"и","n_gender":"n","n_decl":"2","n_num":"sg","n_case":"dat","a_type":"qual","a_gender":"m","a_num":"sg","a_case":"nom","num_type":"quant","num_struct":"simple","num_case":"nom","pro_type":"pron","pro_person":"3","pro_case":"nom","v_inf":"увидеть","v_aspect":"pf","v_conj":"2","v_mood":"ind","v_tense":"past","v_num":"pl","f1":"nim","f2":"500good","f3":"bothf","m_pref":"bes","m_root":"shum","m_suf":"n","m_end":"iy","pos1":"num","pos2":"noun","pos3":"adv","pos4":"verb","pos5":"prep","pos6":"noun","sp1":"mono","sp2":"dialog","sp3":"mono"};
   const STORE='lesson_'+META.code+'_'+META.lessonDay;
   const COLLECTOR_URL="https://script.google.com/macros/s/AKfycbxMF52C2BzQI7WRo7cmiWwvoiUIrjI60RyP6xn-ShM7oJER4FVyYECMolyszifrgQ9j/exec";
 
-  function show(i){idx=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,n)=>s.classList.toggle('active',n===idx));counter.textContent=(idx+1)+' / '+slides.length;prog.style.width=((idx+1)/slides.length*100)+'%';window.scrollTo({top:0,behavior:'smooth'});}
+  function show(i){idx=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,n)=>s.classList.toggle('active',n===idx));counter.textContent=(idx+1)+' / '+slides.length;prog.style.width=((idx+1)/slides.length*100)+'%';document.getElementById('prev').disabled=idx===0;document.getElementById('next').style.visibility=idx===slides.length-1?'hidden':'visible';window.scrollTo({top:0,behavior:'smooth'});}
   document.getElementById('prev').addEventListener('click',()=>show(idx-1));document.getElementById('next').addEventListener('click',()=>show(idx+1));
 
   function readName(name){const els=[...document.querySelectorAll('[name="'+CSS.escape(name)+'"]')];if(!els.length)return '';const f=els[0];if(f.type==='radio')return (els.find(e=>e.checked)||{}).value||'';if(f.type==='checkbox')return els.filter(e=>e.checked).map(e=>e.value);return f.value||'';}
@@ -42,11 +207,12 @@
   function load(){try{const raw=localStorage.getItem(STORE);if(!raw)return;const d=JSON.parse(raw);student.value=d.student||'';klass.value=d.klass||META.klass||'';Object.entries(d.answers||{}).forEach(([n,v])=>{const els=[...document.querySelectorAll('[name="'+CSS.escape(n)+'"]')];els.forEach(el=>{if(el.type==='radio')el.checked=el.value===v;else if(el.type==='checkbox')el.checked=Array.isArray(v)&&v.includes(el.value);else el.value=v;});});}catch(e){}updateCompletion();}
   document.addEventListener('input',save);document.addEventListener('change',save);
 
-  function same(a,b){if(Array.isArray(b)){if(!Array.isArray(a))return false;return a.length===b.length&&[...a].sort().join('|')===[...b].sort().join('|');}return String(a)===String(b);}
-  document.querySelectorAll('[data-check]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.check;const q=document.querySelector('.q[data-q="'+CSS.escape(id)+'"]');const msg=q.querySelector('.checkMsg');const val=readName(id);if((Array.isArray(val)&&val.length===0)||(!Array.isArray(val)&&String(val).trim()==='')){msg.textContent='Сначала выберите ответ.';msg.className='checkMsg bad';return;}const ok=same(val,ANSWERS[id]);msg.textContent=ok?'Верно. Можно двигаться дальше.':'Есть ошибка. Проверьте цитату или правило и попробуйте ещё раз.';msg.className='checkMsg '+(ok?'ok':'bad');}));
+  function norm(v){return String(v||'').trim().toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ');}
+  function same(a,b){return norm(a)===norm(b);}
+  document.querySelectorAll('.checkBtn').forEach(btn=>btn.addEventListener('click',()=>{const q=btn.closest('.q')||btn.parentElement;const msg=q.querySelector('.checkMsg')||btn.nextElementSibling;const fields=(btn.dataset.fields||'').split(',').map(s=>s.trim()).filter(Boolean);if(!fields.length)return;let filled=true,correct=0;for(const id of fields){const val=readName(id);if(String(val).trim()==='')filled=false;if(same(val,ANSWERS[id]))correct++;}if(!filled){msg.textContent='Сначала заполните весь блок.';msg.className='checkMsg bad';return;}msg.textContent=correct===fields.length?'Все ответы верны. Можно двигаться дальше.':'Верно '+correct+' из '+fields.length+'. Есть ошибки: вернитесь к правилу и попробуйте ещё раз.';msg.className='checkMsg '+(correct===fields.length?'ok':'bad');}));
 
-  function autoScore(){let score=0,max=0;Object.entries(ANSWERS).forEach(([name,key])=>{if(key===null)return;max++;if(same(readName(name),key))score++;});return {score,max};}
-  function openText(){const parts=[];document.querySelectorAll('textarea[name]').forEach(t=>{const v=t.value.trim();if(v)parts.push((t.dataset.label||t.name)+': '+v);});return parts.join('\n\n');}
+  function autoScore(){let score=0,max=0;Object.entries(ANSWERS).forEach(([name,key])=>{max++;if(same(readName(name),key))score++;});return {score,max};}
+    function openText(){const parts=[];document.querySelectorAll('textarea[name],input[type=text][name]').forEach((t,i)=>{const v=String(t.value||'').trim();if(!v)return;const key=t.dataset.label||t.name||('open_'+(i+1));parts.push(key+': '+v);});return parts.join('\n\n');}
   function validate(){let first=null;requiredQuestions().forEach(q=>{const ok=filledQuestion(q);q.classList.toggle('missing',!ok);if(!ok&&!first)first=q;});if(!student.value.trim()){student.style.borderColor='var(--bad)';if(!first)first=student;}else student.style.borderColor='';if(first){sendStatus.textContent='Заполните выделенные обязательные поля.';sendStatus.className='sendStatus bad';if(first.scrollIntoView)first.scrollIntoView({behavior:'smooth',block:'center'});return false;}return true;}
   function makeId(){if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);}
   function submitPayload(payload){return new Promise((resolve,reject)=>{const iframe=document.createElement('iframe');const nm='collector_'+Date.now();iframe.name=nm;iframe.style.display='none';let submitted=false;let timer;iframe.addEventListener('load',()=>{if(!submitted)return;clearTimeout(timer);setTimeout(()=>{iframe.remove();resolve();},50);});document.body.appendChild(iframe);const form=document.createElement('form');form.method='POST';form.action=COLLECTOR_URL;form.target=nm;form.style.display='none';const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=JSON.stringify(payload);form.appendChild(input);document.body.appendChild(form);submitted=true;timer=setTimeout(()=>{try{form.remove();iframe.remove();}catch(e){}reject(new Error('Не удалось подтвердить отправку. Проверьте интернет и повторите.'));},15000);form.submit();form.remove();});}
