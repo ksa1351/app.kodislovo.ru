@@ -4,3 +4,19 @@ html,body{height:auto;min-height:100%}html{background:var(--bg)}body{min-height:
 @media(max-width:1000px){.work-grid{grid-template-columns:minmax(0,1fr) 290px}.landing{gap:28px}.source{padding:18px}.panel{padding:22px}}
 @media(max-width:760px){#main{padding:24px 16px 80px}.landing{grid-template-columns:1fr;gap:22px;padding-top:0}.intro .lead{font-size:18px}.journey{grid-template-columns:1fr 1fr;margin-top:28px}.journey div{padding:20px}.work-grid{display:flex;flex-direction:column}.source{position:static;width:100%;max-height:none;order:-1}.panel{width:100%;min-height:0;padding:20px}.source[open]{max-height:65vh;overflow:auto}.workspace-head h1{font-size:28px}.workspace-head{flex-direction:column}.steps{gap:6px}.steps button{font-size:13px;padding:8px 10px}.top-actions .eyebrow{display:none}.start-card{padding:22px}.score-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr 85px;gap:10px}.nav-bottom button{padding:10px 13px}.question-actions button{flex:1}.site-topbar-inner{padding:10px 16px}.paper{padding:16px}.task-quote{font-size:19px}.pair p{font-size:19px}.row-spread{align-items:flex-start}}
 @media print{.site-topbar,.steps,.nav-bottom,button,.source,#save-status,.skip{display:none!important}body{background:white;color:black}#main{padding:0}.panel,.summary-card,.paper{background:white;color:black;border:1px solid #ddd;box-shadow:none}.work-grid{display:block}.paper{white-space:pre-wrap}p,h1,h2,h3{color:black}}
+
+/* Preserve verse lines while allowing long lines to wrap on small screens. */
+.verse-material .source-part p,.verse-material .task-quote{white-space:pre-wrap;overflow-wrap:anywhere}
+.verse-material .source-part p{line-height:1.65}
+.verse-material .inline-source .source-part{min-width:0}
+.verse-material .inline-source .source-part p{font-size:20px}
+.verse-material .source-fragments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 32px}
+.verse-material .inline-source cite{display:block;font-size:14px;line-height:1.6;color:var(--muted);font-style:normal;margin-top:18px}
+.verse-material .source-link{font:14px/1.6 var(--ks-font-sans)}
+.glossary{margin-top:20px;font-size:16px;line-height:1.6}
+.glossary summary{cursor:pointer;font-weight:650}
+.glossary dt{font-weight:650;margin-top:12px}
+.glossary dd{margin:4px 0 12px;color:var(--muted)}
+@media(max-width:760px){.verse-material .source-fragments{grid-template-columns:minmax(0,1fr)}.verse-material .inline-source{padding:16px}.verse-material .inline-source .source-part p{font-size:18px}}
+
+.task-context{white-space:pre-line}

@@ -190,6 +190,39 @@
         },
         "title": {
           "type": "string"
+        },
+        "format": {
+          "enum": [
+            "prose",
+            "verse"
+          ]
+        },
+        "paragraphLabels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceLabel": {
+          "type": "string"
+        },
+        "glossary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "term",
+              "definition"
+            ],
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "definition": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     },
