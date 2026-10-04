@@ -22,7 +22,7 @@ export function validateLesson(lesson) {
   for(const key of ['id','version','title','subject']) if(!lesson[key]) throw new Error('В уроке отсутствует поле '+key+'.');
   const ids=new Set();
   const stages=new Set((lesson.stages||[]).map(stage=>stage.id));
-  if(!stages.size||!lesson.material?.paragraphs?.length||!/^https:\/\//.test(lesson.material.sourceUrl||''))throw new Error('В уроке не хватает этапов или исходного материала.');
+  if(!stages.size||!lesson.material?.paragraphs?.length||(lesson.material.sourceUrl&&!/^https:\/\//.test(lesson.material.sourceUrl)))throw new Error('В уроке не хватает этапов или исходного материала.');
   if(!lesson.display||!Array.isArray(lesson.display.pills)||!Array.isArray(lesson.display.journey)||!lesson.manualGroups?.length)throw new Error('Не заполнено описание урока или критерии.');
   for(const task of lesson.tasks){
     if(!TYPES.includes(task.type)) throw new Error('Тип задания «'+task.type+'» пока не поддерживается.');

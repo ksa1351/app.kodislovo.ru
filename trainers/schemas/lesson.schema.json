@@ -116,6 +116,27 @@
         },
         "completionTitle": {
           "type": "string"
+        },
+        "workspaceLabel": {
+          "type": "string"
+        },
+        "automaticNote": {
+          "type": "string"
+        },
+        "manualLabel": {
+          "type": "string"
+        },
+        "workHeading": {
+          "type": "string"
+        },
+        "scaleNote": {
+          "type": "string"
+        },
+        "draftNotice": {
+          "type": "string"
+        },
+        "showStartNotes": {
+          "type": "boolean"
         }
       }
     },
@@ -143,8 +164,7 @@
       "required": [
         "paragraphs",
         "samples",
-        "attribution",
-        "sourceUrl"
+        "attribution"
       ],
       "properties": {
         "paragraphs": {
@@ -167,6 +187,9 @@
           "type": "string",
           "format": "uri",
           "pattern": "^https://"
+        },
+        "title": {
+          "type": "string"
         }
       }
     },
@@ -242,6 +265,12 @@
       "items": {
         "$ref": "#/$defs/task"
       }
+    },
+    "revisionMode": {
+      "enum": [
+        "draft-and-final",
+        "final-only"
+      ]
     }
   },
   "$defs": {
