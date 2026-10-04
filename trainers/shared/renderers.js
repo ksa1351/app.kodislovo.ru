@@ -16,8 +16,13 @@ function mapping(task,value,onChange){
 }
 export function match(task,value,onChange){return mapping(task,value,onChange);}
 export function classify(task,value,onChange){return mapping(task,value,onChange);}
+export function examReference(task){
+  if(!task.exam)return '';
+  return `<div class="exam-reference"><section aria-labelledby="exam-errors-title"><h3 id="exam-errors-title">Грамматические ошибки</h3><ul class="exam-errors">${task.exam.errors.map(row=>`<li><b>${e(row.letter)}.</b> ${e(row.text)}</li>`).join('')}</ul></section><section aria-labelledby="exam-sentences-title"><h3 id="exam-sentences-title">Предложения</h3><ol class="exam-sentences">${task.exam.sentences.map(text=>`<li>${e(text)}</li>`).join('')}</ol></section></div>`;
+}
 export function fill(task,value,onChange){
   const node=document.createElement('fieldset');node.innerHTML=`<legend>${e(task.instruction||'Заполни пропуски.')}</legend>`+task.items.map(item=>`<label class="select-row">${e(item.text)}<input type="text" data-item="${e(item.id)}" value="${e(value?.[item.id]||'')}" autocomplete="off"></label>`).join('');
+  if(task.exam)for(const input of node.querySelectorAll('input')){input.inputMode='numeric';input.maxLength=5;input.pattern='[1-9]{5}';input.placeholder='Например: 12345';}
   node.addEventListener('input',()=>onChange(Object.fromEntries([...node.querySelectorAll('input')].map(el=>[el.dataset.item,el.value]))));return node;
 }
 export function order(task,value,onChange){

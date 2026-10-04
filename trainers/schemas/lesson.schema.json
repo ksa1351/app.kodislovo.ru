@@ -137,6 +137,9 @@
         },
         "showStartNotes": {
           "type": "boolean"
+        },
+        "separateWrittenAnswers": {
+          "type": "boolean"
         }
       }
     },
@@ -223,6 +226,9 @@
               }
             }
           }
+        },
+        "summaryLabel": {
+          "type": "string"
         }
       }
     },
@@ -414,6 +420,49 @@
         },
         "referenceTitle": {
           "type": "string"
+        },
+        "exam": {
+          "type": "object",
+          "required": [
+            "errors",
+            "sentences"
+          ],
+          "properties": {
+            "errors": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "required": [
+                  "letter",
+                  "text"
+                ],
+                "properties": {
+                  "letter": {
+                    "enum": [
+                      "А",
+                      "Б",
+                      "В",
+                      "Г",
+                      "Д"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "sentences": {
+              "type": "array",
+              "minItems": 9,
+              "maxItems": 9,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         }
       },
       "allOf": [
