@@ -78,6 +78,7 @@
         <button class="kd-btn" id="btnFinish" type="button">Завершить</button>
         <button class="kd-btn secondary" id="btnSubmit" type="button" disabled>Отправить</button>
       </div>
+      <p id="submissionStatus" class="kd-subtitle" role="status" aria-live="polite" aria-atomic="true"></p>
 
       <div class="kd-reset-block">
         <label class="kd-reset-label" for="resetCode">Код сброса</label>
@@ -96,7 +97,7 @@
       </div>
 
       <div class="kd-subtitle" style="margin-top:10px">
-        Сброс нужен, если ребёнок сдавал без интернета или браузер дал сбой. Учитель выдаёт код, вы вводите его здесь и нажимаете «Сбросить».
+        Если отправка не подтверждена, нажмите «Повторить отправку» — ответы сохранятся. Код сброса выдаёт учитель, когда разрешает начать работу заново.
       </div>
     </section>
 
@@ -149,6 +150,6 @@
 
   <script src="../assets/js/control-grading.js?v=2026-05-31-7"></script>
   <script src="./control_navigation.js?v=1"></script>
-  <script src="./control_core.js?v=26"></script>
+  <script src="./control_core.js?v=27"></script>
 </body>
 </html>

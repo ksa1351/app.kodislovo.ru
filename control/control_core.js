@@ -74,11 +74,12 @@
     return await r.json();
   }
 
-  async function postJson(url, body, headers = {}) {
+  async function postJson(url, body, headers = {}, signal) {
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
+      signal,
     });
     const text = await r.text();
     let json = null;
@@ -187,6 +188,11 @@
   let startedAt = null;
   let finishedAt = null;
   let isFinished = false;
+  // Снимок отправки и квитанция хранятся вместе с ответами, а не вместо них.
+  let submission = null;
+  let submissionBusy = false;
+  let resetBusy = false;
+  let progressStorageFailed = false;
 
   let timeLimitSec = null;
   let timerTick = null;
@@ -265,7 +271,12 @@
   }
 
   function lsKey() {
-    return `${LS_PREFIX}${subject}:${currentVariantId || "variant"}`;
+    const scope = assignmentPublicId ? `assignment:${encodeURIComponent(assignmentPublicId)}:` : "";
+    return `${LS_PREFIX}${scope}${subject}:${currentVariantId || "variant"}`;
+  }
+
+  function legacySubmissionKey() {
+    return `kodislovo_submission_key:${assignmentPublicId || subject}:${currentVariantId}`;
   }
 
   function deepClone(value) {
@@ -434,12 +445,13 @@
   }
 
   function saveProgress() {
-    if (!currentVariantId) return;
+    if (!currentVariantId) return false;
     const payload = {
       schema: "kodislovo.control.v1",
       subject,
       variantId: currentVariantId,
       variantFile: currentVariantFile,
+      assignmentId: assignmentPublicId,
       startedAt,
       finishedAt,
       isFinished,
@@ -449,19 +461,72 @@
       },
       answers: JSON.parse(JSON.stringify(answersMap)),
       currentTaskIndex,
+      submission,
       savedAt: nowIso(),
     };
     try {
       localStorage.setItem(lsKey(), JSON.stringify(payload));
+      progressStorageFailed = false;
+      updateSubmissionStatus();
+      return true;
     } catch (e) {
       console.warn("localStorage write failed", e);
+      progressStorageFailed = true;
+      updateSubmissionStatus();
+      return false;
     }
   }
 
   function loadProgress() {
-    const raw = localStorage.getItem(lsKey());
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+    try {
+      const raw = localStorage.getItem(lsKey());
+      if (raw) return JSON.parse(raw);
+      if (!assignmentPublicId) return null;
+      // Старый ключ не различал назначения одного варианта. Не присваиваем
+      // неоднозначный черновик новой работе без явного выбора ученика.
+      const legacy = localStorage.getItem(`${LS_PREFIX}${subject}:${currentVariantId || "variant"}`);
+      if (!legacy) return null;
+      const progress = JSON.parse(legacy);
+      if (progress.assignmentId && progress.assignmentId !== assignmentPublicId) return null;
+      if (progress.assignmentId !== assignmentPublicId && !window.confirm(
+        `Найден прежний черновик: ${safeText(progress.student?.name) || "без имени"}, ` +
+        `${safeText(progress.student?.class) || "без класса"}. Восстановить его для этой работы?`
+      )) return null;
+      return progress; // Старый файл остаётся резервной копией.
+    } catch (error) {
+      console.warn("localStorage read failed", error);
+      return null;
+    }
+  }
+
+  function updateSubmissionStatus() {
+    let message = "";
+    if (submission?.state === "accepted") {
+      message = submission.receipt?.score
+        ? "Работа принята. Ответы и подтверждение сохранены на этом устройстве."
+        : "Работа принята. Оценка пока не получена. Повторно отправлять работу не нужно.";
+      if (progressStorageFailed) message = "Работа принята, но резервную копию подтверждения сохранить не удалось. Не отправляйте её повторно и пока не закрывайте страницу.";
+    } else if (progressStorageFailed) {
+      message = "Не удалось сохранить ответы на этом устройстве. Не закрывайте страницу: резервной копии последних изменений может не быть.";
+    } else if (submissionBusy) {
+      message = "Отправляем работу. Копия ответов сохранена на этом устройстве.";
+    } else if (submission) {
+      message = "Ответы сохранены на этом устройстве. Приём работы не подтверждён — повторите отправку.";
+    } else if (isFinished) {
+      message = "Работа завершена и сохранена на этом устройстве. Нажмите «Отправить».";
+    }
+    setText("submissionStatus", message);
+  }
+
+  function readServerScore(response) {
+    const grading = response?.gradedBy === "server" ? response.grading : null;
+    const earned = grading?.earnedPoints;
+    const maximum = grading?.maxPoints;
+    // null, пустая строка и отрицательные баллы не являются оценкой 0.
+    if (typeof earned !== "number" || typeof maximum !== "number" ||
+        !Number.isFinite(earned) || !Number.isFinite(maximum) ||
+        earned < 0 || maximum < 0 || earned > maximum) return null;
+    return { earned, max: maximum, percent: maximum > 0 ? Math.round(earned / maximum * 100) : 0, mark: null };
   }
 
   function clearLocalProgress() {
@@ -628,19 +693,23 @@
   function showSubmitSuccessOverlay(score) {
     const overlay = $("submitSuccessOverlay");
     if (!overlay) {
-      alert("Работа успешно отправлена.");
+      alert(score ? "Работа принята." : "Работа принята. Оценка пока не получена. Повторная отправка не нужна.");
       return;
     }
 
-    const payload = buildResultPayload();
+    const payload = submission?.payload || buildResultPayload();
     setText("successStudent", `${safeText(payload.student?.name) || "—"} · ${safeText(payload.student?.class) || "—"}`);
     setText("successVariant", payload.variant?.title || payload.variant?.id || "—");
-    const markText = score.mark != null ? ` · отметка ${score.mark}` : "";
+    setText("successTitle", "Работа принята");
+    setText("successMessage", progressStorageFailed
+      ? "Подтверждение есть, но сохранить его на устройстве не удалось. Пока не закрывайте страницу; повторная отправка не нужна."
+      : "Ответы приняты сервером. Резервная копия сохранена на этом устройстве.");
+    const markText = score?.mark != null ? ` · отметка ${score.mark}` : "";
     setText(
       "successScore",
-      score.max > 0
+      !score ? "Оценка пока не получена — повторно отправлять работу не нужно" : score.max > 0
         ? `${score.earned} из ${score.max} баллов (${score.percent}%)${markText}`
-        : "Отправлено"
+        : "Автоматические баллы не предусмотрены"
     );
 
     const back = $("successBackBtn");
@@ -685,11 +754,20 @@
       btnFinish.textContent = isFinished ? "Завершено" : "Завершить";
       btnFinish.disabled = isFinished;
     }
-    if (btnSubmit) btnSubmit.disabled = !isFinished;
-    if (btnReset) btnReset.disabled = false;
+    if (btnSubmit) {
+      btnSubmit.disabled = !isFinished || submissionBusy || resetBusy || submission?.state === "accepted";
+      btnSubmit.textContent = submissionBusy ? "Отправляется…" : submission?.state === "accepted" ? "Работа принята" : submission ? "Повторить отправку" : "Отправить";
+    }
+    if (btnReset) btnReset.disabled = submissionBusy || resetBusy;
 
-    const inputs = document.querySelectorAll("#studentName,#studentClass,#variantSelect,#taskOne input");
+    const inputs = document.querySelectorAll("#variantSelect,#taskOne input,#taskOne textarea,#taskOne select");
     inputs.forEach((el) => { el.disabled = isFinished; });
+    // Если время закончилось до заполнения имени, данные ещё можно дописать.
+    // После фиксации отправки личность входит в неизменяемый снимок.
+    [$("studentName"), $("studentClass")].forEach((el) => {
+      if (el) el.disabled = Boolean(submission) || submissionBusy || resetBusy;
+    });
+    updateSubmissionStatus();
   }
 
   function buildResultPayload() {
@@ -735,7 +813,8 @@
     finishedAt = nowIso();
     saveProgress();
     applyFinishedState();
-    alert(auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена. Нажмите «Отправить».");
+    alert((auto ? "Время вышло. Контрольная завершена автоматически." : "Контрольная завершена.") +
+      (progressStorageFailed ? " Не удалось сохранить резервную копию. Не закрывайте страницу." : " Нажмите «Отправить»."));
   }
 
   // ========= texts by range =========
@@ -1187,6 +1266,8 @@
     timeLimitSec = timerMinutes > 0 ? timerMinutes * 60 : null;
 
     const progress = loadProgress();
+    submission = progress?.submission || null;
+    lastSubmissionId = submission?.receipt?.submissionId || (assignmentConfig ? lastSubmissionId : "");
     startedAt = progress?.startedAt || nowIso();
     finishedAt = progress?.finishedAt || null;
     isFinished = Boolean(progress?.isFinished);
@@ -1195,7 +1276,17 @@
     if (progress?.student?.class && $("studentClass")) $("studentClass").value = progress.student.class;
 
     answersMap = progress?.answers || {};
+    // Повтор запроса должен отправлять ровно тот же снимок, включая времена.
+    if (submission?.payload) {
+      answersMap = deepClone(submission.payload.answers || {});
+      startedAt = submission.payload.startedAt;
+      finishedAt = submission.payload.finishedAt;
+      isFinished = true;
+      if ($("studentName")) $("studentName").value = submission.payload.student?.name || "";
+      if ($("studentClass")) $("studentClass").value = submission.payload.student?.class || "";
+    }
     currentTaskIndex = Number.isFinite(progress?.currentTaskIndex) ? progress.currentTaskIndex : 0;
+    if (progress) saveProgress();
 
     setHeader();
 
@@ -1233,65 +1324,79 @@
 
   // ========= submit to Yandex Cloud =========
   async function submitResultToCloud() {
+    if (submissionBusy || resetBusy) return;
+    if (submission?.state === "accepted") {
+      showSubmitSuccessOverlay(submission.receipt?.score || null);
+      return;
+    }
     if (!isFinished) {
       alert("Сначала нажмите «Завершить».");
       return;
     }
 
-    const btn = $("btnSubmit");
-    const prevText = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.textContent = "Отправляется…"; }
+    submissionBusy = true;
+    applyFinishedState();
 
     try {
-      const payload = buildResultPayload();
+      if (!submission) {
+        const payload = buildResultPayload();
+        if (!payload.student.name || !payload.student.class) {
+          throw new Error("Заполните ФИО и класс перед отправкой.");
+        }
+        submission = {
+          state: "pending",
+          idempotencyKey: localStorage.getItem(legacySubmissionKey()) || root.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          payload,
+          receipt: null,
+        };
+      }
+      // Без сохранённого снимка нельзя безопасно повторить запрос после сбоя.
+      if (!saveProgress()) throw new Error("Не удалось сохранить резервную копию ответов. Не закрывайте страницу; отправка пока не выполнена.");
       const services = await loadBackendServices();
-      const keyName = `kodislovo_submission_key:${assignmentPublicId || subject}:${currentVariantId}`;
-      let idempotencyKey = localStorage.getItem(keyName) || "";
-      if (!idempotencyKey) {
-        idempotencyKey = root.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        localStorage.setItem(keyName, idempotencyKey);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      let response;
+      try {
+        response = await postJson(
+          services.submitUrl,
+          submission.payload,
+          assignmentConfig ? { "Idempotency-Key": submission.idempotencyKey } : {},
+          controller.signal
+        );
+      } finally {
+        clearTimeout(timeout);
       }
-      const response = await postJson(
-        services.submitUrl,
-        payload,
-        assignmentConfig ? { "Idempotency-Key": idempotencyKey } : {}
-      );
-      if (assignmentConfig && response?.submissionId) {
-        lastSubmissionId = response.submissionId;
-        localStorage.setItem(`kodislovo_last_submission:${assignmentPublicId}`, lastSubmissionId);
-        localStorage.removeItem(keyName);
+      const score = readServerScore(response);
+      const submissionId = typeof response?.submissionId === "string" ? response.submissionId.trim() : "";
+      // Назначения подтверждаются номером записи. Старый endpoint без назначения
+      // подтверждал приём серверной оценкой — сохраняем этот контракт.
+      if (response?.ok === false || response?.error || (!submissionId && (assignmentConfig || !score))) {
+        throw new Error("Сервер не подтвердил приём работы.");
       }
-
-      // ✅ после успешной отправки — удаляем временное автосохранение
-      clearLocalProgress();
-
-      // оставляем экран в состоянии "завершено" (в памяти)
-      applyFinishedState();
-
-      const serverGrading = response && response.gradedBy === "server" ? response.grading : null;
-      const earned = Number(serverGrading?.earnedPoints);
-      const maximum = Number(serverGrading?.maxPoints);
-      if (!serverGrading || !Number.isFinite(earned) || !Number.isFinite(maximum)) {
-        throw new Error(SERVICE_UNAVAILABLE_MESSAGE);
-      }
-      const score = {
-        earned,
-        max: maximum,
-        percent: maximum > 0 ? Math.round((earned / maximum) * 100) : 0,
-        mark: null,
+      submission.state = "accepted";
+      submission.receipt = {
+        submissionId: submissionId || null,
+        acceptedAt: nowIso(),
+        score,
       };
+      if (submissionId) lastSubmissionId = submissionId;
+      // Ответы, ключ и квитанция остаются в одной резервной записи и после успеха.
+      saveProgress();
       showSubmitSuccessOverlay(score);
     } catch (err) {
       console.error(err);
-      alert(SERVICE_UNAVAILABLE_MESSAGE);
-      if (btn) { btn.disabled = false; }
+      if (!assignmentConfig) backendServicesPromise = null; // Повтор загрузит настройки после сетевого сбоя.
+      alert(progressStorageFailed || !submission ? err.message :
+        "Приём работы не подтверждён. Ответы сохранены на этом устройстве. Повторите отправку; сброс работы не нужен.");
     } finally {
-      if (btn) btn.textContent = prevText || "Отправить";
+      submissionBusy = false;
+      applyFinishedState();
     }
   }
 
   // ========= reset consume (код сброса) =========
   async function consumeResetCode() {
+    if (submissionBusy || resetBusy) return;
     const input = $("resetCode");
     let raw = String(input?.value ?? "");
     let code = raw.trim().toLowerCase();
@@ -1327,9 +1432,14 @@
 
     const btn = $("btnReset");
     const prevText = btn ? btn.textContent : "";
+    resetBusy = true;
+    applyFinishedState();
     if (btn) { btn.disabled = true; btn.textContent = "Проверка…"; }
 
     try {
+      if (!saveProgress()) throw new Error("Не удалось сохранить ответы перед сбросом. Не закрывайте страницу.");
+      const archiveId = submission?.idempotencyKey || startedAt;
+      localStorage.setItem(`${LS_PREFIX}archive:${encodeURIComponent(lsKey())}:${encodeURIComponent(archiveId)}`, localStorage.getItem(lsKey()));
       const services = await loadBackendServices();
       await postJson(services.resetConsumeUrl, {
         subject,
@@ -1341,8 +1451,10 @@
       });
       if (assignmentConfig) {
         localStorage.removeItem(`kodislovo_last_submission:${assignmentPublicId}`);
-        lastSubmissionId = "";
       }
+      lastSubmissionId = "";
+      localStorage.removeItem(legacySubmissionKey());
+      submission = null;
 
       // ✅ сброс: очищаем локальный прогресс и стартуем заново
       clearLocalProgress();
@@ -1368,7 +1480,9 @@
       console.error(err);
       alert("Код сброса не принят.\n\n" + String(err.message || err));
     } finally {
+      resetBusy = false;
       if (btn) { btn.disabled = false; btn.textContent = prevText || "Сброс"; }
+      applyFinishedState();
     }
   }
 
