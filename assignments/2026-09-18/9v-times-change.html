@@ -148,6 +148,7 @@ button.ghost{
   .actions{display:none}
 }
 </style>
+<script src="../../assets/js/lesson-submitter.js?v=1"></script>
 </head>
 <body>
 <div class="wrap">
@@ -571,54 +572,7 @@ button.ghost{
       !/PASTE_GOOGLE/.test(window.COLLECTOR_URL);
   }
 
-  function submitPayload(payload){
-    return new Promise((resolve, reject) => {
-      if (!endpointReady()) {
-        reject(new Error("Адрес приёмника ещё не настроен."));
-        return;
-      }
-
-      const iframeName = "collector_frame_" + Date.now();
-      const iframe = document.createElement("iframe");
-      iframe.name = iframeName;
-      iframe.style.display = "none";
-      let submitted = false;
-      let timer = null;
-
-      iframe.addEventListener("load", () => {
-        if (!submitted) return;
-        clearTimeout(timer);
-        setTimeout(() => {
-          iframe.remove();
-          resolve();
-        }, 50);
-      });
-
-      document.body.appendChild(iframe);
-
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = window.COLLECTOR_URL;
-      form.target = iframeName;
-      form.style.display = "none";
-
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "payload";
-      input.value = JSON.stringify(payload);
-      form.appendChild(input);
-      document.body.appendChild(form);
-
-      submitted = true;
-      timer = setTimeout(() => {
-        try{ form.remove(); iframe.remove(); }catch(e){}
-        reject(new Error("Не удалось подтвердить отправку. Проверь интернет и попробуй ещё раз."));
-      }, 15000);
-
-      form.submit();
-      form.remove();
-    });
-  }
+  function submitPayload(payload){ return window.KodislovoLessonSubmitter.submit(window.COLLECTOR_URL, payload); }
 
   sendBtn.addEventListener("click", async () => {
     const student = getStudent();
@@ -665,8 +619,8 @@ button.ghost{
     statusEl.textContent = "Не закрывай страницу, идёт отправка.";
 
     try{
-      await submitPayload(payload);
-      statusEl.textContent = "Работа отправлена учителю. Можно закрыть страницу.";
+      const receipt = await submitPayload(payload);
+      statusEl.textContent = window.KodislovoLessonSubmitter.message(receipt);
       sendBtn.textContent = "Отправить ещё раз";
       try{
         localStorage.setItem("collector_last_" + (meta.code || "task"), JSON.stringify({
