@@ -17,13 +17,14 @@ export async function submitResult(url,state,save,fetcher=fetch){
   if(!url) throw new Error('Отправка в кабинет пока недоступна. Скачайте работу, чтобы передать её учителю.');
   if(!state.pending) throw new Error('Сначала завершите работу.');
   if(state.preview) throw new Error('Предпросмотр не отправляется в журнал.');
-  if(state.receipt){if(!validReceipt(state.receipt,state.pending))throw new Error('Подтверждение сохранения повреждено.');return state.receipt;}
+  if(state.receipt){if(validReceipt(state.receipt,state.pending))return state.receipt;state.receipt=null;}
   if(active.has(state))return active.get(state);
   const promise=send(url,state,save,fetcher);active.set(state,promise);
   try{return await promise;}finally{active.delete(state);}
 }
 async function send(url,state,save,fetcher){
-  const wrapper=transport(state.pending);state.transportStarted=true;save();
+  const wrapper=transport(state.pending),wasStarted=state.transportStarted;state.transportStarted=true;
+  try{save();}catch(error){state.transportStarted=wasStarted;throw error;}
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),45000);
   try{
     const response=await fetcher(url,{method:'POST',credentials:'omit',redirect:'follow',body:new URLSearchParams({payload:JSON.stringify(wrapper)}),signal:controller.signal});
@@ -31,6 +32,9 @@ async function send(url,state,save,fetcher){
     const receipt=await response.json();
     if(receipt?.status==='error'&&receipt.sourceSubmissionId===state.pending.submission_id&&typeof receipt.message==='string')throw new Error(receipt.message.slice(0,500));
     if(!validReceipt(receipt,state.pending))throw new Error('Кабинет не подтвердил сохранение новой работы. Повторите отправку.');
-    state.receipt=receipt;save();return receipt;
+    state.receipt=receipt;
+    // A failed local write cannot undo the server's confirmed acceptance.
+    try{save();}catch(_){}
+    return receipt;
   }catch(error){if(error.name==='AbortError'||error instanceof TypeError||error instanceof SyntaxError)throw new Error('Подтверждение не получено. Работа сохранена на устройстве; повторите отправку.');throw error;}finally{clearTimeout(timer);}
 }

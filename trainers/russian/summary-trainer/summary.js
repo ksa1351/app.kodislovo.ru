@@ -1,8 +1,8 @@
 (function () {
   const STORAGE_PREFIX = "summary-trainer";
   const LAST_TEXT_KEY = `${STORAGE_PREFIX}:last-text`;
-  const AUTOSAVE_MESSAGE = "Изменения сохраняются автоматически";
-  const MANUAL_SAVE_MESSAGE = "Сохранено";
+  const AUTOSAVE_MESSAGE = "Черновик сохранён на этом устройстве";
+  const MANUAL_SAVE_MESSAGE = "Черновик сохранён на этом устройстве";
   const RETURN_TO_EDIT_CONFIRM =
     "Вернуться к правке?\n\nИсходный текст снова будет скрыт.\nТекущее изложение сохранится — вы сможете его доработать и отправить обновлённую версию.";
   const OPEN_QUESTIONS_CONFIRM =
@@ -675,6 +675,7 @@
       }
       showQuestionGroup(currentGroupIndex);
     } else if (currentPhase === PHASE_EDITING) {
+      setSubmitStatus(submissionState.pending?'Подтверждение отправки не получено. Повтори отправку.':'Эта редакция ещё не отправлена учителю.');
       workspace.hidden = false;
       comparisonSection.hidden = true;
       setWorkspacePhase("editing");

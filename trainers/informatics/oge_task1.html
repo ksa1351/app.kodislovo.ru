@@ -39,7 +39,7 @@
         </ol>
       </nav>
       <h1>Задание 1. Количественные параметры информационных объектов</h1>
-      <p>Тренажер использует набор задач из Android-приложения: выберите задачу, введите ответ и сразу проверьте себя.</p>
+      <p>Выберите задачу и запишите ответ. Ответы остаются только в этой вкладке и не отправляются учителю. Для сдачи работы откройте ссылку, которую выдал учитель.</p>
     </header>
 
     <section class="kd-section" id="step-task">
@@ -51,7 +51,7 @@
           </div>
           <div class="trainer-score-pills">
             <span class="trainer-score-pill" id="scoreAttempts">Ответов: 0</span>
-            <span class="trainer-score-pill ok" id="scoreCorrect">Проверка: на сервере</span>
+            <span class="trainer-score-pill" id="scoreCorrect">Самостоятельная практика</span>
           </div>
         </div>
 
@@ -59,7 +59,7 @@
 
         <div class="answer-row">
           <input id="answerInput" type="text" autocomplete="off" placeholder="Введите ответ" aria-label="Ответ">
-          <button class="kd-button" id="checkBtn" type="button">Сохранить ответ</button>
+          <button class="kd-button" id="checkBtn" type="button">Записать ответ</button>
         </div>
 
         <div class="trainer-actions">
@@ -101,7 +101,7 @@
 
     function updateStats() {
       scoreAttemptsEl.textContent = `Ответов: ${totalCount}`;
-      scoreCorrectEl.textContent = "Проверка: на сервере";
+      scoreCorrectEl.textContent = "Самостоятельная практика";
     }
 
     function setFeedback(message, type) {
@@ -128,13 +128,13 @@
       const userAnswer = String(answerInputEl.value || "").trim();
 
       if (!userAnswer) {
-        setFeedback("Введите ответ, затем нажмите «Сохранить ответ».", "bad");
+        setFeedback("Введите ответ, затем нажмите «Записать ответ».", "bad");
         return;
       }
 
       totalCount += 1;
       setFeedback(
-        "Ответ сохранён только в текущем окне. Проверка доступна в работе, назначенной учителем.",
+        "Ответ записан только в этой вкладке. Учителю он не отправлен.",
         "neutral"
       );
       updateStats();
@@ -142,7 +142,7 @@
 
     function showAnswer() {
       setFeedback(
-        "Правильные ответы не передаются в браузер. Итог проверяет сервер после отправки назначенной работы.",
+        "Эта страница не отправляет ответы. Для проверки откройте работу по ссылке учителя и отправьте ответы из неё.",
         "neutral"
       );
     }

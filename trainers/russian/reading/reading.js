@@ -689,9 +689,7 @@
   }
 
   function downloadJSON() {
-    if (!lastResult) {
-      buildReport();
-    }
+    buildReport();
     const blob = new Blob([JSON.stringify(lastResult, null, 2)], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -731,11 +729,18 @@
       },
       lastResult,
     };
-    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(payload));
+      $("local-save-status").textContent = "Черновик сохранён на этом устройстве.";
+    } catch (_) {
+      $("local-save-status").textContent = "Черновик не удалось сохранить. Не закрывай страницу; скачай отчёт.";
+    }
   }
 
   function restoreState() {
-    const raw = localStorage.getItem(LS_KEY);
+    let raw;
+    try { raw = localStorage.getItem(LS_KEY); }
+    catch (_) { $("local-save-status").textContent = "Хранилище браузера недоступно. После работы скачай отчёт.";return null; }
     if (!raw) return null;
     try {
       return JSON.parse(raw);

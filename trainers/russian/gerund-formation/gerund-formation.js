@@ -83,7 +83,9 @@
     state.updatedAt = new Date().toISOString();
     try {
       localStorage.setItem(storageKey(state.studentName), JSON.stringify(state));
+      $("local-save-status").textContent = "Прогресс сохранён на этом устройстве.";
     } catch (error) {
+      $("local-save-status").textContent = "Прогресс не удалось сохранить. Не закрывай страницу; скачай результат.";
       console.warn("Не удалось сохранить прогресс", error);
     }
   }

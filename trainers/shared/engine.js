@@ -1,13 +1,14 @@
 import {validateLesson,answered,gradeTask} from './scoring.js?v=20261004-grade7';
 import {draftKey,newDraft,loadDraft,persist} from './storage.js';
 import {buildResult,readableWork} from './results.js?v=20261004-grade11';
-import {collectorForLesson,submitResult} from './submitter.js?v=20261005-receipts';
+import {collectorForLesson,submitResult,validReceipt} from './submitter.js?v=20261005-completion';
 import {renderers,examReference,escapeHTML as e,wordCount} from './renderers.js?v=20261004-grade11';
 import {trainerAccess} from './access.js?v=20261005-access';
 
 const main=document.getElementById('main'),saveStatus=document.getElementById('save-status');
 let lesson,collectorUrl,state,key,enteredAt=0,activeId=null,savingFailed=false,view='landing';
-let accessCheck=null,accessBlocked=false;
+let accessCheck=null,accessBlocked=false,sending=false;
+const received=()=>Boolean(state?.pending&&validReceipt(state.receipt,state.pending));
 async function ensureAccess(){
   if(accessCheck)return accessCheck;
   accessCheck=(async()=>{
@@ -15,7 +16,7 @@ async function ensureAccess(){
     try{enabled=await trainerAccess(lesson);}catch(error){message=error.message;}
     if(enabled)return true;
     if(state){track();save();}activeId=null;accessBlocked=true;
-    main.innerHTML=`<section class="panel"><h1>${message?'Не удалось проверить доступ':'Доступ к работе закрыт'}</h1><p>${e(message||'Учитель закрыл доступ к этой работе. Обратись к учителю, чтобы узнать, когда её можно будет выполнить.')}</p>${state?'<p>Твои ответы сохранены на этом устройстве. Их можно скачать.</p><button id="save-closed-work">Скачать ответы</button>':''}<button id="retry-access">Проверить снова</button></section>`;
+    main.innerHTML=`<section class="panel"><h1>${message?'Не удалось проверить доступ':'Доступ к работе закрыт'}</h1><p>${e(message||'Учитель закрыл доступ к этой работе. Обратись к учителю, чтобы узнать, когда её можно будет выполнить.')}</p>${state?`<p>${savingFailed?'Не закрывай страницу: скачай ответы, чтобы не потерять их.':'Твои ответы сохранены на этом устройстве. Их можно скачать.'}</p><button id="save-closed-work">Скачать ответы</button>`:''}<button id="retry-access">Проверить снова</button></section>`;
     document.getElementById('retry-access').onclick=()=>location.reload();
     document.getElementById('save-closed-work')?.addEventListener('click',()=>download(readableWork(lesson,state,state.pending||buildResult(lesson,state)),lesson.id+'-work.txt'));
     return false;
@@ -75,27 +76,49 @@ function renderTask(){
   bindShell();document.getElementById('prev').onclick=()=>go(state.index-1);document.getElementById('next').onclick=()=>state.index===lesson.tasks.length-1?review():go(state.index+1);
 }
 function feedback(task){const grade=gradeTask(task,state.answers[task.id]);note((grade.correct?'✓ Верно. ':'Пока нет. ')+(task.explanation||''));}
-function review(){track();activeId=null;view='review';save();const missing=lesson.tasks.filter(t=>!t.optional&&!answered(t,state.answers[t.id]));main.innerHTML=shell('review')+`<section class="panel"><div class="eyebrow">ПЕРЕД ЗАВЕРШЕНИЕМ</div><h2 tabindex="-1">Посмотри на работу целиком</h2><p>${missing.length?'Не заполнено обязательных заданий: '+missing.length+'. Можно вернуться к ним или сохранить неполную работу.':'Все обязательные задания заполнены. Осталось сохранить результат.'}</p><div class="paper">${e(finalText()||'Текст ещё не написан.')}</div><details ${missing.length?'open':''}><summary>Проверка заполненности</summary><ul class="review-list">${lesson.tasks.map((t,i)=>`<li><span>${answered(t,state.answers[t.id])?'✓':'○'} ${e(t.prompt)}${t.optional?' (по желанию)':''}</span><button data-task="${i}">Открыть</button></li>`).join('')}</ul></details><p class="small">${e(lesson.display.scoreNote)}</p><div class="actions"><button id="return">Продолжить работу</button><button id="finish" class="primary">${missing.length?'Сохранить неполную работу':'Завершить и сохранить'}</button></div></section>`;bindShell();document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>go(Number(b.dataset.task)));document.getElementById('return').onclick=renderTask;document.getElementById('finish').onclick=finish;focusHeading();}
-function finish(){
+function review(){track();activeId=null;view='review';save();const missing=lesson.tasks.filter(t=>!t.optional&&!answered(t,state.answers[t.id]));main.innerHTML=shell('review')+`<section class="panel"><div class="eyebrow">ПЕРЕД ЗАВЕРШЕНИЕМ</div><h2 tabindex="-1">Посмотри на работу целиком</h2><p>${missing.length?'Не заполнено обязательных заданий: '+missing.length+'. Можно вернуться к ним или отправить неполную работу.':'Все обязательные задания заполнены. Проверь ответы перед отправкой.'}</p><div class="paper">${e(finalText()||'Текст ещё не написан.')}</div><details ${missing.length?'open':''}><summary>Проверка заполненности</summary><ul class="review-list">${lesson.tasks.map((t,i)=>`<li><span>${answered(t,state.answers[t.id])?'✓':'○'} ${e(t.prompt)}${t.optional?' (по желанию)':''}</span><button data-task="${i}">Открыть</button></li>`).join('')}</ul></details><p class="small">${e(lesson.display.scoreNote)}</p><div class="actions"><button id="return">Продолжить работу</button><button id="finish" class="primary">${collectorUrl&&!state.preview?(missing.length?'Отправить неполную работу':'Отправить учителю'):'Посмотреть результат'}</button></div></section>`;bindShell();document.querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>go(Number(b.dataset.task)));document.getElementById('return').onclick=renderTask;document.getElementById('finish').onclick=finish;focusHeading();}
+async function finish(){
+  if(sending)return;
   if(lesson.revisionMode!=='final-only'&&!state.versions.some(v=>v.kind==='first'))state.versions.push({kind:'first',label:'Первая редакция',at:new Date().toISOString(),text:allText(),answers:structuredClone(state.answers),sampleViewed:!!state.samples_viewed_at});
   state.versions.push({kind:'final',label:'Редакция при завершении',at:new Date().toISOString(),text:finalText(),answers:structuredClone(state.answers),sampleViewed:!!state.samples_viewed_at});
   for(const task of lesson.tasks)if(task.type!=='open-response'&&answered(task,state.answers[task.id])&&!state.checked[task.id])state.attempts[task.id]=(state.attempts[task.id]||0)+1;
-  state.pending=buildResult(lesson,state);state.receipt=null;save();showResult();
+  state.pending=buildResult(lesson,state);state.receipt=null;save();showResult();if(collectorUrl&&!state.preview)await sendWork();
 }
 function download(text,name){const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function showResult(){
-  view='result';activeId=null;const result=state.pending,accepted=state.receipt?.trainerGrading;
+  view='result';activeId=null;const result=state.pending,confirmed=received(),accepted=confirmed?state.receipt.trainerGrading:null;
   const auto=accepted?.automatic||{earned:result.auto_score,max:result.auto_max};
   const manual=accepted?.manualGroups?.[0];
-  main.innerHTML=`<div class="eyebrow">${state.preview?'ПРЕДПРОСМОТР · ':' '}РЕЗУЛЬТАТ РАБОТЫ</div><h1 tabindex="-1" style="margin-top:16px">${e(lesson.display.completionTitle)}</h1><p>${e(state.student)} · ${e(state.class)}. ${savingFailed?'Скачай работу: сохранение в браузере недоступно.':'Работа сохранена на этом устройстве.'}</p><div class="score-grid"><section class="summary-card"><div class="eyebrow">ПОДГОТОВКА</div><div class="score-big">${auto.earned} <small>/ ${auto.max}</small></div><p>${e(lesson.display.automaticDescription)}</p><p class="small">${e(lesson.display.automaticNote||'Это результат тренировки, а не отметка за изложение.')}</p></section><section class="summary-card"><div class="eyebrow">${e(lesson.display.manualLabel||'Самостоятельный текст')}</div><h2 style="margin:16px 0">${manual?.earned!=null?manual.earned+' / '+manual.max:'Проверяет учитель'}</h2><p>${lesson.manualGroups[0].criteria.length} отдельных критериев: ${e(lesson.manualGroups[0].title.toLowerCase())}. ${manual?.earned!=null?'Проверено учителем.':'Балл пока не выставлен.'}</p><details class="rubric"><summary>Критерии проверки</summary><ol>${lesson.manualGroups[0].criteria.map(c=>`<li>${e(c.text)} — ${c.points} балл</li>`).join('')}</ol></details></section></div><section class="panel"><h2>${e(lesson.display.workHeading||'Твоя редакция')}</h2><div class="paper">${e(finalText()||'Нет текста.')}</div><p class="small">${wordCount(finalText())} слов. Объём служит ориентиром и не ограничивает ответ.</p><div class="drafts">${state.versions.map(v=>`<details class="version"><summary>${e(v.label)} · ${new Date(v.at).toLocaleString('ru-RU')}</summary><div class="paper">${e(v.text||'Нет текста.')}</div></details>`).join('')}</div>${lesson.material.samples?.length?`<p class="small">${state.samples_viewed_at?'Просмотр образца отмечен в истории работы.':'Образец не просматривался.'}</p>`:''}<div class="actions"><button id="download" class="primary">Скачать работу</button><button id="print">Печать</button><button id="edit" ${!state.preview&&collectorUrl&&state.transportStarted&&!state.receipt?'disabled':''}>Доработать</button><button id="switch-profile">Сменить ученика</button></div><div class="warning" id="delivery-status" role="status">${state.preview?'Это предпросмотр. Он не попадает в журнал учеников.':state.receipt?'Работа отправлена учителю. Сохранение в кабинете подтверждено.':collectorUrl?'Работа ещё не отправлена учителю.':'Отправка в кабинет для этого тренажёра пока недоступна. Скачай работу, чтобы передать её учителю.'}</div>${collectorUrl&&!state.preview?'<button id="send">Отправить учителю</button>':''}</section>`;
+  main.innerHTML=`<div class="eyebrow">${state.preview?'ПРЕДПРОСМОТР · ':' '}РЕЗУЛЬТАТ РАБОТЫ</div><h1 tabindex="-1" style="margin-top:16px">${confirmed?'Работа отправлена учителю':state.preview?'Результат предпросмотра':state.transportStarted?'Отправка не подтверждена':'Работа ещё не отправлена'}</h1><p>${e(state.student)} · ${e(state.class)}. ${savingFailed?'Скачай работу: сохранение в браузере недоступно.':confirmed?'':'Черновик сохранён только на этом устройстве.'}</p><section class="panel" aria-label="Отправка работы"><div id="delivery-status" role="status" aria-live="polite">${state.preview?'Предпросмотр не отправляется учителю.':confirmed?'Сохранение в кабинете подтверждено. Можно закрыть страницу.':collectorUrl?'Отправь работу и дождись подтверждения на этой странице.':'Отправка для этого тренажёра недоступна. Скачай работу и передай её учителю.'}</div>${collectorUrl&&!state.preview&&!confirmed?`<button class="primary" id="send">${state.transportStarted?'Повторить отправку':'Отправить учителю'}</button>`:''}</section><div class="score-grid"><section class="summary-card"><div class="eyebrow">ПОДГОТОВКА</div><div class="score-big">${auto.earned} <small>/ ${auto.max}</small></div><p>${e(lesson.display.automaticDescription)}</p><p class="small">${e(lesson.display.automaticNote||'Это результат тренировки, а не отметка за изложение.')}</p></section><section class="summary-card"><div class="eyebrow">${e(lesson.display.manualLabel||'Самостоятельный текст')}</div><h2 style="margin:16px 0">${manual?.earned!=null?manual.earned+' / '+manual.max:confirmed?'Ожидает проверки':'После отправки проверит учитель'}</h2><p>${lesson.manualGroups[0].criteria.length} отдельных критериев: ${e(lesson.manualGroups[0].title.toLowerCase())}. ${manual?.earned!=null?'Проверено учителем.':'Балл пока не выставлен.'}</p><details class="rubric"><summary>Критерии проверки</summary><ol>${lesson.manualGroups[0].criteria.map(c=>`<li>${e(c.text)} — ${c.points} балл</li>`).join('')}</ol></details></section></div><section class="panel"><h2>${e(lesson.display.workHeading||'Твоя редакция')}</h2><div class="paper">${e(finalText()||'Нет текста.')}</div><p class="small">${wordCount(finalText())} слов. Объём служит ориентиром и не ограничивает ответ.</p><div class="drafts">${state.versions.map(v=>`<details class="version"><summary>${e(v.label)} · ${new Date(v.at).toLocaleString('ru-RU')}</summary><div class="paper">${e(v.text||'Нет текста.')}</div></details>`).join('')}</div>${lesson.material.samples?.length?`<p class="small">${state.samples_viewed_at?'Просмотр образца отмечен в истории работы.':'Образец не просматривался.'}</p>`:''}<div class="actions"><button id="download">Скачать работу</button><button id="print">Печать</button><button id="edit" ${!state.preview&&collectorUrl&&state.transportStarted&&!confirmed?'disabled':''}>Доработать</button><button id="switch-profile">Сменить ученика</button></div></section>`;
   document.getElementById('download').onclick=()=>download(readableWork(lesson,state,result),lesson.id+'-work.txt');document.getElementById('print').onclick=()=>window.print();document.getElementById('switch-profile').onclick=landing;
   document.getElementById('edit').onclick=()=>{state.deliveries=state.deliveries||[];state.deliveries.push({payload:state.pending,receipt:state.receipt});state.pending=null;state.receipt=null;state.transportStarted=false;save();renderTask();};
-  document.getElementById('send')?.addEventListener('click',async event=>{
-    const button=event.target;button.disabled=true;document.getElementById('edit').disabled=true;document.getElementById('switch-profile').disabled=true;
-    try{if(!await ensureAccess())return;await submitResult(collectorUrl,state,()=>save(true));if(!accessBlocked)showResult();}
-    catch(error){const status=document.getElementById('delivery-status');if(status)status.textContent=error.message;}
-    finally{button.disabled=false;const profile=document.getElementById('switch-profile'),edit=document.getElementById('edit');if(profile)profile.disabled=false;if(edit)edit.disabled=!!state.transportStarted&&!state.receipt;}
-  });focusHeading();
+  document.getElementById('send')?.addEventListener('click',sendWork);focusHeading();
+}
+
+async function sendWork(){
+  if(sending||received())return;
+  sending=true;
+  const button=document.getElementById('send');
+  for(const id of ['send','edit','switch-profile']){const node=document.getElementById(id);if(node)node.disabled=true;}
+  if(button)button.textContent='Отправляем…';
+  main.querySelector('h1').textContent='Отправляем работу учителю…';
+  document.getElementById('delivery-status').textContent='Дождись подтверждения. Это может занять несколько секунд.';
+  try{
+    if(!await ensureAccess())return;
+    await submitResult(collectorUrl,state,()=>save(true));
+    if(!accessBlocked)showResult();
+  }catch(error){
+    if(!accessBlocked){
+      main.querySelector('h1').textContent='Отправка не подтверждена';
+      const status=document.getElementById('delivery-status');
+      if(status)status.textContent=savingFailed?'Не удалось сохранить черновик на устройстве. Не закрывай страницу: скачай работу или разреши хранение данных и повтори отправку.':error.message;
+    }
+  }finally{
+    sending=false;
+    const retry=document.getElementById('send'),profile=document.getElementById('switch-profile'),edit=document.getElementById('edit');
+    if(retry){retry.disabled=false;retry.textContent='Повторить отправку';}
+    if(profile)profile.disabled=false;if(edit)edit.disabled=!!state.transportStarted&&!received();
+  }
 }
 document.addEventListener('visibilitychange',()=>{if(!state||!activeId)return;if(document.hidden){state.duration[activeId]=(state.duration[activeId]||0)+Date.now()-enteredAt;enteredAt=0;save();}else enteredAt=Date.now();});
 window.addEventListener('pagehide',()=>{if(state){track();save();}});
