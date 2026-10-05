@@ -49,6 +49,7 @@
   const saveDraftButton = document.getElementById("saveDraft");
 
   let currentText = null;
+  let sending = false;
   let cloudConfigPromise = null;
   let summaryTexts = [];
   let currentPhase = PHASE_QUESTIONS;
@@ -198,8 +199,10 @@
     return {
       revision,
       lastSubmittedAt: raw.lastSubmittedAt || null,
-      lastSubmitOk: Boolean(raw.lastSubmitOk),
-      comparisonSeenAt: raw.comparisonSeenAt || null
+      lastSubmitOk: Boolean(raw.lastSubmitOk && raw.receipt?.schemaVersion==='kodislovo.summary-receipt.v1'),
+      comparisonSeenAt: raw.comparisonSeenAt || null,
+      pending: raw.pending || null,
+      receipt: raw.receipt || null
     };
   }
 
@@ -246,9 +249,14 @@
     }
 
     const settings = options || {};
-    localStorage.setItem(storageKey(currentText.id), JSON.stringify(getPersistedState()));
-    localStorage.setItem(LAST_TEXT_KEY, currentText.id);
-    setSaveStatus(settings.manual ? MANUAL_SAVE_MESSAGE : AUTOSAVE_MESSAGE);
+    try {
+      localStorage.setItem(storageKey(currentText.id), JSON.stringify(getPersistedState()));
+      localStorage.setItem(LAST_TEXT_KEY, currentText.id);
+      setSaveStatus(settings.manual ? MANUAL_SAVE_MESSAGE : AUTOSAVE_MESSAGE);
+    }catch(error){
+      setSaveStatus('Черновик не удалось сохранить на устройстве. Скачайте копию работы.');
+      if(settings.strict)throw Error('Не удалось сохранить черновик. Скачайте копию и разрешите хранение данных в браузере.');
+    }
   }
 
   function restoreAnswers(data) {
@@ -315,7 +323,8 @@
         draftText.value = "";
       }
     } catch (error) {
-      localStorage.removeItem(storageKey(currentText.id));
+      setSaveStatus('Не удалось прочитать черновик. Сохранённые данные не удалены.');
+      return;
     }
 
     updateWordCount();
@@ -472,8 +481,8 @@
 
     if (currentPhase === PHASE_EDITING) {
       phaseHint.textContent = submissionState.lastSubmitOk
-        ? "Исходный текст скрыт. Доработайте изложение и нажмите «Сохранить» — отправится новая версия"
-        : "Исходный текст скрыт. Отредактируйте черновик по памяти и нажмите «Сохранить»";
+        ? "Исходный текст скрыт. Доработайте изложение и нажмите «Отправить новую редакцию учителю»"
+        : "Исходный текст скрыт. Отредактируйте черновик по памяти и нажмите «Отправить учителю»";
       return;
     }
 
@@ -629,7 +638,7 @@
         ? ` (версия ${submissionState.revision})`
         : "";
       comparisonNotice.textContent =
-        `Работа сохранена${revisionLabel}. Сравните исходный текст и ваше изложение.`;
+        `Работа получена учителем${revisionLabel}. Сохранение в кабинете подтверждено. Сравните исходный текст и ваше изложение.`;
     }
   }
 
@@ -684,8 +693,8 @@
       if (saveDraftButton) {
         saveDraftButton.disabled = false;
         saveDraftButton.textContent = submissionState.lastSubmitOk
-          ? "Сохранить новую версию"
-          : "Сохранить";
+          ? "Отправить новую редакцию учителю"
+          : "Отправить учителю";
       }
       draftText.focus();
     } else if (currentPhase === PHASE_COMPARISON) {
@@ -713,6 +722,7 @@
     updateStepper();
     updateStudentGate();
     saveWork();
+    updateDeliveryUI();
   }
 
   function advanceFromQuestions() {
@@ -750,6 +760,7 @@
   }
 
   async function advanceFromEditing() {
+    if(sending)return;
     const draft = draftText.value.trim();
 
     if (!draft) {
@@ -763,7 +774,7 @@
 
     saveWork({ manual: true });
     saveDraftButton.disabled = true;
-    setSubmitStatus("Сохранение работы в хранилище...");
+    setSubmitStatus("Отправляем работу учителю…");
 
     const nextRevision = submissionState.revision + 1;
     const submitted = await submitToCloud({
@@ -774,6 +785,7 @@
 
     if (!submitted) {
       saveDraftButton.disabled = false;
+      updateDeliveryUI();
       return;
     }
 
@@ -783,7 +795,7 @@
     submissionState.comparisonSeenAt = nowIso();
 
     const revisionNote = nextRevision > 1 ? ` (версия ${nextRevision})` : "";
-    setSubmitStatus(`Сохранено в хранилище${revisionNote}: ${new Date().toLocaleString("ru-RU")}`);
+    setSubmitStatus(`Работа получена учителем${revisionNote}: ${new Date().toLocaleString("ru-RU")}`);
     currentPhase = PHASE_COMPARISON;
     applyPhase();
   }
@@ -796,11 +808,10 @@
           throw new Error("В assets/config/public-api.json не задан baseUrl.");
         }
 
-        const services = await fetchJson(`${baseUrl}/api/public/subjects/russian/services`);
         return {
-          submitUrl: new URL(services.submitUrl, `${baseUrl}/`).toString()
+          submitUrl: `${baseUrl}/api/public/summary-trainer/submit`
         };
-      });
+      }).catch(error=>{cloudConfigPromise=null;throw error;});
     }
 
     return cloudConfigPromise;
@@ -814,6 +825,7 @@
       : submissionState.revision + 1;
     const payload = {
       schema: "kodislovo.summary-trainer.result.v1",
+      submission_id: crypto.randomUUID(),
       createdAt: nowIso(),
       subject: "russian",
       subjectTitle: "Русский язык",
@@ -867,29 +879,52 @@
       return false;
     }
 
-    setSubmitStatus("Сохранение работы в хранилище...");
+    setSubmitStatus("Отправляем работу учителю…");
 
     try {
+      if(!submissionState.pending)submissionState.pending=buildSubmissionPayload(settings);
+      saveWork({strict:true});
+      sending=true;updateDeliveryUI();
       const config = await loadCloudConfig();
       if (!config.submitUrl) {
         throw new Error("Backend submit endpoint не настроен.");
       }
 
-      await postJson(config.submitUrl, buildSubmissionPayload(settings));
+      const receipt=await SummaryDelivery.send(config.submitUrl,submissionState.pending);
+      submissionState.receipt=receipt;
+      submissionState.pending=null;
+      submissionState.revision=receipt.revision;
+      submissionState.lastSubmittedAt=nowIso();
+      submissionState.lastSubmitOk=true;
 
       saveWork({ manual: true });
 
       if (!settings.quietSuccess) {
-        setSubmitStatus(`Сохранено в хранилище: ${new Date().toLocaleString("ru-RU")}`);
-        window.alert("Работа сохранена в хранилище.");
+        setSubmitStatus('Работа получена учителем. Сохранение в кабинете подтверждено.');
       }
 
       return true;
     } catch (error) {
-      setSubmitStatus("Не удалось сохранить работу");
-      window.alert(`Не удалось сохранить работу.\n\n${error.message || error}`);
+      if(error.safeToEdit){submissionState.pending=null;saveWork();}
+      setSubmitStatus(error.message || 'Не удалось отправить работу. Повторите отправку.');
       return false;
-    }
+    }finally{sending=false;updateDeliveryUI();}
+  }
+
+  function updateDeliveryUI() {
+    const locked=!!submissionState.pending || sending;
+    for(const input of [studentName,studentClass,textSelect,draftText,...document.querySelectorAll('.summary-answer')])input.disabled=locked || (input.classList.contains('summary-answer')&&!isStudentProfileComplete());
+    if(workflowStepper)workflowStepper.inert=locked;
+    stepSaveButton.disabled=locked || !isStudentProfileComplete();
+    saveDraftButton.disabled=sending;
+    if(submissionState.pending)saveDraftButton.textContent=sending?'Отправляем…':'Повторить отправку';
+    else saveDraftButton.textContent=submissionState.lastSubmitOk?'Отправить новую редакцию учителю':'Отправить учителю';
+  }
+
+  function downloadCopy() {
+    const student=getStudentData();
+    const text=[currentText?.title,student.name+' · '+student.className,'Изложение',draftText.value,'Ответы на вопросы',...collectAnswers().map(a=>`${a.groupIndex+1}.${a.questionIndex+1}. ${a.value}`)].join('\n\n');
+    const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='izlozhenie.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   function createQuestion(groupIndex, questionIndex, question) {
@@ -966,6 +1001,7 @@
   }
 
   function bindEvents() {
+    document.getElementById('downloadSummary').addEventListener('click',downloadCopy);
     textSelect.addEventListener("change", function () {
       loadText(textSelect.value);
     });

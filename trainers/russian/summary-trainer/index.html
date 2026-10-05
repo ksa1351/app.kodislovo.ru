@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="ru" data-theme="dark">
+<html lang="ru" data-theme="dark" data-summary-trainer="true">
 
 <head>
 
@@ -206,7 +206,7 @@
 
           <h2>Черновик по вашим ответам</h2>
 
-          <p class="summary-view-hint">Исходный текст скрыт — работайте с черновиком по памяти. Когда изложение готово, нажмите «Сохранить»: работа уйдёт в хранилище, и только после этого откроется сравнение.</p>
+          <p class="summary-view-hint">Исходный текст скрыт — работайте с черновиком по памяти. Когда изложение готово, нажмите «Отправить учителю». После подтверждения сохранения откроется сравнение.</p>
 
         </div>
 
@@ -230,7 +230,8 @@
 
         <div class="kd-actions summary-actions summary-editing-actions">
 
-          <button id="saveDraft" class="kd-button" type="button">Сохранить</button>
+          <button id="saveDraft" class="kd-button" type="button">Отправить учителю</button>
+          <button id="downloadSummary" class="kd-button kd-button-secondary" type="button">Скачать копию</button>
 
           <span id="submitStatus" class="summary-submit-status" aria-live="polite"></span>
 
@@ -302,9 +303,11 @@
 
   <script src="../../../assets/js/trainer-shell.js?v=2026-06-10-1"></script>
 
-  <script src="./summary.js?v=2026-06-10-9"></script>
+  <style>[data-access-locked]{display:none!important}</style>
+  <script src="../../../assets/js/lesson-access.js?v=20261005-summary"></script>
+  <script src="./summary-delivery.js?v=20261005-summary"></script>
+  <script src="./summary.js?v=20261005-summary"></script>
 
 </body>
 
 </html>
-
