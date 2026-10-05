@@ -3,9 +3,25 @@ import {draftKey,newDraft,loadDraft,persist} from './storage.js';
 import {buildResult,readableWork} from './results.js?v=20261004-grade11';
 import {collectorForLesson,submitResult} from './submitter.js?v=20261004-grade11-release';
 import {renderers,examReference,escapeHTML as e,wordCount} from './renderers.js?v=20261004-grade11';
+import {trainerAccess} from './access.js?v=20261005-access';
 
 const main=document.getElementById('main'),saveStatus=document.getElementById('save-status');
 let lesson,collectorUrl,state,key,enteredAt=0,activeId=null,savingFailed=false,view='landing';
+let accessCheck=null,accessBlocked=false;
+async function ensureAccess(){
+  if(accessCheck)return accessCheck;
+  accessCheck=(async()=>{
+    let enabled=false,message='';
+    try{enabled=await trainerAccess(lesson);}catch(error){message=error.message;}
+    if(enabled)return true;
+    if(state){track();save();}activeId=null;accessBlocked=true;
+    main.innerHTML=`<section class="panel"><h1>${message?'Не удалось проверить доступ':'Доступ к работе закрыт'}</h1><p>${e(message||'Учитель закрыл доступ к этой работе. Обратись к учителю, чтобы узнать, когда её можно будет выполнить.')}</p>${state?'<p>Твои ответы сохранены на этом устройстве. Их можно скачать.</p><button id="save-closed-work">Скачать ответы</button>':''}<button id="retry-access">Проверить снова</button></section>`;
+    document.getElementById('retry-access').onclick=()=>location.reload();
+    document.getElementById('save-closed-work')?.addEventListener('click',()=>download(readableWork(lesson,state,state.pending||buildResult(lesson,state)),lesson.id+'-work.txt'));
+    return false;
+  })();
+  try{return await accessCheck;}finally{accessCheck=null;}
+}
 document.getElementById('theme').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';};
 function tell(text,error=false){saveStatus.textContent=text;saveStatus.classList.toggle('error',error);}
 function save(strict=false){try{persist(localStorage,key,state);savingFailed=false;tell(state.preview?'Предпросмотр · отдельный черновик на этом устройстве':'Черновик сохранён на этом устройстве');}catch(error){savingFailed=true;tell('Не удалось сохранить черновик. Не закрывайте страницу; скачайте работу на экране итога.',true);if(strict)throw error;}}
@@ -25,11 +41,13 @@ function landing(){
   main.innerHTML=`<div class="landing"><section class="intro"><div class="eyebrow">${lesson.grade} класс / урок ${e(lesson.lesson)} / ${lesson.subject==='russian'?'русский язык':'литература'}</div><h1>${e(lesson.display.heroTitle)}<br><span class="gold">${e(lesson.display.heroAccent)}</span></h1><p class="lead">${e(lesson.title)}</p><p>${e(lesson.display.description)}</p><div class="pills">${lesson.display.pills.map(p=>`<span class="pill">${e(p)}</span>`).join('')}</div></section><section class="start-card"><div class="eyebrow">ТВОЯ МАСТЕРСКАЯ</div><h2 style="margin:14px 0 22px">Начнём с главного</h2><form id="start-form"><div class="form-row"><label>Фамилия, имя<input id="student" required maxlength="150" autocomplete="name" placeholder="Как тебя зовут?"></label><label>Класс<input id="klass" required maxlength="30" value="${lesson.grade}" autocomplete="off"></label></div><button class="primary" type="submit">Начать или продолжить →</button></form>${lesson.display.showStartNotes?`<p class="small" style="margin:18px 0 0">Ответы сохраняются в этом браузере отдельно для каждого имени и класса. На общем устройстве начни работу под своим именем.</p>`:''}${lesson.display.draftNotice?`<p class="warning">${e(lesson.display.draftNotice)}</p>`:''}<p id="start-error" role="alert"></p></section></div><div class="journey">${lesson.display.journey.map((item,i)=>`<div><b>${String(i+1).padStart(2,'0')}</b><strong>${e(item.title)}</strong><br><span>${e(item.description)}</span></div>`).join('')}</div>${lesson.display.showStartNotes?`<p class="small assignment-note">${e(lesson.pacing)} ${e(lesson.display.scaleNote||'Подготовка оценивается отдельно от самостоятельного текста. Это учебная диагностика, не шкала ОГЭ.')}</p>`:''}`;
   document.getElementById('start-form').onsubmit=event=>{event.preventDefault();start();};
 }
-function start(){
+async function start(){
   const student=document.getElementById('student').value.trim();const klass=document.getElementById('klass').value.trim();
   if(!student||!klass){document.getElementById('start-error').textContent='Укажи имя и класс.';return;}
+  document.querySelector('#start-form button').disabled=true;
+  if(!await ensureAccess())return;
   key=draftKey(lesson,student,klass,false);
-  try{state=loadDraft(localStorage,key,lesson)||newDraft(lesson,student,klass,false);}catch(error){document.getElementById('start-error').textContent='Не удалось открыть хранилище или прочитать черновик. Существующие ответы не перезаписаны. Проверь разрешение браузера на сохранение данных.';return;}
+  try{state=loadDraft(localStorage,key,lesson)||newDraft(lesson,student,klass,false);}catch(error){document.getElementById('start-error').textContent='Не удалось открыть хранилище или прочитать черновик. Существующие ответы не перезаписаны. Проверь разрешение браузера на сохранение данных.';document.querySelector('#start-form button').disabled=false;return;}
   state.index=Math.min(Math.max(0,state.index||0),lesson.tasks.length-1);save();if(state.pending)showResult();else renderTask();
 }
 function sourceParts(){return lesson.material.paragraphs.map((p,i)=>`<div class="source-part"><small>${e(lesson.material.paragraphLabels?.[i]||'АБЗАЦ '+(i+1))}</small><p>${e(p)}</p></div>`).join('');}
@@ -72,7 +90,12 @@ function showResult(){
   main.innerHTML=`<div class="eyebrow">${state.preview?'ПРЕДПРОСМОТР · ':' '}РЕЗУЛЬТАТ РАБОТЫ</div><h1 tabindex="-1" style="margin-top:16px">${e(lesson.display.completionTitle)}</h1><p>${e(state.student)} · ${e(state.class)}. ${savingFailed?'Скачай работу: сохранение в браузере недоступно.':'Работа сохранена на этом устройстве.'}</p><div class="score-grid"><section class="summary-card"><div class="eyebrow">ПОДГОТОВКА</div><div class="score-big">${auto.earned} <small>/ ${auto.max}</small></div><p>${e(lesson.display.automaticDescription)}</p><p class="small">${e(lesson.display.automaticNote||'Это результат тренировки, а не отметка за изложение.')}</p></section><section class="summary-card"><div class="eyebrow">${e(lesson.display.manualLabel||'Самостоятельный текст')}</div><h2 style="margin:16px 0">${manual?.earned!=null?manual.earned+' / '+manual.max:'Проверяет учитель'}</h2><p>${lesson.manualGroups[0].criteria.length} отдельных критериев: ${e(lesson.manualGroups[0].title.toLowerCase())}. ${manual?.earned!=null?'Проверено учителем.':'Балл пока не выставлен.'}</p><details class="rubric"><summary>Критерии проверки</summary><ol>${lesson.manualGroups[0].criteria.map(c=>`<li>${e(c.text)} — ${c.points} балл</li>`).join('')}</ol></details></section></div><section class="panel"><h2>${e(lesson.display.workHeading||'Твоя редакция')}</h2><div class="paper">${e(finalText()||'Нет текста.')}</div><p class="small">${wordCount(finalText())} слов. Объём служит ориентиром и не ограничивает ответ.</p><div class="drafts">${state.versions.map(v=>`<details class="version"><summary>${e(v.label)} · ${new Date(v.at).toLocaleString('ru-RU')}</summary><div class="paper">${e(v.text||'Нет текста.')}</div></details>`).join('')}</div>${lesson.material.samples?.length?`<p class="small">${state.samples_viewed_at?'Просмотр образца отмечен в истории работы.':'Образец не просматривался.'}</p>`:''}<div class="actions"><button id="download" class="primary">Скачать работу</button><button id="print">Печать</button><button id="edit" ${!state.preview&&collectorUrl&&state.transportStarted&&!state.receipt?'disabled':''}>Доработать</button><button id="switch-profile">Сменить ученика</button></div><div class="warning" id="delivery-status" role="status">${state.preview?'Это предпросмотр. Он не попадает в журнал учеников.':state.receipt?'Работа отправлена учителю. Сохранение в кабинете подтверждено.':collectorUrl?'Работа ещё не отправлена учителю.':'Отправка в кабинет для этого тренажёра пока недоступна. Скачай работу, чтобы передать её учителю.'}</div>${collectorUrl&&!state.preview?'<button id="send">Отправить учителю</button>':''}</section>`;
   document.getElementById('download').onclick=()=>download(readableWork(lesson,state,result),lesson.id+'-work.txt');document.getElementById('print').onclick=()=>window.print();document.getElementById('switch-profile').onclick=landing;
   document.getElementById('edit').onclick=()=>{state.deliveries=state.deliveries||[];state.deliveries.push({payload:state.pending,receipt:state.receipt});state.pending=null;state.receipt=null;state.transportStarted=false;save();renderTask();};
-  document.getElementById('send')?.addEventListener('click',async event=>{const button=event.target;button.disabled=true;document.getElementById('edit').disabled=true;document.getElementById('switch-profile').disabled=true;try{await submitResult(collectorUrl,state,()=>save(true));showResult();}catch(error){document.getElementById('delivery-status').textContent=error.message;}finally{button.disabled=false;document.getElementById('switch-profile').disabled=false;document.getElementById('edit').disabled=!!state.transportStarted&&!state.receipt;}});focusHeading();
+  document.getElementById('send')?.addEventListener('click',async event=>{
+    const button=event.target;button.disabled=true;document.getElementById('edit').disabled=true;document.getElementById('switch-profile').disabled=true;
+    try{if(!await ensureAccess())return;await submitResult(collectorUrl,state,()=>save(true));if(!accessBlocked)showResult();}
+    catch(error){const status=document.getElementById('delivery-status');if(status)status.textContent=error.message;}
+    finally{button.disabled=false;const profile=document.getElementById('switch-profile'),edit=document.getElementById('edit');if(profile)profile.disabled=false;if(edit)edit.disabled=!!state.transportStarted&&!state.receipt;}
+  });focusHeading();
 }
 document.addEventListener('visibilitychange',()=>{if(!state||!activeId)return;if(document.hidden){state.duration[activeId]=(state.duration[activeId]||0)+Date.now()-enteredAt;enteredAt=0;save();}else enteredAt=Date.now();});
 window.addEventListener('pagehide',()=>{if(state){track();save();}});
@@ -82,5 +105,8 @@ try{
   const response=await fetch(`data/${subject}/${grade}/lesson-${number.padStart(3,'0')}.json`);if(!response.ok)throw new Error('Этот урок пока не добавлен. Проверь номер в ссылке.');
   lesson=validateLesson(await response.json());collectorUrl=collectorForLesson(lesson);main.classList.toggle('verse-material',lesson.material.format==='verse');
   if(lesson.mode==='control')throw new Error('Контрольный режим ещё не подключён к серверной проверке. Открой тренировочный комплект.');
-  document.title=lesson.title+' · Кодислово';document.querySelector('.top-actions .eyebrow').textContent=(lesson.subject==='russian'?'Русский язык':'Литература')+' · '+lesson.grade+' класс';landing();
+  document.title=lesson.title+' · Кодислово';document.querySelector('.top-actions .eyebrow').textContent=(lesson.subject==='russian'?'Русский язык':'Литература')+' · '+lesson.grade+' класс';
+  if(await ensureAccess())landing();
+  setInterval(()=>{if(!document.hidden&&!accessBlocked)void ensureAccess();},30000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!accessBlocked)void ensureAccess();});
 }catch(error){main.innerHTML=`<section class="panel"><h1>Не удалось открыть урок</h1><p>${e(error.message)}</p><a href="play.html?subject=russian&grade=9&lesson=13">Открыть «Пушкин и Пущин»</a></section>`;}
