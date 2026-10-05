@@ -48,3 +48,14 @@ test('parallel clicks and different students remain isolated',async()=>{
   await h.api.submit(url,{...payload('student-2'),student:'Другой ученик'});
   assert.equal(h.calls.length,2);assert.equal(h.storage.size,2);
 });
+
+test('closed lesson blocks sending and reopening retries the preserved answers',async()=>{
+  const h=harness();
+  h.root.KodislovoLessonAccess={check:async()=>{throw Error('Closed');}};
+  await assert.rejects(h.api.submit(url,payload()),/Closed/);assert.equal(h.calls.length,0);
+  h.root.KodislovoLessonAccess.check=async()=>true;
+  await h.api.submit(url,{...payload('second'),answers:{x:['changed']}});
+  assert.equal(h.calls[0].submission_id,'first');assert.deepEqual(h.calls[0].answers,{x:['a','b']});
+  h.root.KodislovoLessonAccess.check=async()=>{throw Error('Closed');};
+  await h.api.submit(url,payload());assert.equal(h.calls.length,1);
+});

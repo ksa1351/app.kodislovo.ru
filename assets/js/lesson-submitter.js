@@ -67,6 +67,7 @@
     const usedSavedAnswers = fingerprint(state.payload) !== fingerprint(candidate);
     Object.assign(input, JSON.parse(JSON.stringify(state.payload)));
     if (state.status === 'accepted') return { ...state.receipt, usedSavedAnswers };
+    if (root.KodislovoLessonAccess) await root.KodislovoLessonAccess.check();
     const controller = new root.AbortController();
     const timer = root.setTimeout(() => controller.abort(), 45000);
     let receipt;
