@@ -4,6 +4,7 @@ const lesson=JSON.parse(fs.readFileSync(path.join(__dirname,'../trainers/data/ru
 const base=process.env.TRAINER_BASE||'http://127.0.0.1:8765';
 const url=process.env.TRAINER_URL||base+'/trainers/play.html?subject=russian&grade=11&lesson=14';
 const output=process.env.QA_OUTPUT;
+async function startNamed(page){await page.locator('#student').fill('LOCAL QA START');await page.locator('#klass').fill(String(lesson.grade));await page.locator('#start-form button').click();}
 (async()=>{
  const browser=await chromium.launch({channel:'msedge',headless:true});
  try{
@@ -14,9 +15,9 @@ const output=process.env.QA_OUTPUT;
   const state=()=>page.evaluate(()=>JSON.parse(Object.entries(localStorage).find(([k])=>k.startsWith('kodislovo.trainer.v2:'))[1]));
   const overflow=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow');
   const shot=async name=>{if(output){fs.mkdirSync(output,{recursive:true});await page.screenshot({path:path.join(output,name+'.png'),fullPage:true});}};
-  await page.goto(url);await page.locator('#preview').waitFor();await overflow();await shot('start-desktop');
+  await page.goto(url);await page.locator('#student').waitFor();await overflow();await shot('start-desktop');
   await page.setViewportSize({width:360,height:800});await overflow();await shot('start-mobile');
-  await page.locator('#preview').click();
+  await startNamed(page);
   for(let i=0;i<lesson.tasks.length;i++){
    const t=lesson.tasks[i];
    if(t.type==='single-choice')await page.locator(`input[value="${t.answer}"]`).check();
@@ -49,7 +50,7 @@ const output=process.env.QA_OUTPUT;
    }
    await overflow();
    if(i===12||i===16){
-    const before=(await state()).answers;await page.reload();await page.locator('#preview').click();assert.deepEqual((await state()).answers,before);
+    const before=(await state()).answers;await page.reload();await startNamed(page);assert.deepEqual((await state()).answers,before);
    }
    await page.locator('#next').click();
   }
@@ -59,7 +60,7 @@ const output=process.env.QA_OUTPUT;
   const saved=await state();assert.equal(saved.pending.auto_score,17);assert.equal(saved.pending.auto_max,17);
   assert.equal(saved.pending.answers.length,20);assert.equal(saved.versions.length,1);assert.equal(saved.pending.manual_groups[0].earned,null);
   for(const id of lesson.writingTaskIds){assert(saved.versions[0].text.includes(id));assert((await page.locator('.paper').first().textContent()).includes(id));}
-  assert.equal(await page.locator('#send').count(),0);await overflow();await shot('result-mobile');
+  assert.equal(await page.locator('#send').count(),1);await overflow();await shot('result-mobile');
   const downloadPromise=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadPromise;
   const text=fs.readFileSync(await download.path(),'utf8');
   for(const id of lesson.writingTaskIds)assert(text.includes('СВОЙ ОТВЕТ '+id));
