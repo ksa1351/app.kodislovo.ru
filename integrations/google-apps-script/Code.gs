@@ -11,7 +11,7 @@ const JOURNAL_URL = "https://bbae5ggs5hjqgfo6htv8.containers.yandexcloud.net/api
 const REPORT_HEADERS = ["ID отправки", "Номер работы в кабинете", "Класс", "Фамилия, имя", "Задание", "Состояние", "Итог в кабинете", "Максимум", "Обновлено", "Ошибка"];
 
 function doGet() {
-  return json_({service:"kodislovo-collector", version:2, receiptProtocol:"kodislovo.collector-receipt.v1"});
+  return json_({service:"kodislovo-collector", version:2, receiptProtocol:"kodislovo.collector-receipt.v1",gradebookProtocol:typeof syncGradebook==='function'?'kodislovo.gradebook-sync.v1':null});
 }
 
 function doPost(e) {
@@ -19,6 +19,7 @@ function doPost(e) {
   try {
     const raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || "{}";
     if (raw.length > 120000) throw new Error("Слишком большой ответ");
+    if(typeof gradebookRequest_==='function') { const gradebook=gradebookRequest_(raw);if(gradebook)return gradebook; }
     const p = validate_(JSON.parse(raw));
     id = p.submission_id;
     const ss = SpreadsheetApp.openById(DESTINATIONS[p.lesson_day]);
