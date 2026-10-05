@@ -29,6 +29,7 @@ async function send(url,state,save,fetcher){
     const response=await fetcher(url,{method:'POST',credentials:'omit',redirect:'follow',body:new URLSearchParams({payload:JSON.stringify(wrapper)}),signal:controller.signal});
     if(!response.ok)throw new Error('Сервис временно недоступен. Повторите отправку.');
     const receipt=await response.json();
+    if(receipt?.status==='error'&&receipt.sourceSubmissionId===state.pending.submission_id&&typeof receipt.message==='string')throw new Error(receipt.message.slice(0,500));
     if(!validReceipt(receipt,state.pending))throw new Error('Кабинет не подтвердил сохранение новой работы. Повторите отправку.');
     state.receipt=receipt;save();return receipt;
   }catch(error){if(error.name==='AbortError'||error instanceof TypeError||error instanceof SyntaxError)throw new Error('Подтверждение не получено. Работа сохранена на устройстве; повторите отправку.');throw error;}finally{clearTimeout(timer);}

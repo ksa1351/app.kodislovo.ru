@@ -50,4 +50,7 @@ test('submission retry keeps exact snapshot and requires a matching teacher rece
  await assert.rejects(s.submitResult(null,state,()=>{},fetcher),/пока недоступна/);
  await assert.rejects(s.submitResult('https://example.org',{...state,receipt:null},()=>{throw new Error('storage');},fetcher),/storage/);assert.equal(bodies.length,2);
  await assert.rejects(s.submitResult('https://example.org',{...state,receipt:null},()=>{},async()=>({ok:true,json:async()=>({status:'accepted'})})),/не подтвердил/);
+ const pending={...state,receipt:null};const original=JSON.stringify(pending.pending);
+ await assert.rejects(s.submitResult('https://example.org',pending,()=>{},async()=>({ok:true,json:async()=>({status:'error',sourceSubmissionId:'fixed',message:'Кабинет временно не принял запись (HTTP 400). Повторите отправку.'})})),/HTTP 400/);
+ assert.equal(pending.receipt,null);assert.equal(JSON.stringify(pending.pending),original);
 });

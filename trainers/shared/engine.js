@@ -1,7 +1,7 @@
 import {validateLesson,answered,gradeTask} from './scoring.js?v=20261004-grade7';
 import {draftKey,newDraft,loadDraft,persist} from './storage.js';
 import {buildResult,readableWork} from './results.js?v=20261004-grade11';
-import {collectorForLesson,submitResult} from './submitter.js?v=20261004-grade11-release';
+import {collectorForLesson,submitResult} from './submitter.js?v=20261005-receipts';
 import {renderers,examReference,escapeHTML as e,wordCount} from './renderers.js?v=20261004-grade11';
 import {trainerAccess} from './access.js?v=20261005-access';
 
