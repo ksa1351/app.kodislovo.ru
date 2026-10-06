@@ -39,7 +39,7 @@
         </ol>
       </nav>
       <h1>Задание 1. Количественные параметры информационных объектов</h1>
-      <p>Выберите задачу и запишите ответ. Ответы остаются только в этой вкладке и не отправляются учителю. Для сдачи работы откройте ссылку, которую выдал учитель.</p>
+      <p>Выполните выбранные задачи и нажмите «Отправить учителю». В работу войдут задачи, для которых записан ответ.</p>
     </header>
 
     <section class="kd-section" id="step-task">
@@ -82,94 +82,7 @@
   </main>
 
   <script src="../../assets/js/theme.js"></script>
-  <script>
-    if (typeof tasks === "undefined") {
-      throw new Error("Не найден массив tasks из oge_task1_data.js");
-    }
-
-    let currentIndex = 0;
-    let totalCount = 0;
-
-    const taskProgressEl = document.getElementById("taskProgress");
-    const taskCodeEl = document.getElementById("taskCode");
-    const taskTextEl = document.getElementById("taskText");
-    const answerInputEl = document.getElementById("answerInput");
-    const feedbackEl = document.getElementById("feedback");
-    const scoreAttemptsEl = document.getElementById("scoreAttempts");
-    const scoreCorrectEl = document.getElementById("scoreCorrect");
-    const jumpSelectEl = document.getElementById("jumpSelect");
-
-    function updateStats() {
-      scoreAttemptsEl.textContent = `Ответов: ${totalCount}`;
-      scoreCorrectEl.textContent = "Самостоятельная практика";
-    }
-
-    function setFeedback(message, type) {
-      feedbackEl.textContent = message;
-      feedbackEl.className = "feedback";
-      if (type) feedbackEl.classList.add(type);
-    }
-
-    function loadTask(index) {
-      if (!tasks.length) return;
-      currentIndex = Math.max(0, Math.min(index, tasks.length - 1));
-      const task = tasks[currentIndex];
-
-      taskProgressEl.textContent = `Задача ${task.num} из ${tasks.length}`;
-      taskCodeEl.textContent = task.code ? `Код: ${task.code}` : "";
-      taskTextEl.textContent = task.text || "";
-      answerInputEl.value = "";
-      setFeedback("", "");
-      jumpSelectEl.value = String(currentIndex);
-      answerInputEl.focus();
-    }
-
-    function checkAnswer() {
-      const userAnswer = String(answerInputEl.value || "").trim();
-
-      if (!userAnswer) {
-        setFeedback("Введите ответ, затем нажмите «Записать ответ».", "bad");
-        return;
-      }
-
-      totalCount += 1;
-      setFeedback(
-        "Ответ записан только в этой вкладке. Учителю он не отправлен.",
-        "neutral"
-      );
-      updateStats();
-    }
-
-    function showAnswer() {
-      setFeedback(
-        "Эта страница не отправляет ответы. Для проверки откройте работу по ссылке учителя и отправьте ответы из неё.",
-        "neutral"
-      );
-    }
-
-    function fillJumpSelect() {
-      jumpSelectEl.innerHTML = "";
-      tasks.forEach((task, index) => {
-        const option = document.createElement("option");
-        option.value = String(index);
-        option.textContent = `${task.num} (${task.code})`;
-        jumpSelectEl.appendChild(option);
-      });
-    }
-
-    document.getElementById("checkBtn").addEventListener("click", checkAnswer);
-    document.getElementById("showAnswerBtn").addEventListener("click", showAnswer);
-    document.getElementById("prevBtn").addEventListener("click", () => loadTask(currentIndex <= 0 ? tasks.length - 1 : currentIndex - 1));
-    document.getElementById("nextBtn").addEventListener("click", () => loadTask(currentIndex >= tasks.length - 1 ? 0 : currentIndex + 1));
-    document.getElementById("randomBtn").addEventListener("click", () => loadTask(Math.floor(Math.random() * tasks.length)));
-    jumpSelectEl.addEventListener("change", () => loadTask(Number(jumpSelectEl.value)));
-    answerInputEl.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") checkAnswer();
-    });
-
-    fillJumpSelect();
-    updateStats();
-    loadTask(0);
-  </script>
+  <script src="../shared/practice-delivery.js?v=20261006"></script>
+  <script src="oge_task1.js?v=20261006"></script>
 </body>
 </html>

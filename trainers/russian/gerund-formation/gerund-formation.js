@@ -7,6 +7,7 @@
   const STORAGE_PREFIX = "kodislovo:russian:gerund-formation:v1:";
   const TASKS_PER_LEVEL = 4;
 
+  let profile = null;
   let taskBank = [];
   let taskById = new Map();
   let state = null;
@@ -25,7 +26,7 @@
   }
 
   function storageKey(name) {
-    return `${STORAGE_PREFIX}${studentSlug(name)}`;
+    return `${STORAGE_PREFIX}${studentSlug(name)}:${encodeURIComponent(profile?.class||"")}`;
   }
 
   function getStudentFromUrl() {
@@ -51,6 +52,7 @@
   function freshState(name) {
     const session = core.createSession(taskBank, TASKS_PER_LEVEL);
     return {
+      studentClass: profile?.class || "",
       schema: "kodislovo.gerund-formation.state.v1",
       studentName: name,
       taskIds: session.map((task) => task.id),
@@ -312,7 +314,7 @@
     return {
       schema: "kodislovo.gerund-formation.result.v1",
       createdAt: new Date().toISOString(),
-      student: { name: state.studentName },
+      student: { name: state.studentName, class: profile.class },
       trainer: "gerund-formation",
       title: "Образование деепричастий",
       summary,
@@ -388,11 +390,18 @@
     if (!taskBank.length) throw new Error("Банк заданий пуст.");
     taskById = new Map(taskBank.map((task) => [task.id, task]));
 
-    const initialName = getStudentFromUrl() || loadProfileName();
+    profile = await PracticeDelivery.identity("gerund-formation");
+    const initialName = profile.name;
     $("studentName").value = initialName;
+    $("studentName").readOnly = true;
     bindEvents();
     updateResumeHint();
     updateMobileAction();
+    state = loadState(profile.name);
+    if(state?.phase === "result") showResult();
+    PracticeDelivery.mount({kind:"gerund-formation",student:profile,build:buildResultPayload,
+      ready:()=>state?.phase === "result" && state.taskIds.every(id=>state.initialResults[id]),
+      onNew:()=>localStorage.removeItem(storageKey(profile.name))});
   }
 
   init().catch((error) => {

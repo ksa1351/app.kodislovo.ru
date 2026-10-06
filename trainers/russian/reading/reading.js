@@ -3,7 +3,7 @@
 
   const ORAL_BANK_URL = "../../../controls/russian/oral-bank.json";
   const PUBLIC_API_CONFIG_URL = "../../../assets/config/public-api.json";
-  const LS_KEY = "kodislovo:russian:oral-trainer:v2";
+  let LS_KEY = "kodislovo:russian:oral-trainer:v2";
   const ERROR_TYPES = ["skip", "replace", "distort", "repeat", "stress", "pause"];
 
   const $ = (id) => document.getElementById(id);
@@ -878,6 +878,8 @@
   }
 
   async function init() {
+    const profile=await PracticeDelivery.identity('oral');
+    LS_KEY += ':'+JSON.stringify(profile);
     bindEvents();
     await loadBank();
     fillTextSelect();
@@ -896,6 +898,11 @@
       selectTopic(restoredIds.selectedTopicId, { preserveAnswers: true });
     }
 
+    $('studentName').value=profile.name;$('studentClass').value=profile.class;
+    $('studentName').readOnly=true;$('studentClass').readOnly=true;
+    PracticeDelivery.mount({kind:'oral',student:profile,build:buildResult,
+      ready:()=>!!($('retellingText').value.trim()||$('monologueText').value.trim()||$('transcriptText').value.trim()||Object.values(dialogAnswers).some(v=>String(v).trim())),
+      onNew:()=>localStorage.removeItem(LS_KEY)});
     updateTimer();
     updateStats();
     updateCompletionStatus();
