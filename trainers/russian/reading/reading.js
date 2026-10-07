@@ -27,6 +27,7 @@
   let processorNode = null;
   let pcmChunks = [];
   let isRecording = false;
+  let audioDelivery = null;
   let recordedBlob = null;
   let recordedAudioUrl = "";
   let recordedSampleRate = 16000;
@@ -815,7 +816,10 @@
     $("finishBtn").addEventListener("click", finishReading);
     $("buildReportBtn").addEventListener("click", buildReport);
     $("downloadBtn").addEventListener("click", downloadJSON);
-    $("resetBtn").addEventListener("click", resetAll);
+    $("resetBtn").addEventListener("click", async()=>{
+      try{if(audioDelivery?.busy())throw Error('Сначала остановите запись.');await audioDelivery?.clear();resetAll();}
+      catch(e){$('local-save-status').textContent=e.message;}
+    });
     $("undoErrorBtn").addEventListener("click", undoLastError);
     $("clearErrorsBtn").addEventListener("click", clearErrors);
 
@@ -900,9 +904,10 @@
 
     $('studentName').value=profile.name;$('studentClass').value=profile.class;
     $('studentName').readOnly=true;$('studentClass').readOnly=true;
-    PracticeDelivery.mount({kind:'oral',student:profile,build:buildResult,
-      ready:()=>!!($('retellingText').value.trim()||$('monologueText').value.trim()||$('transcriptText').value.trim()||Object.values(dialogAnswers).some(v=>String(v).trim())),
-      onNew:()=>localStorage.removeItem(LS_KEY)});
+    const audio=await OralAudio.mount(profile);audioDelivery=audio;
+    PracticeDelivery.mount({kind:'oral',student:profile,build:async()=>({...buildResult(),audio:await audio.descriptor()}),beforeSend:audio.upload,
+      ready:()=>!audio.busy()&&(audio.has()||!!($('retellingText').value.trim()||$('monologueText').value.trim()||$('transcriptText').value.trim()||Object.values(dialogAnswers).some(v=>String(v).trim()))),
+      onNew:async()=>{await audio.clear();localStorage.removeItem(LS_KEY);}});
     updateTimer();
     updateStats();
     updateCompletionStatus();

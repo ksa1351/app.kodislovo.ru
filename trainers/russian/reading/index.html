@@ -94,7 +94,7 @@
               <button id="downloadBtn" class="kd-button kd-button-secondary" type="button">Скачать отчёт</button>
               <button id="resetBtn" class="kd-button kd-button-secondary" type="button">Сбросить всё</button>
             </div>
-            <p>Учителю отправляются письменные ответы и черновик расшифровки. Аудиозапись в отчёт не входит.</p>
+            <p>Учителю отправляются аудиозапись и заполненные ответы.</p>
             <p id="local-save-status" role="status"></p>
           </article>
 
@@ -269,10 +269,10 @@
           </article>
           </details>
 
-          <details class="reading-side-panel">
-            <summary>Аудио и автоанализ</summary>
+          <details class="reading-side-panel" hidden>
+            <summary>Черновой анализ чтения</summary>
           <article class="kd-panel reading-panel">
-            <h2>Аудио и автоанализ</h2>
+            <h2>Черновой анализ чтения</h2>
             <p class="reading-prompt">Полуавтоматический режим: запись аудио, отправка на backend, распознавание через SpeechKit и черновая разметка расхождений по эталонному тексту.</p>
             <div class="reading-mini-actions">
               <button id="recordStartBtn" class="kd-button" type="button">Запись</button>
@@ -355,7 +355,7 @@
             <summary>Отчёт</summary>
           <article class="kd-panel reading-panel">
             <h2>Отчёт</h2>
-            <p>Анализ аудио не заменяет отправку отчёта учителю.</p>
+            <p>После выполнения нажмите «Отправить учителю».</p>
             <pre id="reportBox" class="reading-report">Отчёт появится после формирования.</pre>
           </article>
           </details>
@@ -366,7 +366,8 @@
 
   <script src="../../../assets/js/theme.js"></script>
   <script src="../../../assets/js/trainer-shell.js?v=2026-05-31-5"></script>
-  <script src="../../shared/practice-delivery.js?v=20261006"></script>
-  <script src="./reading.js?v=20261006-20261005-completion"></script>
+  <script src="../../shared/practice-delivery.js?v=20261007"></script>
+  <script src="./oral-audio.js?v=20261007"></script>
+  <script src="./reading.js?v=20261007-audio"></script>
 </body>
 </html>

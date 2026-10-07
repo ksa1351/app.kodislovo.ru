@@ -36,7 +36,7 @@
       }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
     }));
   }
-  function mount({kind,student,build,ready=()=>true,onNew=()=>{},target}){
+  function mount({kind,student,build,ready=()=>true,onNew=()=>{},beforeSend=async()=>{},target}){
     const key='kodislovo:practice:delivery:'+kind+':'+JSON.stringify(student);
     let state=read(key)||{},busy=false;const frozen=new Map();
     if(state.pending&&(state.pending.kind!==kind||JSON.stringify(state.pending.student)!==JSON.stringify(student)))state={};
@@ -59,13 +59,14 @@
       if(busy||state.receipt)return;busy=true;button.disabled=true;
       try{
         if(!state.pending){
-          if(!ready())throw Error('Сначала завершите задания тренировки.');
-          const payload={schema:'kodislovo.practice.v1',version:1,kind,submission_id:crypto.randomUUID(),student,result:build()};
+          if(!await ready())throw Error('Сначала завершите задания тренировки.');
+          const payload={schema:'kodislovo.practice.v1',version:1,kind,submission_id:crypto.randomUUID(),student,result:await build()};
           // Persist before transmitting, so an uncertain response can always be retried with the same ID.
           try{localStorage.setItem(key,JSON.stringify({pending:payload}));}catch(_){throw Error('Не удалось сохранить отправку на устройстве. Разрешите сохранение данных в браузере или скачайте результат.');}
           state={pending:payload};freeze();
         }
         status.textContent='Отправляем работу…';
+        await beforeSend(state.pending);
         const receipt=await request('/api/public/practice/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state.pending)});
         if(!validReceipt(receipt,state.pending))throw Error('Кабинет не подтвердил сохранение. Повторите отправку.');
         state.receipt=receipt;try{localStorage.setItem(key,JSON.stringify(state));}catch(_){}
@@ -77,7 +78,7 @@
         status.textContent=e.message;
       }finally{busy=false;button.disabled=!!state.receipt;button.textContent=state.pending&&!state.receipt?'Повторить отправку':'Отправить учителю';}
     });
-    next.addEventListener('click',()=>{localStorage.removeItem(key);onNew();location.reload();});
+    next.addEventListener('click',async()=>{next.disabled=true;try{await onNew();localStorage.removeItem(key);location.reload();}catch(e){status.textContent=e.message;next.disabled=false;}});
     render();return {state,box};
   }
   root.PracticeDelivery={identity,mount,validReceipt};
