@@ -1,0 +1,25 @@
+/* Layout only: typography, palette and controls come from the shared trainer. */
+#double-unions-preview .intro{margin:14px 0 0;max-width:800px}
+#double-unions-preview .steps [aria-pressed=true]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.route{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.route label{display:flex;align-items:center;gap:12px;min-width:0;max-width:100%;font-size:15px}
+.route select{width:auto;min-width:0;max-width:100%;font-size:16px}
+.track{height:5px;background:var(--border);border-radius:5px;overflow:hidden;margin:18px 0 26px}
+.track div{height:100%;background:var(--accent)}
+.lesson{padding:20px 24px;border:1px solid var(--border);border-left:3px solid var(--ks-gold);border-radius:14px;background:var(--bg2);margin:0 0 26px}
+.lesson:empty{display:none}.lesson h3{margin:0 0 12px}.lesson p{margin:0;color:var(--text)}
+.question h3{margin:12px 0 16px}.question p{color:var(--text)}
+.tag{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sentence{font:21px/1.7 var(--ks-font-serif);border-left:3px solid var(--ks-gold);padding-left:20px;margin:22px 0}
+.question ol{padding-left:28px}.question li{padding:5px 0}.question li::marker{color:var(--ks-gold);font-weight:750}
+.matching{display:grid;gap:10px;margin-top:24px}.match-row{display:grid;grid-template-columns:minmax(0,1fr) 85px;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.response-label{margin:18px 0 8px;font-weight:650}.number-answer{max-width:250px}
+.feedback p{color:var(--text)}.feedback h4{margin:0 0 12px}.checklist label{margin:12px 0;display:flex;gap:10px;align-items:flex-start}.checklist input{margin-top:4px}
+.attempt-note{margin:20px 0 0}.draft-status:empty{display:none}
+#delivery{max-width:1220px;margin:-60px auto 30px;padding:0 28px}
+.practice-delivery{background:var(--card);border:1px solid var(--border)!important;border-radius:24px!important;padding:28px!important;box-shadow:var(--ks-shadow-sm);overflow-wrap:anywhere}
+.practice-delivery button,.practice-identity button{background:var(--primary)!important;color:var(--ks-bg)!important;border-radius:12px}
+html:not([data-theme=dark]) .practice-delivery button,html:not([data-theme=dark]) .practice-identity button{color:white!important}
+.practice-identity{background:var(--card)!important;color:var(--text)!important;border-color:var(--border)!important}
+.practice-identity input{background:var(--bg);color:var(--text)}
+@media(max-width:760px){.route label{width:100%}.route select{flex:1;width:0}.route .counter{margin-left:auto}.lesson{padding:16px}.sentence{font-size:19px}.match-row{grid-template-columns:minmax(0,1fr) 70px;gap:10px}.steps button{flex:1}#delivery{padding:0 16px}.practice-delivery{padding:20px!important}.practice-identity h2{font-size:26px}}
