@@ -1,6 +1,7 @@
 """Build the public novella from the current ODT chapters, without editing sources."""
 from pathlib import Path
 import argparse
+import hashlib
 import html
 import re
 import zipfile
@@ -35,12 +36,15 @@ def read_chapter(path):
 
 def document(title, content, chapter=None):
     chapter_attr = f' data-chapter="{chapter}"' if chapter else ""
+    asset_version = hashlib.sha256(
+        (ROOT / "novella/novella.css").read_bytes() + (ROOT / "novella/novella.js").read_bytes()
+    ).hexdigest()[:12]
     return f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)} — Кодислово</title>
 <meta name="description" content="Перерождение чёрной дырой — новелла Марка. Оглавление и чтение глав.">
 <link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="novella.css"><script src="novella.js" defer></script></head>
+<link rel="stylesheet" href="novella.css?v={asset_version}"><script src="novella.js?v={asset_version}" defer></script></head>
 <body{chapter_attr}><header class="topbar"><a class="brand" href="https://kodislovo.ru/">Кодислово <span> / Новелла</span></a>
 <button id="theme" type="button" aria-label="Переключить тему">Сменить тему</button></header>
 <main>{content}</main><footer>Марк · Перерождение чёрной дырой <a href="index.html">Оглавление</a></footer></body></html>'''
@@ -67,7 +71,7 @@ def build(source):
             tag = "h2" if heading else "p"
             paragraphs.append(f'<{tag}>{html.escape(value).replace(chr(10), "<br>")}</{tag}>')
         content = f'''{navigation}<header class="chapter-heading"><p class="eyebrow">Перерождение чёрной дырой · Марк</p><h1>{html.escape(title)}</h1>
-<div class="reading-controls"><span>Размер текста</span><button id="smaller" aria-label="Уменьшить текст">А−</button><button id="larger" aria-label="Увеличить текст">А+</button></div></header>
+<div class="reading-controls"><span>Размер текста</span><button id="smaller" type="button" aria-label="Уменьшить текст">А−</button><output id="font-size" aria-label="Размер текста">21 px</output><button id="larger" type="button" aria-label="Увеличить текст">А+</button><button id="width" type="button" aria-pressed="false">По ширине</button></div></header>
 <article class="prose">{''.join(paragraphs)}</article>{navigation}'''
         rendered = document(title, content, number)
         (output / f"chapter-{number:03}.html").write_text(rendered, encoding="utf-8")
@@ -75,12 +79,21 @@ def build(source):
         for _, value in blocks:
             assert html.escape(value).replace(chr(10), "<br>") in rendered
     content = f'''<section class="hero"><div class="orbit" aria-hidden="true"></div><p class="eyebrow">Авторская новелла · Марк</p>
-<h1>Перерождение<br>чёрной дырой</h1><p class="intro">История Астера. {len(chapters)} глава.</p>
+<h1>Перерождение<br>чёрной дырой</h1><p class="intro">История Астера. {len(chapters)} {chapter_word(len(chapters))}.</p>
 <div class="hero-actions"><a class="primary" href="chapter-001.html">Начать читать →</a><a id="resume" hidden>Продолжить чтение</a></div></section>
 <section class="contents" aria-labelledby="contents-title"><div class="contents-head"><h2 id="contents-title">Оглавление</h2><label>Найти главу <input id="search" type="search" placeholder="Номер или название"></label></div>
 <ol class="chapters">{''.join(entries)}</ol><p id="empty" hidden>Глав с таким названием не найдено.</p></section>'''
     (output / "index.html").write_text(document("Перерождение чёрной дырой", content), encoding="utf-8")
     print(f"Built {len(chapters)} chapters; all source paragraphs verified.")
+
+def chapter_word(count):
+    if count % 100 in (11, 12, 13, 14):
+        return "глав"
+    if count % 10 == 1:
+        return "глава"
+    if count % 10 in (2, 3, 4):
+        return "главы"
+    return "глав"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
