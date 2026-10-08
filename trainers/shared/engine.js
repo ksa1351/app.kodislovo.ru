@@ -37,18 +37,17 @@ function firstRevision(){
   if(!(lesson.writingTaskIds||[]).every(id=>String(state.answers[id]||'').trim())){note('Сначала напиши все абзацы. К ним можно вернуться через этап «Пишем».');return false;}
   state.versions.push({kind:'first',label:'Первая самостоятельная редакция',at:new Date().toISOString(),text:allText(),answers:structuredClone(state.answers),sampleViewed:!!state.samples_viewed_at});save();return true;
 }
-function landing(){
+async function landing(){
   view='landing';activeId=null;
-  main.innerHTML=`<div class="landing"><section class="intro"><div class="eyebrow">${lesson.grade} класс / урок ${e(lesson.lesson)} / ${lesson.subject==='russian'?'русский язык':'литература'}</div><h1>${e(lesson.display.heroTitle)}<br><span class="gold">${e(lesson.display.heroAccent)}</span></h1><p class="lead">${e(lesson.title)}</p><p>${e(lesson.display.description)}</p><div class="pills">${lesson.display.pills.map(p=>`<span class="pill">${e(p)}</span>`).join('')}</div></section><section class="start-card"><div class="eyebrow">ТВОЯ МАСТЕРСКАЯ</div><h2 style="margin:14px 0 22px">Начнём с главного</h2><form id="start-form"><div class="form-row"><label>Фамилия, имя<input id="student" required maxlength="150" autocomplete="name" placeholder="Как тебя зовут?"></label><label>Класс<input id="klass" required maxlength="30" value="${lesson.grade===7?'7Б':''}" placeholder="Например, ${lesson.grade}Б" autocomplete="off"></label></div><button class="primary" type="submit">Начать или продолжить →</button></form>${lesson.display.showStartNotes?`<p class="small" style="margin:18px 0 0">Ответы сохраняются в этом браузере отдельно для каждого имени и класса. На общем устройстве начни работу под своим именем.</p>`:''}${lesson.display.draftNotice?`<p class="warning">${e(lesson.display.draftNotice)}</p>`:''}<p id="start-error" role="alert"></p></section></div><div class="journey">${lesson.display.journey.map((item,i)=>`<div><b>${String(i+1).padStart(2,'0')}</b><strong>${e(item.title)}</strong><br><span>${e(item.description)}</span></div>`).join('')}</div>${lesson.display.showStartNotes?`<p class="small assignment-note">${e(lesson.pacing)} ${e(lesson.display.scaleNote||'Подготовка оценивается отдельно от самостоятельного текста. Это учебная диагностика, не шкала ОГЭ.')}</p>`:''}`;
-  document.getElementById('start-form').onsubmit=event=>{event.preventDefault();start();};
+  main.innerHTML=`<section class="intro"><h1>${e(lesson.title)}</h1><p>${e(lesson.display.description)}</p></section>`;
+  const profile=await StudentEntry.open({id:lesson.id,title:lesson.title,validate:async()=>{if(!await trainerAccess(lesson))throw Error('Учитель закрыл доступ к этой работе.');}});
+  await start(profile);
 }
-async function start(){
-  const student=document.getElementById('student').value.trim();const klass=document.getElementById('klass').value.trim();
-  if(!student||!klass){document.getElementById('start-error').textContent='Укажи имя и класс.';return;}
-  document.querySelector('#start-form button').disabled=true;
+async function start(profile){
+  const student=profile.name,klass=profile.class;
   if(!await ensureAccess())return;
   key=draftKey(lesson,student,klass,false);
-  try{state=loadDraft(localStorage,key,lesson)||(klass==='7Б'?loadDraft(localStorage,draftKey(lesson,student,'7',false),lesson):null)||newDraft(lesson,student,klass,false);}catch(error){document.getElementById('start-error').textContent='Не удалось открыть хранилище или прочитать черновик. Существующие ответы не перезаписаны. Проверь разрешение браузера на сохранение данных.';document.querySelector('#start-form button').disabled=false;return;}
+  try{state=loadDraft(localStorage,key,lesson)||(klass==='7Б'?loadDraft(localStorage,draftKey(lesson,student,'7',false),lesson):null)||newDraft(lesson,student,klass,false);}catch(error){main.innerHTML='<section class=panel><h2>Не удалось прочитать черновик</h2><p>Сохранённые данные не перезаписаны. Проверьте разрешение браузера на сохранение данных и обновите страницу.</p></section>';return;}
   state.class=klass;state.index=Math.min(Math.max(0,state.index||0),lesson.tasks.length-1);save();if(state.pending)showResult();else renderTask();
 }
 function sourceParts(){return lesson.material.paragraphs.map((p,i)=>`<div class="source-part"><small>${e(lesson.material.paragraphLabels?.[i]||'АБЗАЦ '+(i+1))}</small><p>${e(p)}</p></div>`).join('');}

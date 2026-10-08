@@ -437,8 +437,9 @@
     bindEvents();
     updateResumeHint();
     updateMobileAction();
-    state = loadState(profile.name);
-    if(state?.phase === "result") showResult();
+    $("step-start").hidden=true;
+    document.querySelector('.gerund-stepper a[href="#step-start"]')?.remove();
+    startSession({resume:true});
     PracticeDelivery.mount({kind:"gerund-punctuation",student:profile,build:buildResultPayload,
       ready:()=>state?.phase === "result" && state.taskIds.every(id=>state.initialResults[id]),
       onNew:()=>localStorage.removeItem(storageKey(profile.name))});

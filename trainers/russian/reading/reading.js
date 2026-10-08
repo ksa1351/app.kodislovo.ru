@@ -904,6 +904,7 @@
 
     $('studentName').value=profile.name;$('studentClass').value=profile.class;
     $('studentName').readOnly=true;$('studentClass').readOnly=true;
+    $('studentName').closest('label').hidden=true;$('studentClass').closest('label').hidden=true;
     const audio=await OralAudio.mount(profile);audioDelivery=audio;
     PracticeDelivery.mount({kind:'oral',student:profile,build:async()=>({...buildResult(),audio:await audio.descriptor()}),beforeSend:audio.upload,
       ready:()=>!audio.busy()&&(audio.has()||!!($('retellingText').value.trim()||$('monologueText').value.trim()||$('transcriptText').value.trim()||Object.values(dialogAnswers).some(v=>String(v).trim()))),

@@ -1,6 +1,7 @@
 (function () {
   const STORAGE_PREFIX = "summary-trainer";
-  const LAST_TEXT_KEY = `${STORAGE_PREFIX}:last-text`;
+  let LAST_TEXT_KEY = `${STORAGE_PREFIX}:last-text`;
+  let entryProfile=null;
   const AUTOSAVE_MESSAGE = "Черновик сохранён на этом устройстве";
   const MANUAL_SAVE_MESSAGE = "Черновик сохранён на этом устройстве";
   const RETURN_TO_EDIT_CONFIRM =
@@ -62,7 +63,7 @@
   };
 
   function storageKey(id) {
-    return `${STORAGE_PREFIX}:${id}`;
+    return `${STORAGE_PREFIX}:${id}:profile:${StudentEntry.key(entryProfile)}`;
   }
 
   function setSaveStatus(message) {
@@ -274,7 +275,12 @@
   }
 
   function restoreWork() {
-    const raw = localStorage.getItem(storageKey(currentText.id));
+    let raw = localStorage.getItem(storageKey(currentText.id));
+    // Import the old shared draft only for its named owner; leave the original intact.
+    if(!raw){try{const legacy=localStorage.getItem(`${STORAGE_PREFIX}:${currentText.id}`),old=JSON.parse(legacy);
+      if(old?.student?.name && StudentEntry.key({name:old.student.name,class:old.student.className})===StudentEntry.key(entryProfile))raw=legacy;
+    }catch(_){}}
+    studentName.value=entryProfile.name;studentClass.value=entryProfile.class;
 
     draftText.value = "";
     document.querySelectorAll(".summary-answer").forEach((input) => {
@@ -286,10 +292,10 @@
 
     if (!raw) {
       if (studentName) {
-        studentName.value = "";
+        studentName.value = entryProfile.name;
       }
       if (studentClass) {
-        studentClass.value = "";
+        studentClass.value = entryProfile.class;
       }
       updateWordCount();
       setSaveStatus(AUTOSAVE_MESSAGE);
@@ -302,10 +308,10 @@
 
       if (data.student) {
         if (studentName) {
-          studentName.value = data.student.name || "";
+          studentName.value = entryProfile.name;
         }
         if (studentClass) {
-          studentClass.value = data.student.className || "";
+          studentClass.value = entryProfile.class;
         }
       }
 
@@ -1054,6 +1060,15 @@
   }
 
   async function init() {
+    try{await KodislovoLessonAccess.check();}catch(_){return;}
+    entryProfile=await StudentEntry.open({id:'summary-trainer',title:'Сжатое изложение по вопросам',validate:()=>KodislovoLessonAccess.check()});
+    StudentEntry.badge(entryProfile);
+    studentName.value=entryProfile.name;studentClass.value=entryProfile.class;
+    studentName.readOnly=true;studentClass.readOnly=true;
+    studentBar.hidden=true;
+    studentBar.style.display='none';
+    document.querySelector('#workflowStepper a[href="#step-student"]')?.closest('li')?.remove();
+    LAST_TEXT_KEY+=':profile:'+StudentEntry.key(entryProfile);
     try {
       await loadSummaryBank();
     } catch (error) {

@@ -16,6 +16,16 @@
   function read(key){try{return JSON.parse(localStorage.getItem(key));}catch(_){return null;}}
   function validReceipt(data,payload){return data?.schemaVersion==='kodislovo.practice-receipt.v1'&&data.status==='accepted'&&data.journal==='teacher'&&data.sourceSubmissionId===payload.submission_id&&data.kind===payload.kind&&typeof data.submissionId==='string'&&!!data.submissionId;}
   async function identity(kind){
+    if(kind!=='informatics-oge1' && root.StudentEntry){
+      const profile=await StudentEntry.open({id:kind,title:document.title.split('—')[0].split('· Кодислово')[0],storageKey:'kodislovo:practice:profile:'+kind,
+        validate:async student=>{
+          const data=await request('/api/public/practice/'+kind+'/access');
+          if(data.schemaVersion!=='kodislovo.practice-access.v1'||data.kind!==kind||typeof data.enabled!=='boolean')throw Error('Не удалось проверить доступ. Повторите попытку.');
+          const pending=read('kodislovo:practice:delivery:'+kind+':'+JSON.stringify(student))?.pending;
+          if(!data.enabled&&!pending)throw Error('Учитель закрыл доступ к этой работе.');
+        }});
+      StudentEntry.badge(profile);return profile;
+    }
     const dialog=document.createElement('dialog');dialog.className='practice-identity';
     dialog.innerHTML='<form><h2>Начать работу</h2><label>Фамилия и имя<input name="student" autocomplete="name" maxlength="150" required></label><label>Класс<input name="klass" placeholder="Например, 7Б" maxlength="30" required></label><button type="submit">Продолжить</button><p role="status"></p></form>';
     const style=document.createElement('style');style.textContent='.practice-identity{max-width:420px;width:calc(100% - 48px);border:1px solid #567;background:#122135;color:#fff;border-radius:20px;padding:22px}.practice-identity::backdrop{background:#08111ee8}.practice-identity label{display:block;margin:14px 0}.practice-identity input{box-sizing:border-box;width:100%;font:inherit;padding:12px;margin-top:6px;border-radius:10px}.practice-identity button,.practice-delivery button{font:inherit;padding:12px 18px;border:0;border-radius:12px;background:#27c4cd;color:#081725;font-weight:700;cursor:pointer}.practice-delivery{margin:20px 0;padding:18px;border:1px solid #4b697c;border-radius:16px}.practice-delivery button{margin:4px}.practice-delivery p{overflow-wrap:anywhere}.practice-identity button:disabled,.practice-delivery button:disabled{opacity:.6}';document.head.append(style);
