@@ -85,8 +85,6 @@ $('#results').onclick=showReport;
 $('#finish').onclick=()=>{const missing=tasks.findIndex(t=>!state.first[t.id]);if(missing>=0){reviewIds=null;go(missing);$('#notice').textContent='Перед завершением проверьте все задания. Следующее непроверенное — № '+(missing+1)+'.';$('#workspace').scrollIntoView({behavior:'smooth',block:'start'});return;}state.finished=true;setRunning(false);showReport();};
 $('.theory').addEventListener('toggle',()=>{if($('.theory').open){state.hintUsed[tasks[state.i].id]=true;save();}});
 $('#cancel-reset').onclick=()=>$('#reset-dialog').close();$('#confirm-reset').onclick=()=>{state=fresh();running=false;reviewIds=null;save();$('#report').hidden=true;$('#reset-dialog').close();render();tick();$('#welcome').scrollIntoView({behavior:'smooth'});};
-$('#theme').onclick=()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;try{localStorage.setItem('kodislovo:ne:theme',theme);}catch(_){};};
-try{document.documentElement.dataset.theme=localStorage.getItem('kodislovo:ne:theme')||'light';}catch(_){}
 $('#sources').innerHTML=sources.map(([name,url])=>`<li><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a></li>`).join('');
 window.addEventListener('pagehide',()=>{tick();save();});document.addEventListener('visibilitychange',()=>{if(document.hidden){tick();save();}});
 setInterval(()=>{tick();if(running)save();},1000);
