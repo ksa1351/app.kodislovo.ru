@@ -18,3 +18,100 @@
 #workspace,#report{scroll-margin-top:90px}
 @media(max-width:480px){.site-topbar-inner{gap:8px;padding:12px}.site-brand{gap:8px}.site-brand>span>span{display:none}.top-tools{gap:10px}.top-tools button{padding:8px 10px}.theme-toggle{gap:6px}.site-logo{width:36px;height:36px}.site-brand b{font-size:17px}}
 @media print{.site-topbar,dialog{display:none!important}}
+
+/* Compact exercise workspace: keep the question and its controls in view. */
+.site-topbar-inner{padding-top:7px;padding-bottom:7px}
+#session{padding-top:12px}
+.sessionbar{padding:9px 14px;gap:14px;margin-bottom:12px}
+.timegroup{gap:9px}.timegroup>.muted{display:none}.timegroup b{font-size:21px}
+.sessionbar button{padding:6px 12px;min-height:38px;font-size:14px}
+.progressgroup{font-size:12px;min-width:100px}progress{height:6px;margin-top:4px}
+.layout{grid-template-columns:190px minmax(0,1fr);gap:14px}
+#stage-picker>summary{display:none}
+.stage-button{padding:9px 10px;font-size:13px;line-height:1.4;gap:7px;grid-template-columns:22px 1fr}
+.stage-button small{font-size:11px;margin-top:3px}.stage-num{width:21px;height:21px;font-size:11px}
+.workspace{padding:16px 18px}.stagehead{padding-bottom:7px;align-items:center}
+.stagehead h2{font-size:20px;margin:0}.stagehead .eyebrow,.stagehead .muted{display:none}
+.stagehead .chip{font-size:12px;padding:3px 9px}
+.route{margin:9px 0;gap:8px;font-size:13px}.route select{padding:5px 8px;font-size:13px}
+.theory{padding:8px 12px;margin-bottom:10px;font-size:13px}
+.word-task{display:grid;grid-template-columns:170px minmax(0,1fr);gap:10px 16px;align-items:start}
+.word-task .sentence{grid-column:1/-1}
+.sentence{font-size:21px;line-height:1.45;padding:10px 14px;margin:0 0 4px}
+.answer-group{margin:8px 0}.answer-group legend{font-size:14px;margin-bottom:6px}
+.word-task .answer-group{margin:0}.word-task .spelling{flex-direction:column;gap:6px}
+.options{gap:6px}.option{font-size:14px;line-height:1.4;padding:8px 11px;min-height:42px;gap:8px}
+.option input{margin-top:4px}.choice-task h3,.editor-task h3{font-size:19px;margin:5px 0 9px}
+.choice-task>p,.editor-task>p{margin-bottom:10px;font-size:14px}
+.feedback{padding:12px;margin-top:12px;font-size:14px;line-height:1.5}
+.feedback h3{font-size:18px;margin:0 0 8px}.feedback p{margin-bottom:9px}
+.task-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.task-controls .actions,.task-controls .navigation{margin:0;padding:0;border:0;gap:8px}
+.task-controls .actions{flex:1}.task-controls button{padding:8px 12px;min-height:40px;font-size:14px}
+#notice{font-size:13px}.finishbar{margin:12px 0}.finishbar button{padding:8px 14px;min-height:40px;font-size:14px}
+.sources{margin-top:12px;padding:10px 0}footer{padding-top:10px}
+.editor-text{font-size:16px;line-height:1.6;padding:12px}.editor-fields{gap:8px 12px;margin-top:12px}
+.editor-fields input{padding:7px 9px;margin-top:3px}.editor-fields label{font-size:13px}
+@media(min-width:1100px){
+ .exercise-body:has(#feedback:not([hidden])){display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+ .exercise-body:has(#feedback:not([hidden])) .feedback{margin-top:0}
+ .exercise-body:has(#feedback:not([hidden])) .word-task{display:block}
+ .exercise-body:has(#feedback:not([hidden])) .word-task .answer-group{margin-top:10px}
+ .exercise-body:has(#feedback:not([hidden])) .word-task .spelling{flex-direction:row}
+ .exercise-body:has(#feedback:not([hidden])) .option{font-size:13px}
+}
+@media(max-width:800px){
+ .layout{grid-template-columns:minmax(0,1fr);gap:8px}
+ #stage-picker>summary{display:list-item;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:650;font-size:14px}
+ #stage-picker[open]>summary{margin-bottom:6px}
+ .sidebar nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .workspace{padding:14px}.stagehead{display:none}
+ .word-task{grid-template-columns:140px minmax(0,1fr);gap:10px}
+ .sessionbar{gap:9px}
+}
+@media(max-width:480px){
+ .site-topbar-inner{padding-top:6px;padding-bottom:6px}.site-logo{width:32px;height:32px}
+ .site-brand b{font-size:16px}.top-tools{gap:8px}.top-tools button{min-height:36px;padding:5px 9px;font-size:13px}
+ .theme-toggle{font-size:12px;gap:5px;min-height:36px}.theme-switch{width:42px}
+ .sessionbar{display:grid;grid-template-columns:1fr 1fr;padding:8px 10px;gap:7px 10px}
+ .sessionbar>button{width:100%;min-height:34px;padding:5px 8px;font-size:13px}
+ .timegroup{flex-wrap:nowrap;gap:7px}.timegroup b{font-size:19px}.timegroup button{padding:5px 8px;min-height:34px;font-size:12px}
+ .progressgroup{min-width:0}.sidebar nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .word-task{display:block}.word-task .answer-group{margin-top:10px}.word-task .spelling{flex-direction:row}
+ .sentence{font-size:20px;padding:9px 11px;margin-bottom:8px}
+ .option{font-size:14px;padding:8px 10px}.route{margin-top:0}.route>label{display:none}
+ .workspace{padding:12px}.task-controls{flex-wrap:wrap;gap:8px}
+ .task-controls .actions{flex-basis:100%}.task-controls .navigation{width:100%}
+ .task-controls .actions button{width:auto;flex:1}.task-controls .navigation button{min-width:100px}
+ .reference-dialog,.extra-dialog{padding:14px}.extra-dialog .sentence{font-size:20px}
+}
+
+/* The active stage is already shown in navigation; avoid a second heading. */
+.stagehead{display:none}
+@media(max-width:480px){
+ main{padding-bottom:98px}
+ .task-controls{position:fixed;left:12px;right:12px;bottom:8px;z-index:15;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px;margin:0;flex-wrap:nowrap;gap:7px}
+ .task-controls .actions{flex:1;flex-basis:auto;min-width:0}
+ .task-controls .actions button{width:100%;min-width:0}
+ .task-controls .navigation{width:auto;gap:6px}
+ .task-controls .navigation button{min-width:0}
+ .task-controls button{padding:7px 8px;font-size:12px;min-height:38px}
+ #notice:not(:empty){position:absolute;bottom:calc(100% + 5px);left:0;right:0;padding:9px;background:var(--card);border:1px solid var(--line);border-radius:10px}
+}
+@media print{.task-controls{display:none!important}}
+
+#session-menu>summary{display:none}.session-menu-options{display:flex;gap:8px}
+@media(max-width:800px){
+ #session-menu{position:relative}
+ #session-menu>summary{display:grid;place-items:center;list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:10px;min-width:40px;height:40px;font-weight:800;font-size:23px}
+ #session-menu>summary::-webkit-details-marker{display:none}
+ #session-menu[open] .session-menu-options{position:absolute;right:0;top:calc(100% + 7px);width:180px;display:grid;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:20}
+ .session-menu-options button{width:100%}
+}
+@media(max-width:480px){.sessionbar{grid-template-columns:auto minmax(0,1fr) auto;gap:8px}.sessionbar #session-menu{grid-column:3}.sessionbar .progressgroup{font-size:11px}}
+
+@media(max-width:480px){
+ #stage-picker>summary{padding:6px 10px}
+ .route{margin:0 0 6px}.theory{padding:5px 10px;margin-bottom:8px}
+ .sentence{margin-bottom:4px}.word-task .answer-group{margin-top:6px}
+}

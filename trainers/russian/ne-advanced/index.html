@@ -6,7 +6,7 @@
 <title>НЕ: сложные случаи — Кодислово</title>
 <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../assets/css/ui.css?v=2026-10-10-ne">
-<link rel="stylesheet" href="style.css?v=2026-10-10-theme">
+<link rel="stylesheet" href="style.css?v=2026-10-10-compact">
 </head>
 <body>
 <a href="#workspace" class="skip">К заданиям</a>
@@ -15,17 +15,17 @@
 <section class="hero"><h1>НЕ: <span>сложные случаи</span></h1></section>
 <section id="welcome" class="welcome panel"><p>Выбери правильное написание и объясни свой выбор.</p><button id="start" class="primary">Начать занятие →</button></section>
 <div id="session" hidden>
-<div class="sessionbar panel"><div class="timegroup"><span class="muted">Осталось на занятие</span><b id="timer" role="timer">60:00</b><button id="pause" class="quiet">Пауза</button></div><div class="progressgroup"><span id="progress-label"></span><progress id="progress" max="40" value="0" aria-label="Проверенные задания"></progress></div><button data-open-extra class="quiet">Ещё примеры</button><button id="results" class="quiet">Мой результат</button></div>
+<div class="sessionbar panel"><div class="timegroup"><span class="muted">Осталось на занятие</span><b id="timer" role="timer">60:00</b><button id="pause" class="quiet">Пауза</button></div><div class="progressgroup"><span id="progress-label"></span><progress id="progress" max="40" value="0" aria-label="Проверенные задания"></progress></div><details id="session-menu"><summary aria-label="Меню занятия">⋯</summary><div class="session-menu-options"><button data-open-extra class="quiet">Ещё примеры</button><button id="results" class="quiet">Мой результат</button></div></details></div>
 <div id="time-notice" class="time-notice" role="status" hidden>60 минут истекли. Можно завершить занятие или продолжить работу в своём темпе.</div>
-<div class="layout"><aside class="sidebar"><nav id="stages" aria-label="Этапы занятия"></nav></aside>
+<div class="layout"><aside class="sidebar"><details id="stage-picker"><summary id="stage-summary">Этапы занятия</summary><nav id="stages" aria-label="Этапы занятия"></nav></details></aside>
 <section id="workspace" class="panel workspace" tabindex="-1" aria-label="Задание">
 <div class="stagehead"><div><p id="stage-kicker" class="eyebrow"></p><h2 id="stage-title"></h2><p id="stage-subtitle" class="muted"></p></div><span id="stage-time" class="chip"></span></div>
 <div class="route"><label for="task-select">Задание</label><select id="task-select"></select><span id="task-counter" class="muted"></span></div>
 <details class="theory"><summary>Опора: правило этого этапа</summary><p id="theory"></p></details>
-<div id="task"></div>
-<div class="actions"><button id="check" class="primary">Проверить ответ</button><span id="notice" role="status" aria-live="polite"></span></div>
+<div class="exercise-body"><div id="task"></div>
 <section id="feedback" class="feedback" aria-live="polite" hidden></section>
-<div class="navigation"><button id="prev" class="quiet">← Назад</button><button id="next" class="primary">Дальше →</button></div>
+</div>
+<div class="task-controls"><div class="actions"><button id="check" class="primary">Проверить ответ</button><span id="notice" role="status" aria-live="polite"></span></div><div class="navigation"><button id="prev" class="quiet">← Назад</button><button id="next" class="primary">Дальше →</button></div></div>
 </section></div>
 <div class="finishbar"><button id="finish" class="primary">Завершить занятие и увидеть результат</button></div>
 </div>
@@ -36,5 +36,5 @@
 <dialog id="reset-dialog"><h2>Начать заново?</h2><p>Ответы, первые результаты и таймер этого занятия будут сброшены.</p><div class="actions"><button id="cancel-reset" class="quiet">Сохранить работу</button><button id="confirm-reset" class="primary">Начать заново</button></div></dialog>
 <dialog id="reference-dialog" class="reference-dialog" aria-labelledby="reference-title"><div class="dialog-head"><h2 id="reference-title">НЕ: теория</h2><button data-close-reference class="quiet" aria-label="Закрыть теорию">Закрыть</button></div><div id="reference-content"></div></dialog>
 <dialog id="extra-dialog" class="extra-dialog" aria-labelledby="extra-title"><div class="dialog-head"><h2 id="extra-title">Ещё примеры</h2><button data-close-extra class="quiet" aria-label="Закрыть дополнительные примеры">Закрыть</button></div><div class="route"><label for="extra-group">Тема</label><select id="extra-group"></select></div><details class="theory"><summary>Правило</summary><p id="extra-theory"></p></details><p id="extra-count" class="muted"></p><div id="extra-question"></div><div class="actions"><button id="extra-check" class="primary">Проверить ответ</button><span id="extra-notice" role="status" aria-live="polite"></span></div><section id="extra-feedback" class="feedback" hidden aria-live="polite"></section><div class="navigation"><button id="extra-prev" class="quiet">← Назад</button><button id="extra-next" class="primary">Дальше →</button></div><div class="extra-progress muted" role="status"></div></dialog>
-<script src="../../../assets/js/theme.js?v=2026-10-10-ne"></script><script src="content.js"></script><script src="extra-content.js"></script><script src="app.js?v=2026-10-10-theme"></script><script src="extra-app.js"></script>
+<script src="../../../assets/js/theme.js?v=2026-10-10-ne"></script><script src="content.js"></script><script src="extra-content.js"></script><script src="app.js?v=2026-10-10-compact"></script><script src="extra-app.js"></script>
 </body></html>

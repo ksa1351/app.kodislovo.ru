@@ -19,6 +19,8 @@ function currentIndices(){return reviewIds||tasks.map((_,i)=>i);}
 function go(i){state.i=i;save();render();$('#workspace').focus({preventScroll:true});}
 function render(){
 const t=tasks[state.i],a=state.answers[t.id]||{},st=stages[t.stage];
+$('#task').className=t.type==='word'?'word-task':t.type==='editor'?'editor-task':'choice-task';
+$('#stage-summary').textContent=`${t.stage+1}. ${st.title}`;
 $('#welcome').hidden=state.started;$('#session').hidden=!state.started;
 $('.hero').hidden=state.started;$('.sources').hidden=!state.started;
 $('#stages').innerHTML=stages.map((s,j)=>{const total=tasks.filter(t=>t.stage===j),done=total.filter(t=>state.first[t.id]).length;return `<button class="stage-button" data-stage="${j}" ${j===t.stage?'aria-current="step"':''}><span class="stage-num">${j+1}</span><span>${esc(s.title)}<small>${s.minutes} мин · ${done}/${total.length} проверено</small></span></button>`;}).join('');
@@ -26,9 +28,9 @@ $('#stage-kicker').textContent=reviewIds?'ПОВТОРЕНИЕ ОШИБОК · �
 $('#stage-title').textContent=st.title;$('#stage-subtitle').textContent=st.subtitle;$('#stage-time').textContent=st.minutes+' минут';$('#theory').textContent=st.theory;$('.theory').open=false;
 const indices=currentIndices();$('#task-select').innerHTML=indices.map(i=>`<option value="${i}" ${i===state.i?'selected':''}>${tasks[i].id}. ${esc(tasks[i].type==='word'?tasks[i].sentence.slice(0,53):tasks[i].title)}${state.first[tasks[i].id]?' ✓':''}</option>`).join('');
 $('#task-counter').textContent=reviewIds?`${indices.indexOf(state.i)+1} из ${indices.length} для повторения`:`${state.i+1} из ${tasks.length}`;
-let html=`<h3>${esc(t.title)}</h3>`;
+let html=t.type==='word'?'':`<h3>${esc(t.title)}</h3>`;
 if(t.type==='word'){
-html+='<p class="muted">Выбери, как пишется выделенное слово, и объясни почему.</p><div class="sentence">'+esc(t.sentence).replace(/\(не\)[а-яё]+/gi,'<span class="blank">$&</span>')+'</div>';
+html+='<div class="sentence">'+esc(t.sentence).replace(/\(не\)[а-яё]+/gi,'<span class="blank">$&</span>')+'</div>';
 html+=`<fieldset class="answer-group"><legend>1. Как пишется НЕ?</legend><div class="spelling">${option('spelling','together','Слитно',a.spelling)}${option('spelling','apart','Раздельно',a.spelling)}</div></fieldset>`;
 html+=`<fieldset class="answer-group"><legend>2. Почему?</legend><div class="options">${t.reasonOptions.map(k=>option('reason',k,reasons[k],a.reason)).join('')}</div></fieldset>`;
 }else if(t.type==='editor'){
@@ -38,9 +40,9 @@ $('#task').innerHTML=html;$('#notice').textContent='';$('#check').textContent=st
 $('#feedback').hidden=!state.checked[t.id];if(state.checked[t.id])feedback(t,a);
 const pos=indices.indexOf(state.i);$('#prev').disabled=pos<=0;$('#next').disabled=pos>=indices.length-1;
 $('#next').textContent=state.i===tasks.length-1?'Последнее задание':'Дальше →';
-const done=tasks.filter(t=>state.first[t.id]).length;$('#progress').value=done;$('#progress-label').textContent=`${done} из ${tasks.length} заданий проверено`;
+const done=tasks.filter(t=>state.first[t.id]).length;$('#progress').value=done;$('#progress-label').textContent=`Проверено: ${done}/${tasks.length}`;
 $('#task').querySelectorAll('input').forEach(input=>input.addEventListener('input',()=>{const v=state.answers[t.id]||{};if(input.dataset.editor!==undefined){v.fields=Array.from($('#task').querySelectorAll('[data-editor]')).map(x=>x.value);}else v[input.name]=input.value;state.answers[t.id]=v;delete state.checked[t.id];$('#feedback').hidden=true;$('#notice').textContent='';save();}));
-$('#stages').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{reviewIds=null;go(tasks.findIndex(t=>t.stage===Number(b.dataset.stage)));}));
+$('#stages').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{reviewIds=null;go(tasks.findIndex(t=>t.stage===Number(b.dataset.stage)));if(matchMedia('(max-width:800px)').matches)$('#stage-picker').open=false;}));
 }
 function feedback(t,a){
 const result=evaluate(t,a);let html=`<h3 class="${result.score===result.max?'good':'bad'}">${result.score===result.max?'Верно':'Есть что уточнить'} · ${result.score} из ${result.max}</h3>`;
@@ -87,6 +89,8 @@ $('.theory').addEventListener('toggle',()=>{if($('.theory').open){state.hintUsed
 $('#cancel-reset').onclick=()=>$('#reset-dialog').close();$('#confirm-reset').onclick=()=>{state=fresh();running=false;reviewIds=null;save();$('#report').hidden=true;$('#reset-dialog').close();render();tick();$('#welcome').scrollIntoView({behavior:'smooth'});};
 $('#sources').innerHTML=sources.map(([name,url])=>`<li><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a></li>`).join('');
 window.addEventListener('pagehide',()=>{tick();save();});document.addEventListener('visibilitychange',()=>{if(document.hidden){tick();save();}});
+const narrowScreen=matchMedia('(max-width:800px)');function updateStagePicker(){ $('#stage-picker').open=!narrowScreen.matches;$('#session-menu').open=!narrowScreen.matches; }updateStagePicker();narrowScreen.addEventListener('change',updateStagePicker);
+$('#session-menu').addEventListener('click',e=>{if(e.target.closest('button')&&narrowScreen.matches)$('#session-menu').open=false;});
 setInterval(()=>{tick();if(running)save();},1000);
 render();tick();$('#pause').textContent='Продолжить';$('#pause').setAttribute('aria-pressed','true');
 if(state.finished)showReport();
