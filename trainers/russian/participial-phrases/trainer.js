@@ -235,7 +235,7 @@
     buildEditor();showStep(activeStep);refreshProgress();
 
     new ResizeObserver(drawArrows).observe($('text-stage'));document.fonts?.ready.then(drawArrows);addEventListener('resize',drawArrows);
-  
+
 })().catch(()=>{
   const note=document.getElementById('boot-note');
   note.hidden=false;note.textContent='Не удалось открыть тренажёр. Обновите страницу и повторите вход.';
