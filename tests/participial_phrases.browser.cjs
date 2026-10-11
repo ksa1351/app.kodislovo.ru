@@ -101,6 +101,19 @@ const qa=process.env.TRAINER_QA||path.join(os.tmpdir(),'kodislovo-participial-qa
     for(let step=0;step<4;step++){
      await p.locator('#tab-'+step).click();await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
      assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'overflow '+width+' '+theme+' '+step);
+     if(step===0){
+      await p.evaluate(()=>{const token=document.querySelector('[data-token="160"]');window.scrollTo({top:token.getBoundingClientRect().top+scrollY-innerHeight*.62,behavior:'instant'});});
+      await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+      const rects=await p.evaluate(()=>{const nav=document.querySelector('#lesson-nav').getBoundingClientRect(),tools=document.querySelector('#marking-tools').getBoundingClientRect(),word=document.querySelector('[data-token="160"]').getBoundingClientRect();return {navBottom:nav.bottom,toolsTop:tools.top,toolsBottom:tools.bottom,wordTop:word.top,wordBottom:word.bottom,height:innerHeight,y:scrollY};});
+      assert.ok(Math.abs(rects.toolsTop-rects.navBottom)<2,'tools must stay immediately below navigation');
+      assert.ok(rects.wordTop>rects.toolsBottom&&rects.wordBottom<rects.height,'visible text must be below tools');
+      await p.locator('[data-tool=noun]').click();assert.ok(Math.abs(await p.evaluate(()=>scrollY)-rects.y)<2,'switching tools should not jump to the top');
+      await word(160);assert.equal(await p.locator('[data-token="160"]').evaluate(n=>n.classList.contains('noun')),true);
+      await p.locator('#undo').click();assert.equal(await p.locator('[data-token="160"]').evaluate(n=>n.classList.contains('noun')),false);
+      await p.locator('[data-tool=arrow]').click();await word(160);assert.match(await p.locator('#tool-message').textContent(),/Начало стрелки/);
+      await p.locator('[data-tool=noun]').click();
+      if(width===360||width===1366)await p.screenshot({path:path.join(qa,'sticky-'+width+'-'+theme+'.png')});
+     }
      if(width===360&&step===0)await p.locator('#text-stage').screenshot({path:path.join(qa,'marked-mobile-'+theme+'.png')});
     }
    }
@@ -118,6 +131,6 @@ const qa=process.env.TRAINER_QA||path.join(os.tmpdir(),'kodislovo-participial-qa
    assert.match(p.url(),/trainers\/russian\/participial-phrases\/$/);
   }
   await ctx.close();
-  console.log('PASS: shared entry gate, exact 219-word text/key, all marking/forms/editor tasks, inline question, theme persistence, named TXT/JSON/print/share, profile isolation/import, reset, navigation and 320/360/768/1366px in both themes. No real MAX sharing. QA: '+qa);
+  console.log('PASS: sticky marking tools and instructions, tool switching without scroll jumps, visible word selection/undo, shared entry, exact text/key, annotation/forms/editor, exports/share, profiles and 320/360/768/1366px in both themes. No real MAX sharing. QA: '+qa);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -234,6 +234,13 @@
     });
     buildEditor();showStep(activeStep);refreshProgress();
 
+    function syncStickyOffsets(){
+      const root=document.documentElement;
+      root.style.setProperty('--lesson-nav-height',Math.ceil($('lesson-nav').getBoundingClientRect().height)+'px');
+      root.style.setProperty('--marking-tools-height',Math.ceil($('marking-tools').getBoundingClientRect().height)+'px');
+    }
+    const stickyObserver=new ResizeObserver(syncStickyOffsets);
+    stickyObserver.observe($('lesson-nav'));stickyObserver.observe($('marking-tools'));syncStickyOffsets();
     new ResizeObserver(drawArrows).observe($('text-stage'));document.fonts?.ready.then(drawArrows);addEventListener('resize',drawArrows);
 
 })().catch(()=>{

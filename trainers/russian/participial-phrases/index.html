@@ -6,7 +6,7 @@
   <title>Причастные обороты · 11 класс — Кодислово</title>
   <link rel="icon" href="../../../assets/brand/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../../../assets/css/ui.css">
-  <link rel="stylesheet" href="./trainer.css?v=20261011">
+  <link rel="stylesheet" href="./trainer.css?v=20261011-sticky-tools">
 </head>
 <body>
   <a class="skip-link" href="#main">К заданиям</a>
@@ -25,14 +25,14 @@
         <li>Отметьте крестиком определяемые слова и полностью выделите волнистой линией причастные обороты.</li>
         <li>Проведите стрелки от определяемых слов к причастиям. Для каждой связи запишите вопрос и определите род, число и падеж причастия.</li>
       </ol>
-      <div class="row toolbar" aria-label="Инструменты разметки">
-        <button type="button" data-tool="noun" aria-pressed="true">× Определяемое слово</button>
-        <button type="button" data-tool="turn" aria-pressed="false">〰 Причастный оборот</button>
-        <button type="button" data-tool="arrow" aria-pressed="false">→ Стрелка</button>
-        <button type="button" data-tool="erase" aria-pressed="false">Снять отметку</button>
-        <button type="button" id="undo" disabled>Отменить действие</button>
+      <div id="marking-tools" class="marking-tools"><div class="row toolbar" role="group" aria-label="Инструменты разметки">
+        <button type="button" data-tool="noun" aria-pressed="true" aria-label="× Определяемое слово"><span class="tool-long">× Определяемое слово</span><span class="tool-short" aria-hidden="true">× Слово</span></button>
+        <button type="button" data-tool="turn" aria-pressed="false" aria-label="〰 Причастный оборот"><span class="tool-long">〰 Причастный оборот</span><span class="tool-short" aria-hidden="true">〰 Оборот</span></button>
+        <button type="button" data-tool="arrow" aria-pressed="false" aria-label="→ Стрелка"><span class="tool-long">→ Стрелка</span><span class="tool-short" aria-hidden="true">→ Стрелка</span></button>
+        <button type="button" data-tool="erase" aria-pressed="false" aria-label="Снять отметку"><span class="tool-long">Снять отметку</span><span class="tool-short" aria-hidden="true">Снять</span></button>
+        <button type="button" id="undo" disabled aria-label="Отменить действие"><span class="tool-long">Отменить действие</span><span class="tool-short" aria-hidden="true">Отменить</span></button>
       </div>
-      <p id="tool-message" class="status" role="status"></p>
+      <p id="tool-message" class="status" role="status"></p></div>
       <p class="small">Чтобы записать вопрос над стрелкой, нажмите на неё или на надпись «Вопрос…».</p>
       <div id="text-stage"><div id="text"></div><svg id="arrows" role="group" aria-label="Стрелки и вопросы"></svg><div id="inline-question" class="inline-question" hidden><input id="inline-question-input" type="text" maxlength="200" autocomplete="off" aria-label="Вопрос над стрелкой"><button type="button" id="inline-question-done" aria-label="Закончить запись вопроса">✓</button></div></div>
       <p class="small" id="text-source"></p><div class="row panel-actions"><p class="flow-note">Вопросы и формы заполняются на следующей вкладке.</p><button type="button" class="primary" data-go="1">К вопросам и формам →</button></div>
@@ -54,6 +54,6 @@
   <script src="../../../assets/js/theme.js"></script>
   <script src="../../../assets/js/student-class.js"></script>
   <script src="../../shared/student-entry.js?v=20261008"></script>
-  <script src="./trainer.js?v=20261011"></script>
+  <script src="./trainer.js?v=20261011-sticky-tools"></script>
 </body>
 </html>

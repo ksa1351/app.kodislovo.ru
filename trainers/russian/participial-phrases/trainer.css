@@ -34,5 +34,13 @@ textarea{line-height:1.65}.inline-question{background:var(--ks-surface);border-r
 .hero .back-link:hover,footer a:hover{text-decoration:underline}#answers-title~h3{margin-top:28px}
 .boot-note{max-width:1180px;margin:30px auto;padding:0 24px}.skip-link{position:fixed;left:12px;top:-100px;z-index:100;padding:10px 16px;background:var(--ks-surface);color:var(--ks-primary)}.skip-link:focus{top:12px}
 .theme-toggle input{position:absolute;opacity:0;display:block;width:1px;height:1px;min-height:0}.theme-toggle input:focus-visible+.theme-switch{outline:3px solid var(--ks-gold);outline-offset:4px}
+/* Keep all marking tools available while reading the text below the stage tabs. */
+:root{--lesson-nav-height:72px;--marking-tools-height:160px}
+#lesson-nav{z-index:8}
+.marking-tools{position:sticky;top:var(--lesson-nav-height);z-index:6;background:var(--ks-surface);padding:10px 0;border-bottom:1px solid var(--line);box-shadow:0 8px 10px -10px rgba(0,0,0,.3);margin-bottom:14px}
+.marking-tools .toolbar{margin:0}.marking-tools #tool-message{margin:8px 0 0;font-size:16px;line-height:1.45}
+.tool-short{display:none}
+.token,.inline-question,#text-stage{scroll-margin-top:calc(var(--lesson-nav-height) + var(--marking-tools-height) + 20px)}
+@media(max-width:620px){.marking-tools .toolbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.marking-tools .toolbar button{min-width:0;min-height:44px;padding:8px 6px;font-size:15px}.marking-tools #undo{grid-column:span 2}.tool-long{display:none}.tool-short{display:inline}.marking-tools #tool-message{font-size:14px}.marking-tools{padding:8px 0}}
 @media(max-width:620px){main{padding:18px 12px 36px}.student-profile{padding:0 12px}.hero h1{font-size:30px}#lesson-nav button{font-size:15px}section{padding:20px 14px}#text-stage{padding-left:12px;padding-right:12px}.theme-toggle{gap:6px}}
 @media print{.site-topbar,.student-profile,.boot-note,.skip-link{display:none!important}body{background:white}}
