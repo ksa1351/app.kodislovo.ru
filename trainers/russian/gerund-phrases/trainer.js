@@ -35,7 +35,7 @@
     function snapshot(){history.push(clone(model));if(history.length>60)history.shift();clearCheck();$('undo').disabled=false;}
     function phrase(range){if(!range)return '';return tokens.slice(range.start,range.end+1).map(t=>t.word).join(' ');}
     function instruction(){
-      const words={subject:'Нажмите на подлежащее, чтобы отметить его одной линией.',predicate:'Нажмите на сказуемое, чтобы отметить его двумя линиями.',turn:'Нажмите на первое, затем на последнее слово оборота.',arrow:'Нажмите на сказуемое, затем на деепричастие.',erase:'Нажмите на слово внутри отметки, которую хотите снять.'};
+      const words={subject:'Нажмите на подлежащее, чтобы отметить его одной линией.',predicate:'Нажмите на слово, обозначающее основное действие: появятся крестик и двойная линия.',turn:'Нажмите на первое, затем на последнее слово оборота.',arrow:'Нажмите на сказуемое, затем на деепричастие.',erase:'Нажмите на слово внутри отметки, которую хотите снять.'};
       $('tool-message').textContent=pending!==null?(tool==='arrow'?'Начало стрелки отмечено. Нажмите на деепричастие.':'Начало оборота отмечено. Нажмите на последнее слово.'):words[tool];
     }
     function mutate(fn){snapshot();fn();save();renderMarks();renderLinks();instruction();}
@@ -59,7 +59,7 @@
       $('text').replaceChildren();parts.forEach(list=>{const p=document.createElement('p');list.forEach(part=>{if(part.kind==='word'){const b=document.createElement('button');b.type='button';b.className='token';b.dataset.token=part.id;b.textContent=tokens[part.id].word;b.setAttribute('aria-label',tokens[part.id].word+', слово '+(part.id+1));b.addEventListener('click',()=>clickWord(part.id));p.append(b);}else{const span=document.createElement('span');span.className='separator';span.dataset.after=part.after;span.textContent=part.value;p.append(span);}});$('text').append(p);});
     }
     function renderMarks(){
-      document.querySelectorAll('[data-token]').forEach(el=>{const id=Number(el.dataset.token);el.classList.toggle('subject',model.subjects.includes(id));el.classList.toggle('predicate',model.predicates.includes(id));el.classList.toggle('adverbial',model.turns.some(r=>id>=r.start&&id<=r.end));el.classList.toggle('pending',id===pending);const marks=[model.subjects.includes(id)?'подлежащее':'',model.predicates.includes(id)?'сказуемое':'',model.turns.some(r=>id>=r.start&&id<=r.end)?'деепричастный оборот':''].filter(Boolean);el.setAttribute('aria-label',tokens[id].word+', слово '+(id+1)+(marks.length?', '+marks.join(', '):''));});
+      document.querySelectorAll('[data-token]').forEach(el=>{const id=Number(el.dataset.token);el.classList.toggle('subject',model.subjects.includes(id));el.classList.toggle('predicate',model.predicates.includes(id));el.classList.toggle('adverbial',model.turns.some(r=>id>=r.start&&id<=r.end));el.classList.toggle('pending',id===pending);const marks=[model.subjects.includes(id)?'подлежащее':'',model.predicates.includes(id)?'основное действие, крестик и двойная линия':'',model.turns.some(r=>id>=r.start&&id<=r.end)?'деепричастный оборот':''].filter(Boolean);el.setAttribute('aria-label',tokens[id].word+', слово '+(id+1)+(marks.length?', '+marks.join(', '):''));});
       document.querySelectorAll('[data-after]').forEach(el=>{const i=Number(el.dataset.after);el.classList.toggle('adverbial',model.turns.some(r=>i>=r.start&&i<r.end));});
       requestAnimationFrame(drawArrows);
     }
@@ -84,7 +84,8 @@
       questionAnchors.clear();
       const defs=svg('defs',{}),marker=svg('marker',{id:'question-arrowhead',viewBox:'0 0 12 12',refX:10,refY:6,markerWidth:12,markerHeight:12,markerUnits:'userSpaceOnUse',orient:'auto',overflow:'visible'});
       marker.append(svg('polyline',{points:'2,1 10,6 2,11',fill:'none',stroke:'var(--green)','stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'}));defs.append(marker);overlay.append(defs);
-      model.links.forEach(l=>{const a=wordRect(l.from),b=wordRect(l.to);if(!a||!b)return;const ax=a.left+a.width/2-bounds.left,ay=a.top-bounds.top-17,bx=b.left+b.width/2-bounds.left,by=b.top-bounds.top-5,sameLine=Math.abs(a.top-b.top)<8;
+      model.predicates.forEach(id=>{const r=wordRect(id);if(!r)return;const mark=svg('text',{x:r.left+r.width/2-bounds.left,y:r.top-bounds.top-5,'text-anchor':'middle',class:'cross','data-main-action':id,'aria-hidden':'true'});mark.textContent='×';overlay.append(mark);});
+      model.links.forEach(l=>{const a=wordRect(l.from),b=wordRect(l.to);if(!a||!b)return;const ax=a.left+a.width/2-bounds.left+12,ay=a.top-bounds.top-17,bx=b.left+b.width/2-bounds.left,by=b.top-bounds.top-5,sameLine=Math.abs(a.top-b.top)<8;
         const rowTop=Math.min(a.top,b.top)-bounds.top,rowHeight=Math.max(a.height,b.height),lineHeight=parseFloat(getComputedStyle($('text')).lineHeight);
         let d,tx,ty;if(sameLine){const lift=Math.min(28,20+Math.abs(ax-bx)*.03),top=Math.min(ay,by)-lift;d='M '+ax+' '+ay+' C '+ax+' '+top+' '+bx+' '+top+' '+bx+' '+by;tx=bx;ty=b.top-bounds.top-20;}else{const gutter=stage.clientWidth-6;d='M '+ax+' '+ay+' C '+ax+' '+(ay-18)+' '+gutter+' '+(ay-18)+' '+gutter+' '+ay+' L '+gutter+' '+(by-26)+' C '+gutter+' '+(by-36)+' '+bx+' '+(by-36)+' '+bx+' '+by;tx=bx;ty=b.top-bounds.top-20;}
         const line=svg('path',{d,'marker-end':'url(#question-arrowhead)','data-from':l.from,'data-to':l.to,'stroke-linecap':'round',style:'stroke-width:2','aria-hidden':'true'});line.addEventListener('click',()=>openQuestionEditor(l.id));overlay.append(line);
