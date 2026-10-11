@@ -15,12 +15,14 @@
     const storeKey='kodislovo:gerund-phrases:'+hash.toString(16)+':'+config.release+':'+StudentEntry.key(student);
     const tokens=[],parts=[];
     config.paragraphs.forEach((paragraph,pi)=>{const list=[];let pos=0;for(const m of paragraph.matchAll(/[\p{L}\p{N}]+(?:[-‑][\p{L}\p{N}]+)*/gu)){if(m.index>pos)list.push({kind:'sep',value:paragraph.slice(pos,m.index),after:tokens.length-1});const t={id:tokens.length,word:m[0],paragraph:pi,start:m.index,end:m.index+m[0].length};tokens.push(t);list.push({kind:'word',id:t.id});pos=t.end;}if(pos<paragraph.length)list.push({kind:'sep',value:paragraph.slice(pos),after:tokens.length-1});parts.push(list);});
-    const blank=()=>({subjects:[],predicates:[],turns:[],links:[],next:1});
+    const blank=()=>({subjects:[],predicates:[],mainActions:[],turns:[],links:[],next:1});
     const validId=n=>Number.isInteger(n)&&n>=0&&n<tokens.length;
     const clone=x=>JSON.parse(JSON.stringify(x));
     function clean(raw){
       const m=blank();if(!raw||typeof raw!=='object')return m;
       for(const field of ['subjects','predicates'])m[field]=[...new Set((Array.isArray(raw[field])?raw[field]:[]).filter(validId))];
+      const actionIds=Array.isArray(raw.mainActions)?raw.mainActions:raw.predicates;
+      m.mainActions=[...new Set((Array.isArray(actionIds)?actionIds:[]).filter(validId))];
       const ranges=Array.isArray(raw.turns)?raw.turns:[];m.turns=ranges.filter(r=>validId(r.start)&&validId(r.end)&&r.start<=r.end).map((r,i)=>({id:'r'+(i+1),start:r.start,end:r.end}));
       const links=Array.isArray(raw.links)?raw.links:[];m.links=links.filter(l=>validId(l.from)&&validId(l.to)&&l.from!==l.to).map((l,i)=>({id:'l'+(i+1),from:l.from,to:l.to,question:typeof l.question==='string'?l.question.slice(0,200):'',aspect:['impf','pf'].includes(l.aspect)?l.aspect:'',timing:['simultaneous','before','after'].includes(l.timing)?l.timing:'',actor:typeof l.actor==='string'?l.actor.slice(0,150):''}));
       m.next=Math.max(m.turns.length,m.links.length)+1;return m;
@@ -35,13 +37,13 @@
     function snapshot(){history.push(clone(model));if(history.length>60)history.shift();clearCheck();$('undo').disabled=false;}
     function phrase(range){if(!range)return '';return tokens.slice(range.start,range.end+1).map(t=>t.word).join(' ');}
     function instruction(){
-      const words={subject:'Нажмите на подлежащее, чтобы отметить его одной линией.',predicate:'Нажмите на слово, обозначающее основное действие: появятся крестик и двойная линия.',turn:'Нажмите на первое, затем на последнее слово оборота.',arrow:'Нажмите на сказуемое, затем на деепричастие.',erase:'Нажмите на слово внутри отметки, которую хотите снять.'};
+      const words={subject:'Нажмите на подлежащее, чтобы отметить его одной линией.',predicate:'Нажмите на сказуемое, чтобы отметить его двумя линиями.',action:'Нажмите на слово, обозначающее основное действие, чтобы поставить или снять крестик.',turn:'Нажмите на первое, затем на последнее слово оборота.',arrow:'Нажмите на сказуемое, затем на деепричастие.',erase:'Нажмите на слово внутри отметки, которую хотите снять.'};
       $('tool-message').textContent=pending!==null?(tool==='arrow'?'Начало стрелки отмечено. Нажмите на деепричастие.':'Начало оборота отмечено. Нажмите на последнее слово.'):words[tool];
     }
     function mutate(fn){snapshot();fn();save();renderMarks();renderLinks();instruction();}
     function clickWord(id){
-      if(tool==='subject'||tool==='predicate'){const field=tool==='subject'?'subjects':'predicates';mutate(()=>{model[field]=model[field].includes(id)?model[field].filter(n=>n!==id):[...model[field],id];});return;}
-      if(tool==='erase'){mutate(()=>{model.subjects=model.subjects.filter(n=>n!==id);model.predicates=model.predicates.filter(n=>n!==id);model.turns=model.turns.filter(r=>!(id>=r.start&&id<=r.end));model.links=model.links.filter(l=>l.from!==id&&l.to!==id);});return;}
+      if(['subject','predicate','action'].includes(tool)){const field={subject:'subjects',predicate:'predicates',action:'mainActions'}[tool];mutate(()=>{model[field]=model[field].includes(id)?model[field].filter(n=>n!==id):[...model[field],id];});return;}
+      if(tool==='erase'){mutate(()=>{model.subjects=model.subjects.filter(n=>n!==id);model.predicates=model.predicates.filter(n=>n!==id);model.mainActions=model.mainActions.filter(n=>n!==id);model.turns=model.turns.filter(r=>!(id>=r.start&&id<=r.end));model.links=model.links.filter(l=>l.from!==id&&l.to!==id);});return;}
       if(pending===null){pending=id;renderMarks();instruction();return;}
       const from=pending;pending=null;
       if(tool==='arrow'){
@@ -59,7 +61,7 @@
       $('text').replaceChildren();parts.forEach(list=>{const p=document.createElement('p');list.forEach(part=>{if(part.kind==='word'){const b=document.createElement('button');b.type='button';b.className='token';b.dataset.token=part.id;b.textContent=tokens[part.id].word;b.setAttribute('aria-label',tokens[part.id].word+', слово '+(part.id+1));b.addEventListener('click',()=>clickWord(part.id));p.append(b);}else{const span=document.createElement('span');span.className='separator';span.dataset.after=part.after;span.textContent=part.value;p.append(span);}});$('text').append(p);});
     }
     function renderMarks(){
-      document.querySelectorAll('[data-token]').forEach(el=>{const id=Number(el.dataset.token);el.classList.toggle('subject',model.subjects.includes(id));el.classList.toggle('predicate',model.predicates.includes(id));el.classList.toggle('adverbial',model.turns.some(r=>id>=r.start&&id<=r.end));el.classList.toggle('pending',id===pending);const marks=[model.subjects.includes(id)?'подлежащее':'',model.predicates.includes(id)?'основное действие, крестик и двойная линия':'',model.turns.some(r=>id>=r.start&&id<=r.end)?'деепричастный оборот':''].filter(Boolean);el.setAttribute('aria-label',tokens[id].word+', слово '+(id+1)+(marks.length?', '+marks.join(', '):''));});
+      document.querySelectorAll('[data-token]').forEach(el=>{const id=Number(el.dataset.token);el.classList.toggle('subject',model.subjects.includes(id));el.classList.toggle('predicate',model.predicates.includes(id));el.classList.toggle('adverbial',model.turns.some(r=>id>=r.start&&id<=r.end));el.classList.toggle('pending',id===pending);const marks=[model.subjects.includes(id)?'подлежащее':'',model.predicates.includes(id)?'сказуемое':'',model.mainActions.includes(id)?'основное действие, крестик':'',model.turns.some(r=>id>=r.start&&id<=r.end)?'деепричастный оборот':''].filter(Boolean);el.setAttribute('aria-label',tokens[id].word+', слово '+(id+1)+(marks.length?', '+marks.join(', '):''));});
       document.querySelectorAll('[data-after]').forEach(el=>{const i=Number(el.dataset.after);el.classList.toggle('adverbial',model.turns.some(r=>i>=r.start&&i<r.end));});
       requestAnimationFrame(drawArrows);
     }
@@ -84,7 +86,7 @@
       questionAnchors.clear();
       const defs=svg('defs',{}),marker=svg('marker',{id:'question-arrowhead',viewBox:'0 0 12 12',refX:10,refY:6,markerWidth:12,markerHeight:12,markerUnits:'userSpaceOnUse',orient:'auto',overflow:'visible'});
       marker.append(svg('polyline',{points:'2,1 10,6 2,11',fill:'none',stroke:'var(--green)','stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'}));defs.append(marker);overlay.append(defs);
-      model.predicates.forEach(id=>{const r=wordRect(id);if(!r)return;const mark=svg('text',{x:r.left+r.width/2-bounds.left,y:r.top-bounds.top-5,'text-anchor':'middle',class:'cross','data-main-action':id,'aria-hidden':'true'});mark.textContent='×';overlay.append(mark);});
+      model.mainActions.forEach(id=>{const r=wordRect(id);if(!r)return;const mark=svg('text',{x:r.left+r.width/2-bounds.left,y:r.top-bounds.top-5,'text-anchor':'middle',class:'cross','data-main-action':id,'aria-hidden':'true'});mark.textContent='×';overlay.append(mark);});
       model.links.forEach(l=>{const a=wordRect(l.from),b=wordRect(l.to);if(!a||!b)return;const ax=a.left+a.width/2-bounds.left+12,ay=a.top-bounds.top-17,bx=b.left+b.width/2-bounds.left,by=b.top-bounds.top-5,sameLine=Math.abs(a.top-b.top)<8;
         const rowTop=Math.min(a.top,b.top)-bounds.top,rowHeight=Math.max(a.height,b.height),lineHeight=parseFloat(getComputedStyle($('text')).lineHeight);
         let d,tx,ty;if(sameLine){const lift=Math.min(28,20+Math.abs(ax-bx)*.03),top=Math.min(ay,by)-lift;d='M '+ax+' '+ay+' C '+ax+' '+top+' '+bx+' '+top+' '+bx+' '+by;tx=bx;ty=b.top-bounds.top-20;}else{const gutter=stage.clientWidth-6;d='M '+ax+' '+ay+' C '+ax+' '+(ay-18)+' '+gutter+' '+(ay-18)+' '+gutter+' '+ay+' L '+gutter+' '+(by-26)+' C '+gutter+' '+(by-36)+' '+bx+' '+(by-36)+' '+bx+' '+by;tx=bx;ty=b.top-bounds.top-20;}
@@ -110,7 +112,7 @@
     function compare(actual,key){
       const expected=clean(key.answer),rows=[];let all=true;
       function sets(title,aa,bb){const a=new Set(aa),b=new Set(bb),correct=[...a].filter(x=>b.has(x)).length,extra=[...a].filter(x=>!b.has(x)).length,missing=[...b].filter(x=>!a.has(x)).length,ok=!extra&&!missing;all=all&&ok;rows.push({title,ok,message:title+': совпало '+correct+' из '+b.size+'. Лишних отметок: '+extra+'; пропущено: '+missing+'.'});}
-      sets('Подлежащие',actual.subjects,expected.subjects);sets('Сказуемые',actual.predicates,expected.predicates);
+      sets('Подлежащие',actual.subjects,expected.subjects);sets('Сказуемые',actual.predicates,expected.predicates);sets('Основное действие (крестик)',actual.mainActions,expected.mainActions);
       sets('Границы оборотов',actual.turns.map(r=>r.start+':'+r.end),expected.turns.map(r=>r.start+':'+r.end));sets('Направление и концы стрелок',actual.links.map(l=>l.from+':'+l.to),expected.links.map(l=>l.from+':'+l.to));
       const isQuestionOK=value=>['что делая','как'].includes(question(value));
       const detail=actual.links.map(l=>{const e=expected.links.find(x=>x.from===l.from&&x.to===l.to),errors=[];if(!e)errors.push('Проверьте начало и конец стрелки.');else{if(!isQuestionOK(l.question))errors.push('Проверьте вопрос к добавочному действию.');for(const [name,title]of [['aspect','Вид'],['timing','Соотношение действий'],['actor','Исполнитель']])if(normalize(l[name])!==normalize(e[name]))errors.push(title+' не совпал с ключом.');}return {id:l.id,ok:errors.length===0,message:errors.length?errors.join(' '):'Вопрос, вид, связь действий и исполнитель совпали с ключом.'};});
@@ -124,7 +126,7 @@
       lastCheck=compare(model,config.key);$('results').replaceChildren(element('p',lastCheck.all?'Все части работы совпали с ключом учителя.':'Проверьте отмеченные части работы.'));const ul=document.createElement('ul');lastCheck.rows.forEach(r=>{const li=element('li',r.message);li.className=r.ok?'':'error';ul.append(li);});$('results').append(ul);lastCheck.detail.forEach(d=>{const el=$('feedback-'+d.id);if(el){el.textContent=d.message;el.classList.toggle('good',d.ok);}});
     }
     function report(){
-      const lines=[student.class+' · Русский язык · Урок 17 · Деепричастные обороты','Ученик: '+student.name,'Класс: '+student.class,'Самостоятельная работа','','Исходный текст:',sourceText,'','Подлежащие: '+model.subjects.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Сказуемые: '+model.predicates.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Деепричастные обороты:'];
+      const lines=[student.class+' · Русский язык · Урок 17 · Деепричастные обороты','Ученик: '+student.name,'Класс: '+student.class,'Самостоятельная работа','','Исходный текст:',sourceText,'','Подлежащие: '+model.subjects.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Сказуемые: '+model.predicates.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Основное действие (крестик): '+model.mainActions.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Деепричастные обороты:'];
       model.turns.forEach((r,i)=>lines.push((i+1)+'. '+phrase(r)+' (слова '+(r.start+1)+'–'+(r.end+1)+')'));
       lines.push('','Связи, вопросы и действия:');model.links.forEach((l,i)=>lines.push((i+1)+'. '+tokens[l.from].word+' → '+tokens[l.to].word+'; вопрос: '+(l.question||'не записан')+'; вид: '+(labels.aspect[l.aspect]||'не выбран')+'; добавочное действие: '+(labels.timing[l.timing]||'не выбрано')+'; исполнитель: '+(l.actor||'не записан')));
       if(lastCheck){lines.push('','Сравнение с ключом:');lastCheck.rows.forEach(r=>lines.push(r.message));}return lines.join('\n');
@@ -141,7 +143,7 @@
     function cleanEditing(raw){return config.editing.map((_,i)=>{const r=Array.isArray(raw)&&raw[i]||{};return {decision:['yes','no'].includes(r.decision)?r.decision:'',solution:typeof r.solution==='string'?r.solution.slice(0,6000):'',explanation:typeof r.explanation==='string'?r.explanation.slice(0,6000):''};});}
     function editorComplete(r){return !!(r.decision&&r.solution.trim()&&r.explanation.trim());}
     function refreshProgress(){
-      $('marks-progress').textContent='Подлежащих: '+model.subjects.length+' · сказуемых: '+model.predicates.length+' · оборотов: '+model.turns.length+' · стрелок: '+model.links.length;
+      $('marks-progress').textContent='Подлежащих: '+model.subjects.length+' · сказуемых: '+model.predicates.length+' · крестиков: '+model.mainActions.length+' · деепричастных оборотов: '+model.turns.length+' · стрелок: '+model.links.length;
       $('editor-progress').textContent='Заполнено заданий редактора: '+editorAnswers.filter(editorComplete).length+' из '+config.editing.length;
     }
     function showStep(index,focus=false){

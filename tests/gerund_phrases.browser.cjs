@@ -31,6 +31,9 @@ const qa=process.env.TRAINER_QA||path.join(os.tmpdir(),'kodislovo-gerund-qa');
   async function check(){await p.locator('#tab-1').click();await p.locator('#check-work').click();}
   await tool('subject');for(const id of key.subjects)await word(id);
   await tool('predicate');for(const id of key.predicates)await word(id);
+  assert.equal(await p.locator('#arrows .cross').count(),0);
+  await tool('action');for(const id of key.mainActions)await word(id);
+  await p.locator('#arrows .cross').waitFor();
   await tool('turn');for(const r of key.turns){await word(r.start);await word(r.end);}
   await tool('arrow');for(const l of key.links){await word(l.from);await word(l.to);}
   await p.waitForFunction(()=>document.querySelectorAll('#arrows path').length===2);
@@ -45,7 +48,7 @@ const qa=process.env.TRAINER_QA||path.join(os.tmpdir(),'kodislovo-gerund-qa');
    const c=p.locator('#connections .connection').nth(i);
    await c.locator('input[id^=question-]').fill(i?'КАК ?':'что делая?');await c.locator('select[id^=aspect-]').selectOption('impf');await c.locator('select[id^=timing-]').selectOption('simultaneous');await c.locator('input[id^=actor-]').fill('МОШКИ');
   }
-  await check();assert.match(await p.locator('#results').textContent(),/Все части/);assert.equal(await p.locator('#results li').count(),8);
+  await check();assert.match(await p.locator('#results').textContent(),/Все части/);assert.equal(await p.locator('#results li').count(),9);
   const first=p.locator('#connections .connection').first();await first.locator('select[id^=aspect-]').selectOption('pf');await p.locator('#check-work').click();assert.match(await first.locator('.feedback').textContent(),/Вид не совпал/);
   await first.locator('select[id^=aspect-]').selectOption('impf');assert.equal(await p.locator('#results').textContent(),'');await check();
   await p.locator('#tab-0').click();await tool('turn');
@@ -61,10 +64,10 @@ const qa=process.env.TRAINER_QA||path.join(os.tmpdir(),'kodislovo-gerund-qa');
   const story='Выбрав фотографии, ученики подготовились к выставке. Прочитав подписи, они записали вопросы. Затем они обсудили вопросы с учителем. Работа над выставкой продолжилась. В конце ученики разместили фотографии на стенде.';
   await p.locator('#own-text').fill(story);await p.locator('#own-explanation').fill('Выбрав фотографии; прочитав подписи. Исполнители — ученики. Сначала прочитали, затем записали.');
   await p.locator('.optional-task summary').click();await p.locator('#own-extra').fill('Записывать — инфинитив; исполнитель обоих действий подразумевается один.');
-  await p.locator('#tab-3').click();await p.locator('#check-all').click();assert.match(await p.locator('#summary-result').textContent(),/Все автоматически/);assert.match(await p.locator('#summary-result').textContent(),/8 \/ 8/);assert.match(await p.locator('#summary-result').textContent(),/4 \/ 4/);
+  await p.locator('#tab-3').click();await p.locator('#check-all').click();assert.match(await p.locator('#summary-result').textContent(),/Все автоматически/);assert.match(await p.locator('#summary-result').textContent(),/9 \/ 9/);assert.match(await p.locator('#summary-result').textContent(),/4 \/ 4/);
   let pending=p.waitForEvent('download');await p.locator('#save-answers').click();let dl=await pending;
   assert.equal(dl.suggestedFilename(),'11А_РУС_17_Тестовый_Ученик_Ответы.json');const saved=JSON.parse(await fs.readFile(await dl.path(),'utf8'));
-  assert.deepEqual(saved.student,{name:'Тестовый Ученик',class:'11А'});assert.equal(saved.annotationCheck.all,true);assert.equal(saved.writing.text,story);assert.ok(saved.editingCheck.every(r=>r.ok));
+  assert.deepEqual(saved.student,{name:'Тестовый Ученик',class:'11А'});assert.equal(saved.annotationCheck.all,true);assert.deepEqual(saved.answer.mainActions,key.mainActions);assert.equal(saved.writing.text,story);assert.ok(saved.editingCheck.every(r=>r.ok));
   const payload={name:'answers.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(saved))};
   pending=p.waitForEvent('download');await p.locator('#save-text').click();dl=await pending;const report=await fs.readFile(await dl.path(),'utf8');assert.match(report,/Ученик: Тестовый Ученик/);assert.match(report,/вопрос:/);assert.ok(report.includes(story));assert.match(report,/инфинитив/);
   await p.evaluate(()=>{Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.testShare={name:data.files[0].name,text:await data.files[0].text()};}});});
