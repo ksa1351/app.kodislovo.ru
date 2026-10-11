@@ -19,6 +19,14 @@
       card.innerHTML = '<div class="card-head"><span class="chip">5А · 5Б · 7Б · 9В · 11А</span><span class="status live">Доступно</span></div><h3>Задания</h3><p>Выбери свой класс, дату и открой нужное задание.</p>';
       cards.prepend(card);
     }
+    const participlesUrl = "https://ksa1351.github.io/app.kodislovo.ru/trainers/russian/participial-phrases/";
+    if (cards && !cards.querySelector('a[href="' + participlesUrl + '"]')) {
+      const card = document.createElement("a");
+      card.className = "card live card-russian";
+      card.href = participlesUrl;
+      card.innerHTML = '<div class="card-head"><span class="chip">Русский язык · 11 класс</span><span class="status live">Доступно</span></div><h3>Причастные обороты</h3><p>«Лес и степь»: разметка текста, вопросы, формы причастий и редактирование предложений.</p>';
+      cards.prepend(card);
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addAssignments, {once:true});
   else addAssignments();
