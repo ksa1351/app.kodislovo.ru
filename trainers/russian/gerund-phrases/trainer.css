@@ -54,3 +54,7 @@ button.token.adverbial,.separator.adverbial{background-image:repeating-linear-gr
 
 /* Keep full syntactic labels legible on narrow screens. */
 @media(max-width:620px){.marking-tools .toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.marking-tools [data-tool=turn]{grid-column:1/-1}.marking-tools .tool-long{display:inline}.marking-tools .tool-short{display:none}.marking-tools .toolbar button{font-size:14px;line-height:1.3;min-height:48px}.marking-tools #undo{grid-column:auto}}
+
+.score-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:900px){.score-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.score-grid{grid-template-columns:1fr}}

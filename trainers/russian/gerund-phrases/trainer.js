@@ -111,25 +111,30 @@
     function question(s){return normalize(s).replace(/[?？]+$/,'').trim();}
     function compare(actual,key){
       const expected=clean(key.answer),rows=[];let all=true;
-      function sets(title,aa,bb){const a=new Set(aa),b=new Set(bb),correct=[...a].filter(x=>b.has(x)).length,extra=[...a].filter(x=>!b.has(x)).length,missing=[...b].filter(x=>!a.has(x)).length,ok=!extra&&!missing;all=all&&ok;rows.push({title,ok,message:title+': совпало '+correct+' из '+b.size+'. Лишних отметок: '+extra+'; пропущено: '+missing+'.'});}
-      sets('Подлежащие',actual.subjects,expected.subjects);sets('Сказуемые',actual.predicates,expected.predicates);sets('Основное действие (крестик)',actual.mainActions,expected.mainActions);
+      function sets(title,aa,bb){const a=new Set(aa),b=new Set(bb),correct=[...a].filter(x=>b.has(x)).length,extra=[...a].filter(x=>!b.has(x)).length,missing=[...b].filter(x=>!a.has(x)).length,ok=!extra&&!missing;all=all&&ok;rows.push({title,ok,domain:['Подлежащие','Сказуемые'].includes(title)?'basis':'gerunds',message:title+': совпало '+correct+' из '+b.size+'. Лишних отметок: '+extra+'; пропущено: '+missing+'.'});}
+      const optionalIds=(key.optionalPredicateGroups||[]).filter(g=>actual.predicates.includes(g.head)).flatMap(g=>g.additional);
+      const predicateWords=actual.predicates.filter(id=>!optionalIds.includes(id));
+      sets('Подлежащие',actual.subjects,expected.subjects);sets('Сказуемые',predicateWords,expected.predicates);sets('Основное действие (крестик)',actual.mainActions,expected.mainActions);
       sets('Границы оборотов',actual.turns.map(r=>r.start+':'+r.end),expected.turns.map(r=>r.start+':'+r.end));sets('Направление и концы стрелок',actual.links.map(l=>l.from+':'+l.to),expected.links.map(l=>l.from+':'+l.to));
       const isQuestionOK=value=>['что делая','как'].includes(question(value));
       const detail=actual.links.map(l=>{const e=expected.links.find(x=>x.from===l.from&&x.to===l.to),errors=[];if(!e)errors.push('Проверьте начало и конец стрелки.');else{if(!isQuestionOK(l.question))errors.push('Проверьте вопрос к добавочному действию.');for(const [name,title]of [['aspect','Вид'],['timing','Соотношение действий'],['actor','Исполнитель']])if(normalize(l[name])!==normalize(e[name]))errors.push(title+' не совпал с ключом.');}return {id:l.id,ok:errors.length===0,message:errors.length?errors.join(' '):'Вопрос, вид, связь действий и исполнитель совпали с ключом.'};});
       for(const [name,title]of [['question','Вопросы'],['aspect','Вид деепричастий'],['timing','Соотношение действий'],['actor','Исполнитель обоих действий']]){
-        const correct=expected.links.filter(e=>{const l=actual.links.find(x=>x.from===e.from&&x.to===e.to);return l&&(name==='question'?isQuestionOK(l[name]):normalize(l[name])===normalize(e[name]));}).length,ok=correct===expected.links.length;all=all&&ok;rows.push({title,ok,message:title+': совпало '+correct+' из '+expected.links.length+'.'});
+        const correct=expected.links.filter(e=>{const l=actual.links.find(x=>x.from===e.from&&x.to===e.to);return l&&(name==='question'?isQuestionOK(l[name]):normalize(l[name])===normalize(e[name]));}).length,ok=correct===expected.links.length;all=all&&ok;rows.push({title,ok,domain:'gerunds',message:title+': совпало '+correct+' из '+expected.links.length+'.'});
       }
-      return {all,rows,detail};
+      const basisRows=rows.filter(r=>r.domain==='basis'),gerundRows=rows.filter(r=>r.domain==='gerunds');
+      const basis={points:basisRows.every(r=>r.ok)?1:0,max:1};
+      const gerunds={correct:gerundRows.filter(r=>r.ok).length,total:gerundRows.length,all:gerundRows.every(r=>r.ok)};
+      return {all,rows,detail,basis,gerunds};
     }
     function showComparison(){
       if(!config.key||config.key.text!==sourceText){$('results').textContent='Для этого текста нет подходящего ключа учителя.';return;}
-      lastCheck=compare(model,config.key);$('results').replaceChildren(element('p',lastCheck.all?'Все части работы совпали с ключом учителя.':'Проверьте отмеченные части работы.'));const ul=document.createElement('ul');lastCheck.rows.forEach(r=>{const li=element('li',r.message);li.className=r.ok?'':'error';ul.append(li);});$('results').append(ul);lastCheck.detail.forEach(d=>{const el=$('feedback-'+d.id);if(el){el.textContent=d.message;el.classList.toggle('good',d.ok);}});
+      lastCheck=compare(model,config.key);$('results').replaceChildren(element('p',lastCheck.all?'Все части работы совпали с ключом учителя.':'Проверьте отмеченные части работы.'));const ul=document.createElement('ul');lastCheck.rows.forEach(r=>{const li=element('li',r.message);li.className=r.ok?'':'error';ul.append(li);});$('results').append(element('p','Грамматические основы: '+lastCheck.basis.points+' / 1 балл. Работа с деепричастными оборотами: '+lastCheck.gerunds.correct+' / '+lastCheck.gerunds.total+' критериев.'),ul);lastCheck.detail.forEach(d=>{const el=$('feedback-'+d.id);if(el){el.textContent=d.message;el.classList.toggle('good',d.ok);}});
     }
     function report(){
       const lines=[student.class+' · Русский язык · Урок 17 · Деепричастные обороты','Ученик: '+student.name,'Класс: '+student.class,'Самостоятельная работа','','Исходный текст:',sourceText,'','Подлежащие: '+model.subjects.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Сказуемые: '+model.predicates.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Основное действие (крестик): '+model.mainActions.map(id=>tokens[id].word+' (слово '+(id+1)+')').join('; '),'Деепричастные обороты:'];
       model.turns.forEach((r,i)=>lines.push((i+1)+'. '+phrase(r)+' (слова '+(r.start+1)+'–'+(r.end+1)+')'));
       lines.push('','Связи, вопросы и действия:');model.links.forEach((l,i)=>lines.push((i+1)+'. '+tokens[l.from].word+' → '+tokens[l.to].word+'; вопрос: '+(l.question||'не записан')+'; вид: '+(labels.aspect[l.aspect]||'не выбран')+'; добавочное действие: '+(labels.timing[l.timing]||'не выбрано')+'; исполнитель: '+(l.actor||'не записан')));
-      if(lastCheck){lines.push('','Сравнение с ключом:');lastCheck.rows.forEach(r=>lines.push(r.message));}return lines.join('\n');
+      if(lastCheck){lines.push('','Грамматические основы: '+lastCheck.basis.points+' / 1 балл.','Деепричастные обороты: '+lastCheck.gerunds.correct+' / '+lastCheck.gerunds.total+' критериев.','Сравнение с ключом:');lastCheck.rows.forEach(r=>lines.push(r.message));}return lines.join('\n');
     }
     document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{tool=b.dataset.tool;pending=null;document.querySelectorAll('[data-tool]').forEach(el=>el.setAttribute('aria-pressed',el===b));renderMarks();instruction();}));
     $('undo').addEventListener('click',()=>{if(!history.length)return;model=history.pop();pending=null;clearCheck();$('undo').disabled=!history.length;save();renderMarks();renderLinks();instruction();});
@@ -192,7 +197,7 @@
       $('summary-result').replaceChildren();
       const overall=element('p',lastCheck.all&&edits.every(r=>r.ok&&r.explanationWritten)&&writing.text.trim()&&writing.explanation.trim()?'Все автоматически проверяемые части выполнены. Покажите объяснения учителю.':'Есть части работы, которые стоит проверить ещё раз.');overall.className='summary-lead';$('summary-result').append(overall);
       const grid=document.createElement('div');grid.className='score-grid';
-      for(const [value,label]of [[completed+' / '+lastCheck.rows.length,'критериев разметки выполнено'],[edits.filter(r=>r.ok).length+' / '+edits.length,'решений редактора совпало'],[edits.filter(r=>r.explanationWritten).length+' / '+edits.length,'объяснений записано']]){
+      for(const [value,label]of [[lastCheck.basis.points+' / '+lastCheck.basis.max,'балл за грамматические основы'],[lastCheck.gerunds.correct+' / '+lastCheck.gerunds.total,'критериев работы с деепричастными оборотами'],[edits.filter(r=>r.ok).length+' / '+edits.length,'решений редактора совпало'],[edits.filter(r=>r.explanationWritten).length+' / '+edits.length,'объяснений записано']]){
         const box=document.createElement('div');box.append(element('strong',value),element('p',label));grid.append(box);
       }
       $('summary-result').append(grid,element('p','Рассказ: '+(writing.text.trim()?'записан':'не записан')+'. Объяснение к рассказу: '+(writing.explanation.trim()?'записано':'не записано')+'. Рассказ, объяснения и иные правильные формулировки проверяет учитель.'));
